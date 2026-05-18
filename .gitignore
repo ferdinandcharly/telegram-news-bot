@@ -1,4 +1,10 @@
 .env
 vus.json
+alertes.json
+sauvegardes.json
+subscriptions.json
+vapid_private.pem
+test_telegram.py
 __pycache__/
 *.pyc
+*.pem

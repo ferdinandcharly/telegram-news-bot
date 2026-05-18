@@ -1,19 +1,71 @@
 import os
 import time
 import json
+import base64
 import threading
+import tempfile
 from datetime import datetime
 from flask import Flask, jsonify, send_from_directory, request
 import bot
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
-alertes = []
-ALERTES_FILE = "alertes.json"
-DOMAINES_FILE = "domaines.json"
+# ── Données en mémoire ────────────────────────────────────────────────────────
+alertes          = []
+sauvegardes      = set()
+subscriptions_push = []
 
-DOMAINES_DEFAUT = list(bot.FLUX.keys())
+ALERTES_FILE       = "alertes.json"
+SAUVEGARDES_FILE   = "sauvegardes.json"
+SUBSCRIPTIONS_FILE = "subscriptions.json"
+DOMAINES_DEFAUT    = list(bot.FLUX.keys())
 
+# ── VAPID (push notifications) ────────────────────────────────────────────────
+VAPID_PUBLIC  = os.getenv("VAPID_PUBLIC_KEY", "")
+_VAPID_PRIVATE_B64 = os.getenv("VAPID_PRIVATE_KEY", "")
+VAPID_PRIVATE_FILE = None
+
+def init_vapid():
+    global VAPID_PRIVATE_FILE
+    if os.path.exists("vapid_private.pem"):
+        VAPID_PRIVATE_FILE = "vapid_private.pem"
+    elif _VAPID_PRIVATE_B64:
+        try:
+            pem = base64.urlsafe_b64decode(_VAPID_PRIVATE_B64 + "==")
+            tmp = tempfile.NamedTemporaryFile(mode="wb", suffix=".pem", delete=False)
+            tmp.write(pem); tmp.close()
+            VAPID_PRIVATE_FILE = tmp.name
+        except Exception as e:
+            print(f"Erreur décodage VAPID : {e}")
+
+def envoyer_push(titre, body, url):
+    if not VAPID_PRIVATE_FILE or not subscriptions_push:
+        return
+    try:
+        from pywebpush import webpush, WebPushException
+    except ImportError:
+        return
+    morts = []
+    for sub in subscriptions_push:
+        try:
+            webpush(
+                subscription_info=sub,
+                data=json.dumps({"title": titre, "body": body, "url": url}),
+                vapid_private_key=VAPID_PRIVATE_FILE,
+                vapid_claims={"sub": "mailto:ferdinandcharly@gmail.com"},
+            )
+        except Exception as e:
+            if hasattr(e, "response") and e.response and e.response.status_code in [404, 410]:
+                morts.append(sub)
+            else:
+                print(f"Push error : {e}")
+    for sub in morts:
+        subscriptions_push.remove(sub)
+    if morts:
+        sauver_subscriptions()
+
+
+# ── Persistance ───────────────────────────────────────────────────────────────
 
 def charger_alertes():
     if os.path.exists(ALERTES_FILE):
@@ -21,83 +73,169 @@ def charger_alertes():
             return json.load(f)
     return []
 
-
 def sauver_alertes_fichier():
     with open(ALERTES_FILE, "w", encoding="utf-8") as f:
         json.dump(alertes, f, ensure_ascii=False, indent=2)
 
+def charger_sauvegardes():
+    if os.path.exists(SAUVEGARDES_FILE):
+        with open(SAUVEGARDES_FILE, encoding="utf-8") as f:
+            return set(json.load(f))
+    return set()
 
-def ajouter_alerte(domaine, titre, teaser, lien):
+def sauver_sauvegardes_fichier():
+    with open(SAUVEGARDES_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(sauvegardes), f)
+
+def charger_subscriptions():
+    if os.path.exists(SUBSCRIPTIONS_FILE):
+        with open(SUBSCRIPTIONS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def sauver_subscriptions():
+    with open(SUBSCRIPTIONS_FILE, "w", encoding="utf-8") as f:
+        json.dump(subscriptions_push, f)
+
+
+# ── Callback bot ──────────────────────────────────────────────────────────────
+
+def ajouter_alerte(domaine, titre, teaser, lien, description=""):
+    accroche = teaser.get("accroche", "") if isinstance(teaser, dict) else teaser
     alerte = {
-        "id": len(alertes),
-        "domaine": domaine,
-        "titre": titre,
-        "accroche": teaser.get("accroche", "") if isinstance(teaser, dict) else teaser,
-        "contexte": teaser.get("contexte", "") if isinstance(teaser, dict) else "",
-        "suite":    teaser.get("suite", "")    if isinstance(teaser, dict) else "",
-        "lien": lien,
-        "date": datetime.now().isoformat(),
+        "id":          int(datetime.now().timestamp() * 1000),
+        "domaine":     domaine,
+        "titre":       titre,
+        "accroche":    accroche,
+        "contexte":    teaser.get("contexte", "") if isinstance(teaser, dict) else "",
+        "suite":       teaser.get("suite", "")    if isinstance(teaser, dict) else "",
+        "description": description[:1200],
+        "lien":        lien,
+        "date":        datetime.now().isoformat(),
     }
     alertes.insert(0, alerte)
     if len(alertes) > 200:
         alertes.pop()
     sauver_alertes_fichier()
 
+    # push notification
+    body = accroche or titre
+    envoyer_push(titre=f"{domaine} — {titre[:60]}", body=body[:120], url=lien)
 
-def charger_domaines():
-    if os.path.exists(DOMAINES_FILE):
-        with open(DOMAINES_FILE, encoding="utf-8") as f:
-            return json.load(f)
-    return DOMAINES_DEFAUT
-
-
-def sauver_domaines(domaines):
-    with open(DOMAINES_FILE, "w", encoding="utf-8") as f:
-        json.dump(domaines, f, ensure_ascii=False)
-
-
-# Brancher le callback du bot
 bot.on_alerte = ajouter_alerte
 
 
-# ── API ──────────────────────────────────────────────────────────────────────
+# ── API alertes ───────────────────────────────────────────────────────────────
 
 @app.route("/api/alertes")
 def api_alertes():
     domaine = request.args.get("domaine")
-    if domaine and domaine != "Tout":
-        filtrees = [a for a in alertes if domaine in a["domaine"]]
-        return jsonify(filtrees)
-    return jsonify(alertes)
-
+    liste = alertes if not domaine or domaine == "Tout" else [
+        a for a in alertes if domaine in a["domaine"]
+    ]
+    return jsonify(liste)
 
 @app.route("/api/stats")
 def api_stats():
     aujourd_hui = datetime.now().date().isoformat()
-    alertes_jour = [a for a in alertes if a["date"].startswith(aujourd_hui)]
     return jsonify({
-        "total": len(alertes),
-        "aujourd_hui": len(alertes_jour),
-        "domaines": {d: sum(1 for a in alertes if d in a["domaine"]) for d in DOMAINES_DEFAUT},
+        "total":       len(alertes),
+        "aujourd_hui": sum(1 for a in alertes if a["date"].startswith(aujourd_hui)),
     })
 
 
-@app.route("/api/domaines", methods=["GET", "POST"])
-def api_domaines():
-    if request.method == "POST":
-        data = request.get_json()
-        nouveaux = data.get("domaines", [])
-        # Mettre à jour les flux actifs dans le bot
-        bot.FLUX = {k: v for k, v in bot.FLUX.items() if k in nouveaux}
-        sauver_domaines(nouveaux)
-        return jsonify({"ok": True})
-    return jsonify(charger_domaines())
+# ── API synthèse ──────────────────────────────────────────────────────────────
 
+@app.route("/api/synthese/<alerte_id>")
+def api_synthese(alerte_id):
+    try:
+        alerte_id = int(alerte_id)
+        alerte = next((a for a in alertes if a["id"] == alerte_id), None)
+        if not alerte:
+            return jsonify({"erreur": "introuvable"}), 404
+
+        accroche = alerte.get("accroche") or alerte.get("resume", "")
+        contexte_txt = "\n".join(filter(None, [
+            f"Titre : {alerte.get('titre', '')}",
+            f"Info : {accroche}",
+            f"Contexte : {alerte.get('contexte', '')}",
+            f"Suite : {alerte.get('suite', '')}",
+            f"Description : {alerte.get('description', '')[:800]}",
+        ]))
+
+        rep = bot.client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": (
+                "Tu es journaliste. Explique cet événement en français en 3 à 5 phrases "
+                "claires, objectives et accessibles. Ne commence pas par 'Voici' ou 'Cet article'.\n\n"
+                + contexte_txt
+            )}],
+            max_tokens=400,
+            temperature=0.3,
+        )
+        return jsonify({"synthese": rep.choices[0].message.content.strip()})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"erreur": str(e)}), 500
+
+
+# ── API sauvegardes ───────────────────────────────────────────────────────────
+
+@app.route("/api/sauvegardes")
+def api_sauvegardes_get():
+    return jsonify([a for a in alertes if a["id"] in sauvegardes])
+
+@app.route("/api/sauvegardes/<alerte_id>", methods=["POST", "DELETE"])
+def api_sauvegardes_toggle(alerte_id):
+    try:
+        aid = int(alerte_id)
+    except ValueError:
+        return jsonify({"erreur": "id invalide"}), 400
+    if request.method == "POST":
+        sauvegardes.add(aid)
+    else:
+        sauvegardes.discard(aid)
+    sauver_sauvegardes_fichier()
+    return jsonify({"ok": True})
+
+@app.route("/api/sauvegardes/ids")
+def api_sauvegardes_ids():
+    return jsonify(list(sauvegardes))
+
+
+# ── API push subscriptions ────────────────────────────────────────────────────
+
+@app.route("/api/subscribe", methods=["POST"])
+def api_subscribe():
+    sub = request.get_json()
+    if sub and sub not in subscriptions_push:
+        subscriptions_push.append(sub)
+        sauver_subscriptions()
+    return jsonify({"ok": True})
+
+@app.route("/api/unsubscribe", methods=["POST"])
+def api_unsubscribe():
+    sub = request.get_json()
+    if sub in subscriptions_push:
+        subscriptions_push.remove(sub)
+        sauver_subscriptions()
+    return jsonify({"ok": True})
+
+@app.route("/api/vapid-public")
+def api_vapid_public():
+    return jsonify({"key": VAPID_PUBLIC})
+
+
+# ── Fichiers statiques & pages ────────────────────────────────────────────────
+
+@app.route("/sw.js")
+def service_worker():
+    return send_from_directory("static", "sw.js",
+                               mimetype="application/javascript")
 
 @app.route("/health")
 def health():
     return "OK", 200
-
 
 @app.route("/")
 def index():
@@ -111,7 +249,7 @@ def boucle():
     bot.verifier(premiere_fois=premiere_fois)
     bot.envoyer(
         "🤖 *Bot d'actualités redémarré*\n"
-        "Domaines : Géopolitique 🌍 | Science 🔬\n"
+        "Domaines : Géopolitique 🌍 | Science 🔬 | Tech 💻 | Finance 💰 | Environnement 🌱\n"
         "Fréquence : toutes les 15 min"
     )
     while True:
@@ -120,7 +258,10 @@ def boucle():
 
 
 if __name__ == "__main__":
+    init_vapid()
     alertes.extend(charger_alertes())
+    sauvegardes.update(charger_sauvegardes())
+    subscriptions_push.extend(charger_subscriptions())
     t = threading.Thread(target=boucle, daemon=True)
     t.start()
     port = int(os.environ.get("PORT", 5000))

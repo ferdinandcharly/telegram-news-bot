@@ -27,6 +27,18 @@ FLUX = {
         "https://www.sciencedaily.com/rss/all.xml",
         "https://www.futura-sciences.com/rss/actualites.xml",
     ],
+    "💻 Tech & IA": [
+        "https://www.wired.com/feed/rss",
+        "https://www.technologyreview.com/feed/",
+    ],
+    "💰 Finance": [
+        "https://feeds.reuters.com/reuters/businessNews",
+        "https://services.lesechos.fr/rss/les-echos-economie.xml",
+    ],
+    "🌱 Environnement": [
+        "https://www.lemonde.fr/planete/rss_full.xml",
+        "https://reporterre.net/spip.php?page=backend",
+    ],
 }
 
 client = Groq(api_key=GROQ_KEY)
@@ -57,9 +69,15 @@ def est_important(titre, resume, domaine):
                     f"Domaine : {domaine}\n"
                     f"Titre : {titre}\n"
                     f"Résumé : {resume[:400]}\n\n"
-                    "Est-ce un événement MAJEUR méritant une alerte urgente ? "
-                    "(guerre, catastrophe, découverte historique, rupture diplomatique…) "
-                    "Les news mineures ou routinières ne comptent pas.\n"
+                    "Est-ce un événement VRAIMENT MAJEUR qui changera le cours des choses ? "
+                    "Exemples acceptés : guerre déclarée, catastrophe naturelle massive, "
+                    "découverte scientifique historique, rupture diplomatique majeure, "
+                    "krach financier, catastrophe environnementale irréversible, "
+                    "percée technologique qui redéfinit un secteur entier. "
+                    "Exemples REFUSÉS : nouveau produit, mise à jour, partenariat, rapport, "
+                    "nomination, conférence, sondage, tendance, article d'opinion. "
+                    "Règle : si on peut l'ignorer sans conséquence, ce n'est pas important. "
+                    "Rejette au moins 95% des articles.\n"
                     "Si important, rédige un teaser en 3 points courts en français.\n"
                     "Réponds JSON uniquement : "
                     "{\"important\": true/false, "
@@ -107,7 +125,7 @@ def verifier(premiere_fois=False):
         for url in urls:
             try:
                 feed = feedparser.parse(url)
-                for article in feed.entries[:15]:
+                for article in feed.entries[:8]:
                     aid = article.get("id") or article.get("link", "")
                     if not aid or aid in vus:
                         continue
@@ -136,7 +154,7 @@ def verifier(premiere_fois=False):
                         )
                         envoyer(message)
                         if on_alerte:
-                            on_alerte(domaine, titre, teaser, lien)
+                            on_alerte(domaine, titre, teaser, lien, resume)
                         alertes += 1
                         time.sleep(2)
 

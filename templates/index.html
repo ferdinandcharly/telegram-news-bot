@@ -8,15 +8,16 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0d0d0d;
-      --surface: #1a1a1a;
-      --surface2: #242424;
-      --border: #2a2a2a;
+      --bg: #000;
+      --surface: #0e0e0e;
+      --line: #1e1e1e;
       --text: #f0f0f0;
-      --muted: #888;
-      --geo: #f97316;
-      --sci: #22d3ee;
-      --accent: #6366f1;
+      --sub: #666;
+      --geo:    #e07b39;
+      --sci:    #5b8dee;
+      --tech:   #a855f7;
+      --finance: #f59e0b;
+      --env:    #22c55e;
     }
 
     body {
@@ -24,7 +25,8 @@
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       min-height: 100vh;
-      padding-bottom: 80px;
+      padding-bottom: 68px;
+      overflow-x: hidden;
     }
 
     /* ── Header ── */
@@ -32,197 +34,428 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(13,13,13,0.9);
+      background: rgba(0,0,0,0.96);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--line);
       padding: 16px 20px 0;
     }
 
-    .header-top {
+    .header-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 14px;
     }
 
-    .header-top h1 {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
+    .header-row h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+
+    .live {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--sub);
     }
 
     .live-dot {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .live-dot span {
-      width: 8px; height: 8px;
-      background: #22c55e;
+      width: 6px; height: 6px;
+      background: #3ecf5e;
       border-radius: 50%;
-      animation: pulse 2s infinite;
+      animation: blink 2.5s infinite;
     }
 
-    @keyframes pulse {
+    @keyframes blink {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+      50%       { opacity: 0.2; }
     }
 
-    /* ── Filtres ── */
     .filtres {
       display: flex;
+      align-items: center;
       gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 14px;
-      scrollbar-width: none;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--line);
     }
-    .filtres::-webkit-scrollbar { display: none; }
 
-    .filtre-btn {
-      flex-shrink: 0;
-      padding: 6px 16px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
+    .filtre-tout {
+      padding: 6px 14px;
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--sub);
       font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
+      white-space: nowrap;
     }
 
-    .filtre-btn.actif {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
+    .filtre-tout.actif {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
+    .filtre-select {
+      flex: 1;
+      padding: 6px 10px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--sub);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+
+    .filtre-select.actif {
+      border-color: var(--text);
+      color: var(--text);
     }
 
     /* ── Stats ── */
-    .stats-bar {
-      display: flex;
-      gap: 12px;
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      border-bottom: 1px solid var(--line);
     }
 
     .stat {
-      flex: 1;
-      background: var(--surface);
-      border-radius: 12px;
-      padding: 12px;
+      padding: 14px 0;
       text-align: center;
+      border-right: 1px solid var(--line);
     }
-
-    .stat-num { font-size: 22px; font-weight: 700; }
-    .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .stat:last-child { border-right: none; }
+    .stat-num   { font-size: 20px; font-weight: 600; }
+    .stat-label { font-size: 10px; color: var(--sub); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* ── Feed ── */
-    #feed {
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
     .vide {
       text-align: center;
-      color: var(--muted);
-      padding: 60px 20px;
-      font-size: 15px;
+      color: var(--sub);
+      padding: 80px 20px;
+      font-size: 14px;
+      line-height: 2;
     }
 
     /* ── Carte ── */
     .carte {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-      animation: slideIn 0.2s ease;
+      padding: 18px 20px 16px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      transition: background 0.12s;
+      position: relative;
     }
 
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    .carte:active { background: #0a0a0a; }
 
-    .carte-header {
+    .carte-meta {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    .badge {
-      font-size: 12px;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 20px;
-    }
+    .carte-gauche { display: flex; align-items: center; gap: 10px; }
 
-    .badge-geo { background: rgba(249,115,22,0.15); color: var(--geo); }
-    .badge-sci { background: rgba(34,211,238,0.15); color: var(--sci); }
-
-    .carte-date {
+    .carte-domaine {
       font-size: 11px;
-      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
     }
+
+    .carte-geo     .carte-domaine { color: var(--geo); }
+    .carte-sci     .carte-domaine { color: var(--sci); }
+    .carte-tech    .carte-domaine { color: var(--tech); }
+    .carte-finance .carte-domaine { color: var(--finance); }
+    .carte-env     .carte-domaine { color: var(--env); }
+    .carte-heure { font-size: 11px; color: var(--sub); }
+
+    .btn-save {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px;
+      color: var(--sub);
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .btn-save.saved { color: var(--text); }
 
     .carte-titre {
       font-size: 15px;
       font-weight: 600;
       line-height: 1.4;
-      margin-bottom: 8px;
+      color: var(--text);
+      margin-bottom: 10px;
     }
 
-    .carte-teaser {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+    .carte-resume {
+      font-size: 13px;
+      color: var(--sub);
+      line-height: 1.5;
       margin-bottom: 12px;
     }
 
-    .teaser-ligne {
+    .carte-hint {
+      font-size: 11px;
+      color: #333;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+    }
+
+    .modal-overlay.visible { display: flex; }
+
+    .modal {
+      width: 100%;
+      background: #0e0e0e;
+      border-top: 1px solid var(--line);
+      border-radius: 20px 20px 0 0;
+      padding: 0 0 32px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    .modal-topbar {
       display: flex;
-      gap: 8px;
-      font-size: 13px;
-      color: #aaa;
-      line-height: 1.4;
-    }
-
-    .teaser-icon { flex-shrink: 0; }
-
-    .carte-lien {
-      display: inline-flex;
       align-items: center;
-      gap: 5px;
-      font-size: 12px;
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 500;
+      justify-content: space-between;
+      padding: 14px 20px 0;
+      margin-bottom: 16px;
     }
 
-    /* ── Résumé du jour ── */
-    .section-titre {
-      padding: 14px 20px 4px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .modal-handle {
+      width: 36px; height: 4px;
+      background: #333;
+      border-radius: 2px;
     }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--sub);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.15s;
+    }
+
+    .modal-close:hover { color: var(--text); }
+
+    .modal-content { padding: 0 20px; }
+
+    .modal-domaine {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+
+    .modal-geo     { color: var(--geo);     }
+    .modal-sci     { color: var(--sci);     }
+    .modal-tech    { color: var(--tech);    }
+    .modal-finance { color: var(--finance); }
+    .modal-env     { color: var(--env);     }
+
+    .modal-titre {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 20px;
+    }
+
+    .modal-sep {
+      height: 1px;
+      background: var(--line);
+      margin-bottom: 20px;
+    }
+
+    .modal-synthese-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--sub);
+      margin-bottom: 12px;
+    }
+
+    .modal-synthese {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #ccc;
+      margin-bottom: 24px;
+      min-height: 60px;
+    }
+
+    .loading {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      color: var(--sub);
+      font-size: 13px;
+    }
+
+    .loading-dots span {
+      display: inline-block;
+      width: 5px; height: 5px;
+      background: var(--sub);
+      border-radius: 50%;
+      animation: dot 1.2s infinite;
+    }
+
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dot {
+      0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+      40%            { opacity: 1;   transform: scale(1); }
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--text);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: none;
+      color: var(--sub);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .btn-secondary.saved { color: var(--text); border-color: var(--text); }
+
+    /* ── Page Sauvegardés ── */
+    #page-saved { display: none; }
+
+    /* ── Page Paramètres ── */
+    #page-params { display: none; padding: 24px 20px; }
+
+    #page-params h2 { font-size: 17px; font-weight: 600; margin-bottom: 24px; }
+
+    .params-bloc {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      background: var(--surface);
+    }
+
+    .params-titre {
+      padding: 11px 16px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .param-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .param-row:last-child { border-bottom: none; }
+    .param-label { font-size: 14px; font-weight: 500; }
+    .param-sub   { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+    .btn-notif {
+      padding: 7px 14px;
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s;
+    }
+
+    .btn-notif.active { border-color: #22c55e; color: #22c55e; }
+
+    .toggle { position: relative; width: 42px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: #2a2a2a;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .slider:before {
+      content: "";
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: #555;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle input:checked + .slider:before { transform: translateX(18px); background: var(--text); }
 
     /* ── Nav ── */
     nav {
       position: fixed;
-      bottom: 0;
-      left: 0; right: 0;
-      background: rgba(13,13,13,0.95);
+      bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.97);
       backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border);
+      border-top: 1px solid var(--line);
       display: flex;
-      padding: 8px 0 12px;
+      padding: 6px 0 14px;
     }
 
     .nav-btn {
@@ -233,78 +466,17 @@
       gap: 3px;
       background: none;
       border: none;
-      color: var(--muted);
+      color: var(--sub);
       font-size: 10px;
+      font-weight: 500;
       cursor: pointer;
       padding: 6px;
+      letter-spacing: 0.3px;
       transition: color 0.15s;
     }
 
-    .nav-btn.actif { color: var(--accent); }
-    .nav-icon { font-size: 20px; }
-
-    /* ── Page paramètres ── */
-    #page-params { display: none; padding: 20px; }
-
-    .params-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-
-    .params-titre {
-      padding: 14px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      border-bottom: 1px solid var(--border);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .param-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .param-row:last-child { border-bottom: none; }
-    .param-label { font-size: 15px; }
-    .param-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-    /* Toggle switch */
-    .toggle {
-      position: relative;
-      width: 44px; height: 26px;
-    }
-
-    .toggle input { opacity: 0; width: 0; height: 0; }
-
-    .toggle-slider {
-      position: absolute;
-      inset: 0;
-      background: var(--border);
-      border-radius: 13px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .toggle-slider:before {
-      content: "";
-      position: absolute;
-      width: 20px; height: 20px;
-      left: 3px; top: 3px;
-      background: white;
-      border-radius: 50%;
-      transition: 0.2s;
-    }
-
-    .toggle input:checked + .toggle-slider { background: var(--accent); }
-    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
+    .nav-btn.actif { color: var(--text); }
+    .nav-icon { font-size: 18px; line-height: 1; }
   </style>
 </head>
 <body>
@@ -312,18 +484,24 @@
 <!-- ── PAGE FEED ── -->
 <div id="page-feed">
   <header>
-    <div class="header-top">
+    <div class="header-row">
       <h1>News Alert</h1>
-      <div class="live-dot"><span></span> En direct</div>
+      <div class="live"><div class="live-dot"></div>En direct</div>
     </div>
     <div class="filtres">
-      <button class="filtre-btn actif" data-filtre="Tout">Tout</button>
-      <button class="filtre-btn" data-filtre="Géopolitique">🌍 Géopolitique</button>
-      <button class="filtre-btn" data-filtre="Science">🔬 Science</button>
+      <button class="filtre-tout actif" id="btn-tout" onclick="setFiltreTout()">Tout</button>
+      <select class="filtre-select" id="filtre-select" onchange="setFiltreSelect(this)">
+        <option value="">Filtrer par domaine</option>
+        <option value="Géopolitique">Géopolitique</option>
+        <option value="Science">Science</option>
+        <option value="Tech">Tech & IA</option>
+        <option value="Finance">Finance</option>
+        <option value="Environnement">Environnement</option>
+      </select>
     </div>
   </header>
 
-  <div class="stats-bar">
+  <div class="stats">
     <div class="stat">
       <div class="stat-num" id="stat-total">—</div>
       <div class="stat-label">Total</div>
@@ -332,162 +510,301 @@
       <div class="stat-num" id="stat-jour">—</div>
       <div class="stat-label">Aujourd'hui</div>
     </div>
-    <div class="stat">
-      <div class="stat-num" id="stat-geo">—</div>
-      <div class="stat-label">Géopolitique</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num" id="stat-sci">—</div>
-      <div class="stat-label">Science</div>
-    </div>
   </div>
 
   <div id="feed"></div>
 </div>
 
+<!-- ── PAGE SAUVEGARDÉS ── -->
+<div id="page-saved">
+  <header>
+    <div class="header-row" style="margin-bottom:14px">
+      <h1>Sauvegardés</h1>
+    </div>
+  </header>
+  <div id="feed-saved"></div>
+</div>
+
 <!-- ── PAGE PARAMÈTRES ── -->
 <div id="page-params">
-  <h2 style="font-size:20px; font-weight:700; margin-bottom:20px;">Paramètres</h2>
+  <h2>Paramètres</h2>
 
-  <div class="params-section">
+  <div class="params-bloc">
     <div class="params-titre">Domaines surveillés</div>
     <div class="param-row">
-      <div>
-        <div class="param-label">🌍 Géopolitique</div>
-        <div class="param-sub">BBC, Le Monde, RFI</div>
-      </div>
-      <label class="toggle">
-        <input type="checkbox" id="toggle-geo" checked onchange="sauverDomaines()" />
-        <span class="toggle-slider"></span>
-      </label>
+      <div><div class="param-label">Géopolitique</div><div class="param-sub">BBC · Le Monde · RFI</div></div>
+      <label class="toggle"><input type="checkbox" id="toggle-geo" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
     </div>
     <div class="param-row">
-      <div>
-        <div class="param-label">🔬 Science</div>
-        <div class="param-sub">NASA, Science Daily, Futura</div>
-      </div>
-      <label class="toggle">
-        <input type="checkbox" id="toggle-sci" checked onchange="sauverDomaines()" />
-        <span class="toggle-slider"></span>
-      </label>
+      <div><div class="param-label">Science</div><div class="param-sub">NASA · Science Daily · Futura</div></div>
+      <label class="toggle"><input type="checkbox" id="toggle-sci" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+    </div>
+    <div class="param-row">
+      <div><div class="param-label">Tech & IA</div><div class="param-sub">TechCrunch · The Verge · Wired</div></div>
+      <label class="toggle"><input type="checkbox" id="toggle-tech" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+    </div>
+    <div class="param-row">
+      <div><div class="param-label">Finance</div><div class="param-sub">Reuters · Les Échos</div></div>
+      <label class="toggle"><input type="checkbox" id="toggle-finance" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+    </div>
+    <div class="param-row">
+      <div><div class="param-label">Environnement</div><div class="param-sub">Le Monde Planète · Reporterre</div></div>
+      <label class="toggle"><input type="checkbox" id="toggle-env" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
     </div>
   </div>
 
-  <div class="params-section">
-    <div class="params-titre">Informations</div>
+  <div class="params-bloc">
+    <div class="params-titre">Notifications</div>
     <div class="param-row">
       <div>
-        <div class="param-label">Fréquence de vérification</div>
-        <div class="param-sub">Toutes les 15 minutes</div>
+        <div class="param-label">Notifications push</div>
+        <div class="param-sub" id="notif-status">Non activées</div>
       </div>
+      <button class="btn-notif" id="btn-notif" onclick="toggleNotifications()">Activer</button>
+    </div>
+  </div>
+
+  <div class="params-bloc">
+    <div class="params-titre">Système</div>
+    <div class="param-row">
+      <div><div class="param-label">Fréquence</div><div class="param-sub">Vérification toutes les 15 min</div></div>
     </div>
     <div class="param-row">
-      <div>
-        <div class="param-label">Filtre IA</div>
-        <div class="param-sub">Llama 3.1 via Groq</div>
+      <div><div class="param-label">Modèle IA</div><div class="param-sub">Llama 3.1 via Groq</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal synthèse ── -->
+<div class="modal-overlay" id="modal" onclick="fermerModal(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-topbar">
+      <div class="modal-handle"></div>
+      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('visible')">✕</button>
+    </div>
+    <div class="modal-content">
+      <div class="modal-domaine" id="modal-domaine"></div>
+      <div class="modal-titre" id="modal-titre"></div>
+      <div class="modal-sep"></div>
+      <div class="modal-synthese-label">Synthèse</div>
+      <div class="modal-synthese" id="modal-synthese">
+        <div class="loading">
+          Génération en cours
+          <div class="loading-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <a class="btn-primary" id="modal-lien" href="#" target="_blank">Lire l'article original</a>
+        <button class="btn-secondary" id="modal-save-btn" onclick="toggleSaveModal()">Sauvegarder</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── Navigation ── -->
+<!-- ── Nav ── -->
 <nav>
   <button class="nav-btn actif" onclick="afficherPage('feed', this)">
-    <span class="nav-icon">📰</span>Actualités
+    <span class="nav-icon">◈</span>Actualités
+  </button>
+  <button class="nav-btn" onclick="afficherPage('saved', this)">
+    <span class="nav-icon">◇</span>Sauvegardés
   </button>
   <button class="nav-btn" onclick="afficherPage('params', this)">
-    <span class="nav-icon">⚙️</span>Paramètres
+    <span class="nav-icon">◎</span>Paramètres
   </button>
 </nav>
 
 <script>
   let filtreCourant = "Tout";
 
-  // ── Navigation pages ──
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+  let savedIds = new Set();
+  let alerteModal = null;
+
+  // ── Navigation ──────────────────────────────────────────────────────────
   function afficherPage(page, btn) {
-    document.getElementById("page-feed").style.display = page === "feed" ? "block" : "none";
-    document.getElementById("page-params").style.display = page === "params" ? "block" : "none";
+    ["feed","saved","params"].forEach(p => {
+      document.getElementById("page-" + p).style.display = "none";
+    });
+    document.getElementById("page-" + page).style.display = "block";
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("actif"));
     btn.classList.add("actif");
+    if (page === "saved") chargerSauvegardes();
   }
 
-  // ── Filtres ──
-  document.querySelectorAll(".filtre-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".filtre-btn").forEach(b => b.classList.remove("actif"));
-      btn.classList.add("actif");
-      filtreCourant = btn.dataset.filtre;
-      chargerAlertes();
-    });
-  });
-
-  // ── Formater date ──
-  function formatDate(iso) {
-    const d = new Date(iso);
-    const maintenant = new Date();
-    const diff = Math.floor((maintenant - d) / 60000); // minutes
-    if (diff < 1)   return "À l'instant";
-    if (diff < 60)  return `Il y a ${diff} min`;
-    if (diff < 1440) return `Il y a ${Math.floor(diff/60)}h`;
-    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  // ── Filtres ─────────────────────────────────────────────────────────────
+  function setFiltreTout() {
+    filtreCourant = "Tout";
+    document.getElementById("btn-tout").classList.add("actif");
+    document.getElementById("filtre-select").classList.remove("actif");
+    document.getElementById("filtre-select").value = "";
+    chargerAlertes();
   }
 
-  // ── Badge domaine ──
-  function badgeDomaine(domaine) {
-    if (domaine.includes("Géopolitique")) return `<span class="badge badge-geo">${domaine}</span>`;
-    if (domaine.includes("Science"))      return `<span class="badge badge-sci">${domaine}</span>`;
-    return `<span class="badge">${domaine}</span>`;
+  function setFiltreSelect(sel) {
+    if (!sel.value) { setFiltreTout(); return; }
+    filtreCourant = sel.value;
+    document.getElementById("btn-tout").classList.remove("actif");
+    sel.classList.add("actif");
+    chargerAlertes();
   }
 
-  // ── Charger les alertes ──
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function formatHeure(iso) {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+    if (diff < 1)    return "À l'instant";
+    if (diff < 60)   return diff + " min";
+    if (diff < 1440) return Math.floor(diff / 60) + "h";
+    return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  }
+
+  const DOMAINES_MAP = [
+    { key: "Géo",          cls: "geo",     label: "Géopolitique" },
+    { key: "Science",      cls: "sci",     label: "Science"      },
+    { key: "Tech",         cls: "tech",    label: "Tech & IA"    },
+    { key: "Finance",      cls: "finance", label: "Finance"      },
+    { key: "Environnement",cls: "env",     label: "Environnement"},
+  ];
+
+  function getDomaine(d) {
+    return DOMAINES_MAP.find(m => d.includes(m.key)) || { cls: "geo", label: d };
+  }
+
+  function carteHTML(a) {
+    const dom   = getDomaine(a.domaine);
+    const cls   = "carte-" + dom.cls;
+    const saved = savedIds.has(a.id);
+    return `
+      <div class="carte ${cls}" onclick="ouvrirModal(${a.id})">
+        <div class="carte-meta">
+          <div class="carte-gauche">
+            <span class="carte-domaine">${dom.label}</span>
+            <span class="carte-heure">${formatHeure(a.date)}</span>
+          </div>
+          <button class="btn-save ${saved ? 'saved' : ''}"
+            onclick="event.stopPropagation(); toggleSave(${a.id}, this)"
+            title="${saved ? 'Retirer' : 'Sauvegarder'}">
+            ${saved ? '◆' : '◇'}
+          </button>
+        </div>
+        <div class="carte-titre">${esc(a.titre)}</div>
+        <div class="carte-resume">${esc(a.accroche || a.resume || '')}</div>
+        <span class="carte-hint">Appuyer pour la synthèse →</span>
+      </div>`;
+  }
+
+  // ── Alertes ─────────────────────────────────────────────────────────────
   async function chargerAlertes() {
     const url = filtreCourant === "Tout"
       ? "/api/alertes"
       : `/api/alertes?domaine=${encodeURIComponent(filtreCourant)}`;
-
-    const res = await fetch(url);
-    const alertes = await res.json();
+    const alertes = await fetch(url).then(r => r.json());
     const feed = document.getElementById("feed");
-
-    if (!alertes.length) {
-      feed.innerHTML = `<div class="vide">Aucune alerte pour le moment.<br>Le bot surveille les flux toutes les 15 min.</div>`;
-      return;
-    }
-
-    feed.innerHTML = alertes.map(a => `
-      <div class="carte">
-        <div class="carte-header">
-          ${badgeDomaine(a.domaine)}
-          <span class="carte-date">${formatDate(a.date)}</span>
-        </div>
-        <div class="carte-titre">${a.titre}</div>
-        <div class="carte-teaser">
-          ${a.accroche ? `<div class="teaser-ligne"><span class="teaser-icon">📌</span>${a.accroche}</div>` : ""}
-          ${a.contexte ? `<div class="teaser-ligne"><span class="teaser-icon">🔍</span>${a.contexte}</div>` : ""}
-          ${a.suite    ? `<div class="teaser-ligne"><span class="teaser-icon">👀</span>${a.suite}</div>`    : ""}
-        </div>
-        <a class="carte-lien" href="${a.lien}" target="_blank">Lire l'article →</a>
-      </div>
-    `).join("");
+    feed.innerHTML = alertes.length
+      ? alertes.map(carteHTML).join("")
+      : `<div class="vide">Aucune alerte pour le moment.<br>Vérification toutes les 15 min.</div>`;
   }
 
-  // ── Charger les stats ──
   async function chargerStats() {
-    const res = await fetch("/api/stats");
-    const s = await res.json();
+    const s = await fetch("/api/stats").then(r => r.json());
     document.getElementById("stat-total").textContent = s.total;
-    document.getElementById("stat-jour").textContent = s.aujourd_hui;
-    const geo = Object.entries(s.domaines).find(([k]) => k.includes("Géopolitique"));
-    const sci = Object.entries(s.domaines).find(([k]) => k.includes("Science"));
-    document.getElementById("stat-geo").textContent = geo ? geo[1] : 0;
-    document.getElementById("stat-sci").textContent = sci ? sci[1] : 0;
+    document.getElementById("stat-jour").textContent  = s.aujourd_hui;
   }
 
-  // ── Paramètres domaines ──
+  // ── Sauvegardés ─────────────────────────────────────────────────────────
+  async function chargerSavedIds() {
+    const ids = await fetch("/api/sauvegardes/ids").then(r => r.json());
+    savedIds = new Set(ids);
+  }
+
+  async function chargerSauvegardes() {
+    const alertes = await fetch("/api/sauvegardes").then(r => r.json());
+    const feed = document.getElementById("feed-saved");
+    feed.innerHTML = alertes.length
+      ? alertes.map(carteHTML).join("")
+      : `<div class="vide">Aucun article sauvegardé.<br>Appuie sur ◇ pour en conserver.</div>`;
+  }
+
+  async function toggleSave(id, btn) {
+    const estSaved = savedIds.has(id);
+    const method   = estSaved ? "DELETE" : "POST";
+    await fetch(`/api/sauvegardes/${id}`, { method });
+    if (estSaved) { savedIds.delete(id); btn.textContent = "◇"; btn.classList.remove("saved"); }
+    else          { savedIds.add(id);    btn.textContent = "◆"; btn.classList.add("saved"); }
+  }
+
+  // ── Modal synthèse ───────────────────────────────────────────────────────
+  let alertesCache = [];
+
+  async function ouvrirModal(id) {
+    alerteModal = alertesCache.find(a => a.id === id);
+    if (!alerteModal) return;
+
+    const dom = getDomaine(alerteModal.domaine);
+    document.getElementById("modal-domaine").textContent = dom.label;
+    document.getElementById("modal-domaine").className   = "modal-domaine modal-" + dom.cls;
+    document.getElementById("modal-lien").href = esc(alerteModal.lien);
+    document.getElementById("modal-titre").textContent    = alerteModal.titre;
+    document.getElementById("modal-lien").href            = alerteModal.lien;
+    document.getElementById("modal-synthese").innerHTML   =
+      `<div class="loading">Génération en cours <div class="loading-dots"><span></span><span></span><span></span></div></div>`;
+
+    const saved = savedIds.has(id);
+    const saveBtn = document.getElementById("modal-save-btn");
+    saveBtn.textContent = saved ? "Retirer des sauvegardés" : "Sauvegarder";
+    saveBtn.className   = "btn-secondary" + (saved ? " saved" : "");
+
+    document.getElementById("modal").classList.add("visible");
+
+    try {
+      const data = await fetch(`/api/synthese/${id}`).then(r => r.json());
+      document.getElementById("modal-synthese").textContent = data.synthese || "Synthèse indisponible.";
+    } catch {
+      document.getElementById("modal-synthese").textContent = "Erreur lors de la génération.";
+    }
+  }
+
+  async function toggleSaveModal() {
+    if (!alerteModal) return;
+    const id      = alerteModal.id;
+    const estSaved = savedIds.has(id);
+    const method   = estSaved ? "DELETE" : "POST";
+    await fetch(`/api/sauvegardes/${id}`, { method });
+    if (estSaved) { savedIds.delete(id); }
+    else          { savedIds.add(id); }
+    const saveBtn = document.getElementById("modal-save-btn");
+    const nowSaved = savedIds.has(id);
+    saveBtn.textContent = nowSaved ? "Retirer des sauvegardés" : "Sauvegarder";
+    saveBtn.className   = "btn-secondary" + (nowSaved ? " saved" : "");
+    chargerAlertes();
+  }
+
+  function fermerModal(e) {
+    if (e.target === document.getElementById("modal")) {
+      document.getElementById("modal").classList.remove("visible");
+    }
+  }
+
+  // ── Paramètres domaines ──────────────────────────────────────────────────
   async function sauverDomaines() {
-    const domaines = [];
-    if (document.getElementById("toggle-geo").checked) domaines.push("🌍 Géopolitique");
-    if (document.getElementById("toggle-sci").checked) domaines.push("🔬 Science");
+    const map = [
+      ["toggle-geo",     "🌍 Géopolitique"],
+      ["toggle-sci",     "🔬 Science"],
+      ["toggle-tech",    "💻 Tech & IA"],
+      ["toggle-finance", "💰 Finance"],
+      ["toggle-env",     "🌱 Environnement"],
+    ];
+    const domaines = map
+      .filter(([id]) => document.getElementById(id)?.checked)
+      .map(([, label]) => label);
     await fetch("/api/domaines", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -495,10 +812,88 @@
     });
   }
 
-  // ── Init ──
-  chargerAlertes();
-  chargerStats();
-  setInterval(() => { chargerAlertes(); chargerStats(); }, 30000); // refresh toutes les 30s
+  // ── Push notifications ───────────────────────────────────────────────────
+  let VAPID_PUBLIC = "";
+
+  function urlB64ToUint8Array(b64) {
+    const pad = "=".repeat((4 - b64.length % 4) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
+  }
+
+  async function toggleNotifications() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      document.getElementById("notif-status").textContent = "Non supportées par ce navigateur";
+      return;
+    }
+    const btn = document.getElementById("btn-notif");
+    if (btn.classList.contains("active")) {
+      // Désactiver
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await fetch("/api/unsubscribe", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(sub.toJSON()) });
+        await sub.unsubscribe();
+      }
+      btn.textContent = "Activer";
+      btn.classList.remove("active");
+      document.getElementById("notif-status").textContent = "Non activées";
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      document.getElementById("notif-status").textContent = "Permission refusée";
+      return;
+    }
+    try {
+      if (!VAPID_PUBLIC) {
+        const data = await fetch("/api/vapid-public").then(r => r.json());
+        VAPID_PUBLIC = data.key;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC),
+      });
+      await fetch("/api/subscribe", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(sub.toJSON()) });
+      btn.textContent = "Activées ✓";
+      btn.classList.add("active");
+      document.getElementById("notif-status").textContent = "Activées sur cet appareil";
+    } catch (e) {
+      document.getElementById("notif-status").textContent = "Erreur : " + e.message;
+    }
+  }
+
+  async function initNotifications() {
+    if (!("serviceWorker" in navigator)) return;
+    await navigator.serviceWorker.register("/sw.js");
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub && Notification.permission === "granted") {
+      const btn = document.getElementById("btn-notif");
+      btn.textContent = "Activées ✓";
+      btn.classList.add("active");
+      document.getElementById("notif-status").textContent = "Activées sur cet appareil";
+    }
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  async function init() {
+    await chargerSavedIds();
+    const data = await fetch("/api/alertes").then(r => r.json());
+    alertesCache = data;
+    chargerAlertes();
+    chargerStats();
+  }
+
+  init();
+  initNotifications();
+  setInterval(async () => {
+    const data = await fetch("/api/alertes").then(r => r.json());
+    alertesCache = data;
+    chargerAlertes();
+    chargerStats();
+  }, 30000);
 </script>
 </body>
 </html>

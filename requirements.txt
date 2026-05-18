@@ -3,3 +3,5 @@ groq
 requests
 python-dotenv
 flask
+pywebpush
+cryptography
