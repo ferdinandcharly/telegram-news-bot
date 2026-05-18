@@ -31,6 +31,9 @@ FLUX = {
 
 client = Groq(api_key=GROQ_KEY)
 
+# Callback optionnel pour sauvegarder les alertes (utilisé par app.py)
+on_alerte = None
+
 
 def charger_vus():
     if os.path.exists(SEEN_FILE):
@@ -118,6 +121,8 @@ def verifier(premiere_fois=False):
                             f"{lien}"
                         )
                         envoyer(message)
+                        if on_alerte:
+                            on_alerte(domaine, titre, synthese, lien)
                         alertes += 1
                         time.sleep(2)
 

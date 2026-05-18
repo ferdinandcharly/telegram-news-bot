@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>News Alert</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #1a1a1a;
+      --surface2: #242424;
+      --border: #2a2a2a;
+      --text: #f0f0f0;
+      --muted: #888;
+      --geo: #f97316;
+      --sci: #22d3ee;
+      --accent: #6366f1;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(13,13,13,0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px 0;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .header-top h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .live-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .live-dot span {
+      width: 8px; height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── Filtres ── */
+    .filtres {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 14px;
+      scrollbar-width: none;
+    }
+    .filtres::-webkit-scrollbar { display: none; }
+
+    .filtre-btn {
+      flex-shrink: 0;
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filtre-btn.actif {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Stats ── */
+    .stats-bar {
+      display: flex;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat {
+      flex: 1;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-num { font-size: 22px; font-weight: 700; }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Feed ── */
+    #feed {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .vide {
+      text-align: center;
+      color: var(--muted);
+      padding: 60px 20px;
+      font-size: 15px;
+    }
+
+    /* ── Carte ── */
+    .carte {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      animation: slideIn 0.2s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .carte-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .badge-geo { background: rgba(249,115,22,0.15); color: var(--geo); }
+    .badge-sci { background: rgba(34,211,238,0.15); color: var(--sci); }
+
+    .carte-date {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .carte-titre {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .carte-resume {
+      font-size: 13px;
+      color: #aaa;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .carte-lien {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* ── Résumé du jour ── */
+    .section-titre {
+      padding: 14px 20px 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      background: rgba(13,13,13,0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 8px 0 12px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 10px;
+      cursor: pointer;
+      padding: 6px;
+      transition: color 0.15s;
+    }
+
+    .nav-btn.actif { color: var(--accent); }
+    .nav-icon { font-size: 20px; }
+
+    /* ── Page paramètres ── */
+    #page-params { display: none; padding: 20px; }
+
+    .params-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .params-titre {
+      padding: 14px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .param-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .param-row:last-child { border-bottom: none; }
+    .param-label { font-size: 15px; }
+    .param-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 44px; height: 26px;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .toggle-slider:before {
+      content: "";
+      position: absolute;
+      width: 20px; height: 20px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider { background: var(--accent); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
+  </style>
+</head>
+<body>
+
+<!-- ── PAGE FEED ── -->
+<div id="page-feed">
+  <header>
+    <div class="header-top">
+      <h1>News Alert</h1>
+      <div class="live-dot"><span></span> En direct</div>
+    </div>
+    <div class="filtres">
+      <button class="filtre-btn actif" data-filtre="Tout">Tout</button>
+      <button class="filtre-btn" data-filtre="Géopolitique">🌍 Géopolitique</button>
+      <button class="filtre-btn" data-filtre="Science">🔬 Science</button>
+    </div>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-num" id="stat-total">—</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-jour">—</div>
+      <div class="stat-label">Aujourd'hui</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-geo">—</div>
+      <div class="stat-label">Géopolitique</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-sci">—</div>
+      <div class="stat-label">Science</div>
+    </div>
+  </div>
+
+  <div id="feed"></div>
+</div>
+
+<!-- ── PAGE PARAMÈTRES ── -->
+<div id="page-params">
+  <h2 style="font-size:20px; font-weight:700; margin-bottom:20px;">Paramètres</h2>
+
+  <div class="params-section">
+    <div class="params-titre">Domaines surveillés</div>
+    <div class="param-row">
+      <div>
+        <div class="param-label">🌍 Géopolitique</div>
+        <div class="param-sub">BBC, Le Monde, RFI</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-geo" checked onchange="sauverDomaines()" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="param-row">
+      <div>
+        <div class="param-label">🔬 Science</div>
+        <div class="param-sub">NASA, Science Daily, Futura</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-sci" checked onchange="sauverDomaines()" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="params-section">
+    <div class="params-titre">Informations</div>
+    <div class="param-row">
+      <div>
+        <div class="param-label">Fréquence de vérification</div>
+        <div class="param-sub">Toutes les 15 minutes</div>
+      </div>
+    </div>
+    <div class="param-row">
+      <div>
+        <div class="param-label">Filtre IA</div>
+        <div class="param-sub">Llama 3.1 via Groq</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Navigation ── -->
+<nav>
+  <button class="nav-btn actif" onclick="afficherPage('feed', this)">
+    <span class="nav-icon">📰</span>Actualités
+  </button>
+  <button class="nav-btn" onclick="afficherPage('params', this)">
+    <span class="nav-icon">⚙️</span>Paramètres
+  </button>
+</nav>
+
+<script>
+  let filtreCourant = "Tout";
+
+  // ── Navigation pages ──
+  function afficherPage(page, btn) {
+    document.getElementById("page-feed").style.display = page === "feed" ? "block" : "none";
+    document.getElementById("page-params").style.display = page === "params" ? "block" : "none";
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("actif"));
+    btn.classList.add("actif");
+  }
+
+  // ── Filtres ──
+  document.querySelectorAll(".filtre-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filtre-btn").forEach(b => b.classList.remove("actif"));
+      btn.classList.add("actif");
+      filtreCourant = btn.dataset.filtre;
+      chargerAlertes();
+    });
+  });
+
+  // ── Formater date ──
+  function formatDate(iso) {
+    const d = new Date(iso);
+    const maintenant = new Date();
+    const diff = Math.floor((maintenant - d) / 60000); // minutes
+    if (diff < 1)   return "À l'instant";
+    if (diff < 60)  return `Il y a ${diff} min`;
+    if (diff < 1440) return `Il y a ${Math.floor(diff/60)}h`;
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  }
+
+  // ── Badge domaine ──
+  function badgeDomaine(domaine) {
+    if (domaine.includes("Géopolitique")) return `<span class="badge badge-geo">${domaine}</span>`;
+    if (domaine.includes("Science"))      return `<span class="badge badge-sci">${domaine}</span>`;
+    return `<span class="badge">${domaine}</span>`;
+  }
+
+  // ── Charger les alertes ──
+  async function chargerAlertes() {
+    const url = filtreCourant === "Tout"
+      ? "/api/alertes"
+      : `/api/alertes?domaine=${encodeURIComponent(filtreCourant)}`;
+
+    const res = await fetch(url);
+    const alertes = await res.json();
+    const feed = document.getElementById("feed");
+
+    if (!alertes.length) {
+      feed.innerHTML = `<div class="vide">Aucune alerte pour le moment.<br>Le bot surveille les flux toutes les 15 min.</div>`;
+      return;
+    }
+
+    feed.innerHTML = alertes.map(a => `
+      <div class="carte">
+        <div class="carte-header">
+          ${badgeDomaine(a.domaine)}
+          <span class="carte-date">${formatDate(a.date)}</span>
+        </div>
+        <div class="carte-titre">${a.titre}</div>
+        <div class="carte-resume">${a.resume}</div>
+        <a class="carte-lien" href="${a.lien}" target="_blank">Lire l'article →</a>
+      </div>
+    `).join("");
+  }
+
+  // ── Charger les stats ──
+  async function chargerStats() {
+    const res = await fetch("/api/stats");
+    const s = await res.json();
+    document.getElementById("stat-total").textContent = s.total;
+    document.getElementById("stat-jour").textContent = s.aujourd_hui;
+    const geo = Object.entries(s.domaines).find(([k]) => k.includes("Géopolitique"));
+    const sci = Object.entries(s.domaines).find(([k]) => k.includes("Science"));
+    document.getElementById("stat-geo").textContent = geo ? geo[1] : 0;
+    document.getElementById("stat-sci").textContent = sci ? sci[1] : 0;
+  }
+
+  // ── Paramètres domaines ──
+  async function sauverDomaines() {
+    const domaines = [];
+    if (document.getElementById("toggle-geo").checked) domaines.push("🌍 Géopolitique");
+    if (document.getElementById("toggle-sci").checked) domaines.push("🔬 Science");
+    await fetch("/api/domaines", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domaines }),
+    });
+  }
+
+  // ── Init ──
+  chargerAlertes();
+  chargerStats();
+  setInterval(() => { chargerAlertes(); chargerStats(); }, 30000); // refresh toutes les 30s
+</script>
+</body>
+</html>
