@@ -1,0 +1,5 @@
+feedparser
+groq
+requests
+python-dotenv
+flask
