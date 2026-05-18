@@ -60,11 +60,15 @@ def est_important(titre, resume, domaine):
                     "Est-ce un événement MAJEUR méritant une alerte urgente ? "
                     "(guerre, catastrophe, découverte historique, rupture diplomatique…) "
                     "Les news mineures ou routinières ne comptent pas.\n"
+                    "Si important, rédige un teaser en 3 points courts en français.\n"
                     "Réponds JSON uniquement : "
-                    "{\"important\": true/false, \"resume\": \"1 phrase en français\"}"
+                    "{\"important\": true/false, "
+                    "\"accroche\": \"ce qui s'est passé en 1 phrase\", "
+                    "\"contexte\": \"pourquoi c'est important en 1 phrase\", "
+                    "\"suite\": \"ce qu'il faut surveiller en 1 phrase\"}"
                 )
             }],
-            max_tokens=100,
+            max_tokens=250,
             temperature=0.1,
         )
         contenu = rep.choices[0].message.content.strip()
@@ -72,10 +76,15 @@ def est_important(titre, resume, domaine):
         debut = contenu.find("{")
         fin = contenu.rfind("}") + 1
         data = json.loads(contenu[debut:fin])
-        return data.get("important", False), data.get("resume", "")
+        teaser = {
+            "accroche": data.get("accroche", ""),
+            "contexte": data.get("contexte", ""),
+            "suite": data.get("suite", ""),
+        }
+        return data.get("important", False), teaser
     except Exception as e:
         print(f"  Erreur IA : {e}")
-        return False, ""
+        return False, {}
 
 
 def envoyer(msg):
@@ -111,18 +120,23 @@ def verifier(premiere_fois=False):
                     resume = article.get("summary", article.get("description", ""))
                     lien   = article.get("link", "")
 
-                    important, synthese = est_important(titre, resume, domaine)
+                    important, teaser = est_important(titre, resume, domaine)
 
                     if important:
+                        accroche = teaser.get("accroche", "")
+                        contexte = teaser.get("contexte", "")
+                        suite    = teaser.get("suite", "")
                         message = (
                             f"{domaine}\n\n"
                             f"*{titre}*\n\n"
-                            f"_{synthese}_\n\n"
+                            f"📌 {accroche}\n"
+                            f"🔍 {contexte}\n"
+                            f"👀 {suite}\n\n"
                             f"{lien}"
                         )
                         envoyer(message)
                         if on_alerte:
-                            on_alerte(domaine, titre, synthese, lien)
+                            on_alerte(domaine, titre, teaser, lien)
                         alertes += 1
                         time.sleep(2)
 

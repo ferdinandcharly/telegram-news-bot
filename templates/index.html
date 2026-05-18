@@ -176,12 +176,22 @@
       margin-bottom: 8px;
     }
 
-    .carte-resume {
-      font-size: 13px;
-      color: #aaa;
-      line-height: 1.5;
+    .carte-teaser {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
       margin-bottom: 12px;
     }
+
+    .teaser-ligne {
+      display: flex;
+      gap: 8px;
+      font-size: 13px;
+      color: #aaa;
+      line-height: 1.4;
+    }
+
+    .teaser-icon { flex-shrink: 0; }
 
     .carte-lien {
       display: inline-flex;
@@ -451,7 +461,11 @@
           <span class="carte-date">${formatDate(a.date)}</span>
         </div>
         <div class="carte-titre">${a.titre}</div>
-        <div class="carte-resume">${a.resume}</div>
+        <div class="carte-teaser">
+          ${a.accroche ? `<div class="teaser-ligne"><span class="teaser-icon">📌</span>${a.accroche}</div>` : ""}
+          ${a.contexte ? `<div class="teaser-ligne"><span class="teaser-icon">🔍</span>${a.contexte}</div>` : ""}
+          ${a.suite    ? `<div class="teaser-ligne"><span class="teaser-icon">👀</span>${a.suite}</div>`    : ""}
+        </div>
         <a class="carte-lien" href="${a.lien}" target="_blank">Lire l'article →</a>
       </div>
     `).join("");

@@ -27,12 +27,14 @@ def sauver_alertes_fichier():
         json.dump(alertes, f, ensure_ascii=False, indent=2)
 
 
-def ajouter_alerte(domaine, titre, resume, lien):
+def ajouter_alerte(domaine, titre, teaser, lien):
     alerte = {
         "id": len(alertes),
         "domaine": domaine,
         "titre": titre,
-        "resume": resume,
+        "accroche": teaser.get("accroche", "") if isinstance(teaser, dict) else teaser,
+        "contexte": teaser.get("contexte", "") if isinstance(teaser, dict) else "",
+        "suite":    teaser.get("suite", "")    if isinstance(teaser, dict) else "",
         "lien": lien,
         "date": datetime.now().isoformat(),
     }
