@@ -211,6 +211,37 @@
       color: #333;
     }
 
+    .badge-niveau {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.4px;
+    }
+
+    .badge-critique {
+      background: rgba(239,68,68,0.15);
+      color: #ef4444;
+    }
+
+    .badge-important {
+      background: rgba(245,158,11,0.15);
+      color: #f59e0b;
+    }
+
+    .btn-notifier {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--sub);
+      padding: 2px 4px;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .btn-notifier:hover { color: var(--text); }
+
     /* ── Modal ── */
     .modal-overlay {
       position: fixed;
@@ -596,7 +627,7 @@
         </div>
       </div>
       <div class="modal-actions">
-        <a class="btn-primary" id="modal-lien" href="#" target="_blank">Lire l'article original</a>
+        <a class="btn-primary" id="modal-lien" href="#">Lire l'article original</a>
         <button class="btn-secondary" id="modal-save-btn" onclick="toggleSaveModal()">Sauvegarder</button>
       </div>
     </div>
@@ -682,18 +713,30 @@
     const dom   = getDomaine(a.domaine);
     const cls   = "carte-" + dom.cls;
     const saved = savedIds.has(a.id);
+    const niv = a.niveau || 2;
+    const badgeHtml = niv >= 3
+      ? `<span class="badge-niveau badge-critique">● CRITIQUE</span>`
+      : `<span class="badge-niveau badge-important">● IMPORTANT</span>`;
+    const clocheBtnHtml = niv < 3
+      ? `<button class="btn-notifier" onclick="event.stopPropagation(); notifierManuellement(${a.id})" title="Me notifier">🔔</button>`
+      : "";
+
     return `
       <div class="carte ${cls}" onclick="ouvrirModal(${a.id})">
         <div class="carte-meta">
           <div class="carte-gauche">
+            ${badgeHtml}
             <span class="carte-domaine">${dom.label}</span>
             <span class="carte-heure">${formatHeure(a.date)}</span>
           </div>
-          <button class="btn-save ${saved ? 'saved' : ''}"
-            onclick="event.stopPropagation(); toggleSave(${a.id}, this)"
-            title="${saved ? 'Retirer' : 'Sauvegarder'}">
-            ${saved ? '◆' : '◇'}
-          </button>
+          <div style="display:flex;gap:4px;align-items:center">
+            ${clocheBtnHtml}
+            <button class="btn-save ${saved ? 'saved' : ''}"
+              onclick="event.stopPropagation(); toggleSave(${a.id}, this)"
+              title="${saved ? 'Retirer' : 'Sauvegarder'}">
+              ${saved ? '◆' : '◇'}
+            </button>
+          </div>
         </div>
         <div class="carte-titre">${esc(a.titre)}</div>
         <div class="carte-resume">${esc(a.accroche || a.resume || '')}</div>
@@ -731,6 +774,10 @@
     feed.innerHTML = alertes.length
       ? alertes.map(carteHTML).join("")
       : `<div class="vide">Aucun article sauvegardé.<br>Appuie sur ◇ pour en conserver.</div>`;
+  }
+
+  async function notifierManuellement(id) {
+    await fetch(`/api/notifier/${id}`, { method: "POST" });
   }
 
   async function toggleSave(id, btn) {
@@ -886,7 +933,21 @@
     chargerStats();
   }
 
-  init();
+  async function checkNotifHash() {
+    const match = window.location.hash.match(/#synthese\/(\d+)/);
+    if (!match) return;
+    const id = parseInt(match[1]);
+    history.replaceState(null, "", "/");
+    // attendre que les alertes soient chargées
+    let tentatives = 0;
+    while (!alertesCache.length && tentatives < 10) {
+      await new Promise(r => setTimeout(r, 300));
+      tentatives++;
+    }
+    ouvrirModal(id);
+  }
+
+  init().then(checkNotifHash);
   initNotifications();
   setInterval(async () => {
     const data = await fetch("/api/alertes").then(r => r.json());

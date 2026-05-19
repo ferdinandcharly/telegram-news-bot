@@ -24,6 +24,7 @@ DOMAINES_DEFAUT    = list(bot.FLUX.keys())
 VAPID_PUBLIC  = os.getenv("VAPID_PUBLIC_KEY", "")
 _VAPID_PRIVATE_B64 = os.getenv("VAPID_PRIVATE_KEY", "")
 VAPID_PRIVATE_FILE = None
+APP_URL = os.getenv("APP_URL", "").rstrip("/")
 
 def init_vapid():
     global VAPID_PRIVATE_FILE
@@ -100,7 +101,7 @@ def sauver_subscriptions():
 
 # ── Callback bot ──────────────────────────────────────────────────────────────
 
-def ajouter_alerte(domaine, titre, teaser, lien, description=""):
+def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
     accroche = teaser.get("accroche", "") if isinstance(teaser, dict) else teaser
     alerte = {
         "id":          int(datetime.now().timestamp() * 1000),
@@ -112,15 +113,18 @@ def ajouter_alerte(domaine, titre, teaser, lien, description=""):
         "description": description[:1200],
         "lien":        lien,
         "date":        datetime.now().isoformat(),
+        "niveau":      niveau,
     }
     alertes.insert(0, alerte)
     if len(alertes) > 200:
         alertes.pop()
     sauver_alertes_fichier()
 
-    # push notification
-    body = accroche or titre
-    envoyer_push(titre=f"{domaine} — {titre[:60]}", body=body[:120], url=lien)
+    # push auto uniquement pour les critiques (niveau 3)
+    if niveau >= 3:
+        body = accroche or titre
+        notif_url = f"{APP_URL}/#synthese/{alerte['id']}" if APP_URL else lien
+        envoyer_push(titre=f"🔴 {domaine} — {titre[:50]}", body=body[:120], url=notif_url)
 
 bot.on_alerte = ajouter_alerte
 
@@ -201,6 +205,23 @@ def api_sauvegardes_toggle(alerte_id):
 @app.route("/api/sauvegardes/ids")
 def api_sauvegardes_ids():
     return jsonify(list(sauvegardes))
+
+@app.route("/api/notifier/<alerte_id>", methods=["POST"])
+def api_notifier(alerte_id):
+    try:
+        alerte = next((a for a in alertes if a["id"] == int(alerte_id)), None)
+        if not alerte:
+            return jsonify({"erreur": "introuvable"}), 404
+        notif_url = f"{APP_URL}/#synthese/{alerte['id']}" if APP_URL else alerte["lien"]
+        body = alerte.get("accroche") or alerte.get("resume", alerte["titre"])
+        envoyer_push(
+            titre=f"🟡 {alerte['domaine']} — {alerte['titre'][:50]}",
+            body=body[:120],
+            url=notif_url
+        )
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
 
 
 # ── API push subscriptions ────────────────────────────────────────────────────

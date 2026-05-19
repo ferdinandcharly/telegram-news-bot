@@ -69,18 +69,18 @@ def est_important(titre, resume, domaine):
                     f"Domaine : {domaine}\n"
                     f"Titre : {titre}\n"
                     f"Résumé : {resume[:400]}\n\n"
-                    "Est-ce un événement VRAIMENT MAJEUR qui changera le cours des choses ? "
-                    "Exemples acceptés : guerre déclarée, catastrophe naturelle massive, "
-                    "découverte scientifique historique, rupture diplomatique majeure, "
-                    "krach financier, catastrophe environnementale irréversible, "
-                    "percée technologique qui redéfinit un secteur entier. "
-                    "Exemples REFUSÉS : nouveau produit, mise à jour, partenariat, rapport, "
-                    "nomination, conférence, sondage, tendance, article d'opinion. "
-                    "Règle : si on peut l'ignorer sans conséquence, ce n'est pas important. "
-                    "Rejette au moins 95% des articles.\n"
-                    "Si important, rédige un teaser en 3 points courts en français.\n"
+                    "Évalue l'importance de cet événement sur 3 niveaux :\n"
+                    "- niveau 3 (CRITIQUE) : guerre déclarée, catastrophe naturelle massive, "
+                    "découverte scientifique historique mondiale, krach financier, "
+                    "catastrophe environnementale irréversible, percée technologique majeure.\n"
+                    "- niveau 2 (IMPORTANT) : événement significatif qui mérite attention "
+                    "sans être une urgence absolue (tension diplomatique, découverte notable, "
+                    "décision économique importante, incident environnemental grave).\n"
+                    "- niveau 0 : tout le reste (produit, mise à jour, rapport, nomination, "
+                    "conférence, sondage, opinion). Rejette au moins 90% des articles.\n"
+                    "Si niveau >= 2, rédige un teaser en français.\n"
                     "Réponds JSON uniquement : "
-                    "{\"important\": true/false, "
+                    "{\"niveau\": 0/2/3, "
                     "\"accroche\": \"ce qui s'est passé en 1 phrase\", "
                     "\"contexte\": \"pourquoi c'est important en 1 phrase\", "
                     "\"suite\": \"ce qu'il faut surveiller en 1 phrase\"}"
@@ -97,12 +97,12 @@ def est_important(titre, resume, domaine):
         teaser = {
             "accroche": data.get("accroche", ""),
             "contexte": data.get("contexte", ""),
-            "suite": data.get("suite", ""),
+            "suite":    data.get("suite", ""),
         }
-        return data.get("important", False), teaser
+        return data.get("niveau", 0), teaser
     except Exception as e:
         print(f"  Erreur IA : {e}")
-        return False, {}
+        return 0, {}
 
 
 def envoyer(msg):
@@ -138,23 +138,28 @@ def verifier(premiere_fois=False):
                     resume = article.get("summary", article.get("description", ""))
                     lien   = article.get("link", "")
 
-                    important, teaser = est_important(titre, resume, domaine)
+                    niveau, teaser = est_important(titre, resume, domaine)
 
-                    if important:
+                    if niveau >= 2:
                         accroche = teaser.get("accroche", "")
                         contexte = teaser.get("contexte", "")
                         suite    = teaser.get("suite", "")
-                        message = (
-                            f"{domaine}\n\n"
-                            f"*{titre}*\n\n"
-                            f"📌 {accroche}\n"
-                            f"🔍 {contexte}\n"
-                            f"👀 {suite}\n\n"
-                            f"{lien}"
-                        )
-                        envoyer(message)
+
+                        # Telegram + push uniquement pour les critiques
+                        if niveau >= 3:
+                            prefixe = "🔴 CRITIQUE"
+                            message = (
+                                f"{prefixe} — {domaine}\n\n"
+                                f"*{titre}*\n\n"
+                                f"📌 {accroche}\n"
+                                f"🔍 {contexte}\n"
+                                f"👀 {suite}\n\n"
+                                f"{lien}"
+                            )
+                            envoyer(message)
+
                         if on_alerte:
-                            on_alerte(domaine, titre, teaser, lien, resume)
+                            on_alerte(domaine, titre, teaser, lien, resume, niveau)
                         alertes += 1
                         time.sleep(2)
 
