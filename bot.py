@@ -78,15 +78,16 @@ def est_important(titre, resume, domaine):
                     "décision économique importante, incident environnemental grave).\n"
                     "- niveau 0 : tout le reste (produit, mise à jour, rapport, nomination, "
                     "conférence, sondage, opinion). Rejette au moins 90% des articles.\n"
-                    "Si niveau >= 2, rédige un teaser en français.\n"
-                    "Réponds JSON uniquement : "
-                    "{\"niveau\": 0/2/3, "
-                    "\"accroche\": \"ce qui s'est passé en 1 phrase\", "
-                    "\"contexte\": \"pourquoi c'est important en 1 phrase\", "
-                    "\"suite\": \"ce qu'il faut surveiller en 1 phrase\"}"
+                    "Si niveau vaut 2 ou 3, rédige un teaser en français.\n"
+                    "Réponds JSON uniquement, avec niveau valant 0, 2 ou 3 :\n"
+                    "{\"niveau\": 0, \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}\n"
+                    "ou\n"
+                    "{\"niveau\": 2, \"accroche\": \"...\", \"contexte\": \"...\", \"suite\": \"...\"}\n"
+                    "ou\n"
+                    "{\"niveau\": 3, \"accroche\": \"...\", \"contexte\": \"...\", \"suite\": \"...\"}"
                 )
             }],
-            max_tokens=250,
+            max_tokens=350,
             temperature=0.1,
         )
         contenu = rep.choices[0].message.content.strip()
