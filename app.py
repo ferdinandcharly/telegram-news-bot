@@ -178,48 +178,51 @@ _ONBOARDING_HTML = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>News Alert</title>
 <style>
+:root, [data-theme="dark"] { --bg:#0a0a0a; --text:#f0f0f0; --sub:#555; --line:#1a1a1a; --surface:#111; }
+[data-theme="dim"]   { --bg:#161b22; --text:#e6edf3; --sub:#8b949e; --line:#30363d; --surface:#1c2128; }
+[data-theme="light"] { --bg:#ffffff; --text:#24292f; --sub:#57606a; --line:#e1e4e8; --surface:#f6f8fa; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0a0a0a; color: #f0f0f0;
+body { background: var(--bg); color: var(--text);
        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
        min-height: 100vh; padding: 0 0 40px; }
 
-.hero { padding: 52px 24px 32px; border-bottom: 1px solid #1a1a1a; }
+.hero { padding: 52px 24px 32px; border-bottom: 1px solid var(--line); }
 .hero-label { font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
-              text-transform: uppercase; color: #444; margin-bottom: 14px; }
+              text-transform: uppercase; color: var(--sub); margin-bottom: 14px; }
 .hero h1 { font-size: 28px; font-weight: 700; line-height: 1.2;
            letter-spacing: -0.5px; margin-bottom: 8px; }
-.hero p { font-size: 14px; color: #555; line-height: 1.6; }
+.hero p { font-size: 14px; color: var(--sub); line-height: 1.6; }
 
-.step { padding: 28px 24px; border-bottom: 1px solid #1a1a1a; }
+.step { padding: 28px 24px; border-bottom: 1px solid var(--line); }
 .step-num { font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
-            text-transform: uppercase; color: #333; margin-bottom: 6px; }
+            text-transform: uppercase; color: var(--sub); margin-bottom: 6px; }
 .step-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
 
-input[type=text] { width: 100%; padding: 14px 16px; background: #111;
-                   border: 1px solid #1e1e1e; border-radius: 12px; color: #f0f0f0;
+input[type=text] { width: 100%; padding: 14px 16px; background: var(--surface);
+                   border: 1px solid var(--line); border-radius: 12px; color: var(--text);
                    font-size: 15px; outline: none; transition: border-color 0.15s; }
-input[type=text]:focus { border-color: #444; }
+input[type=text]:focus { border-color: var(--sub); }
 
 .topics { display: flex; flex-wrap: wrap; gap: 8px; }
-.topic { padding: 10px 18px; border-radius: 24px; border: 1px solid #1e1e1e;
-         background: none; color: #555; font-size: 14px; font-weight: 500;
+.topic { padding: 10px 18px; border-radius: 24px; border: 1px solid var(--line);
+         background: none; color: var(--sub); font-size: 14px; font-weight: 500;
          cursor: pointer; transition: all 0.15s; user-select: none; }
-.topic.on { border-color: #f0f0f0; color: #f0f0f0; background: #1a1a1a; }
-.topic-hint { font-size: 12px; color: #333; margin-top: 12px; }
+.topic.on { border-color: var(--text); color: var(--text); background: var(--surface); }
+.topic-hint { font-size: 12px; color: var(--sub); margin-top: 12px; opacity: 0.6; }
 
 .themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.theme-card { border: 1px solid #1e1e1e; border-radius: 14px; padding: 14px 10px;
+.theme-card { border: 1px solid var(--line); border-radius: 14px; padding: 14px 10px;
               cursor: pointer; text-align: center; transition: all 0.15s; background: none; }
-.theme-card.on { border-color: #f0f0f0; background: #111; }
+.theme-card.on { border-color: var(--text); background: var(--surface); }
 .theme-swatch { height: 40px; border-radius: 8px; margin-bottom: 8px; }
 .sw-dark { background: #000; border: 1px solid #222; }
 .sw-dim  { background: linear-gradient(135deg, #161b22, #1c2128); }
 .sw-light { background: #fff; border: 1px solid #ddd; }
-.theme-name { font-size: 12px; font-weight: 600; color: #888; }
-.theme-card.on .theme-name { color: #f0f0f0; }
+.theme-name { font-size: 12px; font-weight: 600; color: var(--sub); }
+.theme-card.on .theme-name { color: var(--text); }
 
 .cta { padding: 24px; }
-.btn-go { width: 100%; padding: 16px; background: #f0f0f0; color: #000; border: none;
+.btn-go { width: 100%; padding: 16px; background: var(--text); color: var(--bg); border: none;
           border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer;
           letter-spacing: -0.2px; transition: opacity 0.15s; }
 .btn-go:disabled { opacity: 0.3; cursor: default; }
@@ -293,6 +296,7 @@ input[type=text]:focus { border-color: #444; }
     b.addEventListener("click", () => {
       document.querySelectorAll(".theme-card").forEach(x => x.classList.remove("on"));
       b.classList.add("on");
+      document.documentElement.setAttribute("data-theme", b.dataset.t);
     });
   });
 
@@ -639,9 +643,10 @@ def api_init():
             prefs_row = f_prefs.result()
 
     prefs = {
-        "display_name": prefs_row.get("display_name") or "" if prefs_row else "",
-        "theme":        prefs_row.get("theme")        or "dark" if prefs_row else "dark",
+        "display_name": prefs_row.get("display_name") or ""                if prefs_row else "",
+        "theme":        prefs_row.get("theme")        or "dark"             if prefs_row else "dark",
         "domaines":     prefs_row.get("domaines")     or list(bot.FLUX.keys()) if prefs_row else list(bot.FLUX.keys()),
+        "niveau_notif": prefs_row.get("niveau_notif") or 3                 if prefs_row else 3,
     }
 
     # filtrer par domaines préférés

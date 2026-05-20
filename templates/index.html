@@ -1044,7 +1044,14 @@
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
-    await abonner(getNiveauMin());
+    const niveauMin = getNiveauMin();
+    await abonner(niveauMin);
+    // sauvegarder aussi dans les préférences pour rechargement
+    await fetch("/api/preferences", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ niveau_notif: niveauMin })
+    });
   }
 
   async function initNotifications() {
@@ -1113,8 +1120,13 @@
       if (el) el.checked = data.preferences.domaines.includes(label);
     });
 
+    // niveau notif important
+    const niveauNotif = data.preferences.niveau_notif || 3;
+    const toggleImp = document.getElementById("toggle-notif-important");
+    if (toggleImp) toggleImp.checked = niveauNotif <= 2;
+
     // alertes & sauvegardes
-    savedIds    = new Set(data.saved_ids);
+    savedIds     = new Set(data.saved_ids);
     alertesCache = data.alertes;
     chargerAlertes();
     chargerStats();
