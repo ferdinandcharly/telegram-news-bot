@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>News Alert</title>
+  <link rel="manifest" href="/static/manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="News Alert" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="apple-touch-icon" href="/static/icon.svg" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -623,6 +630,24 @@
 
     .nav-btn.actif { color: var(--text); }
     .nav-icon { font-size: 18px; line-height: 1; }
+
+    .nav-badge {
+      position: absolute;
+      top: 4px; right: calc(50% - 18px);
+      background: #e5534b;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      padding: 0 4px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .nav-btn { position: relative; }
   </style>
 </head>
 <body>
@@ -830,8 +855,9 @@
 
 <!-- ── Nav ── -->
 <nav>
-  <button class="nav-btn actif" onclick="afficherPage('feed', this)">
+  <button class="nav-btn actif" id="nav-btn-feed" onclick="afficherPage('feed', this)">
     <span class="nav-icon">◈</span>Actualités
+    <span class="nav-badge" id="badge-nonlus"></span>
   </button>
   <button class="nav-btn" onclick="afficherPage('corr', this)">
     <span class="nav-icon">⊕</span>Corrélations
@@ -865,6 +891,26 @@
   let savedIds = new Set();
   let alerteModal = null;
 
+  // ── Badge non-lus ────────────────────────────────────────────────────────
+  function majBadgeNonLus() {
+    const lastVisit = localStorage.getItem("lastVisit") || "1970-01-01";
+    const nonLus = alertesCache.filter(a => (a.date || "") > lastVisit).length;
+    const badge = document.getElementById("badge-nonlus");
+    if (!badge) return;
+    if (nonLus > 0) {
+      badge.textContent = nonLus > 99 ? "99+" : nonLus;
+      badge.style.display = "flex";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
+  function marquerLus() {
+    localStorage.setItem("lastVisit", new Date().toISOString());
+    const badge = document.getElementById("badge-nonlus");
+    if (badge) badge.style.display = "none";
+  }
+
   // ── Navigation ──────────────────────────────────────────────────────────
   function afficherPage(page, btn) {
     ["feed","corr","saved","params"].forEach(p => {
@@ -873,6 +919,7 @@
     document.getElementById("page-" + page).style.display = "block";
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("actif"));
     btn.classList.add("actif");
+    if (page === "feed")  marquerLus();
     if (page === "saved") chargerSauvegardes();
     if (page === "corr")  chargerCorrelations();
   }
@@ -1280,6 +1327,7 @@
     alertesCache = data.alertes;
     chargerAlertes();
     chargerStats();
+    majBadgeNonLus();
   }
 
   async function checkNotifHash() {
@@ -1307,6 +1355,7 @@
     alertesCache = data;
     chargerAlertes();
     chargerStats();
+    majBadgeNonLus();
   }, 30000);
 </script>
 </body>
