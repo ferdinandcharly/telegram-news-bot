@@ -680,7 +680,17 @@
   <header>
     <div class="header-row">
       <h1>News Alert</h1>
-      <div class="live"><div class="live-dot"></div>En direct</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button id="btn-recherche" onclick="toggleRecherche()"
+                style="background:none;border:none;color:var(--sub);cursor:pointer;font-size:18px;padding:4px;line-height:1">⌕</button>
+        <div class="live"><div class="live-dot"></div>En direct</div>
+      </div>
+    </div>
+    <div id="zone-recherche" style="display:none;padding:0 16px 10px">
+      <input id="recherche" type="search" placeholder="Rechercher un titre, domaine..."
+             oninput="chargerAlertes()"
+             style="width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--line);
+                    border-radius:10px;color:var(--text);font-size:13px;outline:none;-webkit-appearance:none"/>
     </div>
     <div class="filtres">
       <button class="filtre-tout actif" id="btn-tout" onclick="setFiltreTout()">Tout</button>
@@ -693,12 +703,6 @@
         <option value="Environnement">Environnement</option>
         <option value="Sport">Sport</option>
       </select>
-    </div>
-    <div style="padding:0 16px 10px">
-      <input id="recherche" type="search" placeholder="Rechercher..."
-             oninput="chargerAlertes()"
-             style="width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--line);
-                    border-radius:10px;color:var(--text);font-size:13px;outline:none;-webkit-appearance:none"/>
     </div>
   </header>
 
@@ -959,6 +963,18 @@
     if (page === "feed")  marquerLus();
     if (page === "saved") chargerSauvegardes();
     if (page === "corr")  chargerCorrelations();
+  }
+
+  // ── Recherche ────────────────────────────────────────────────────────────
+  function toggleRecherche() {
+    const zone = document.getElementById("zone-recherche");
+    const input = document.getElementById("recherche");
+    const btn = document.getElementById("btn-recherche");
+    const open = zone.style.display === "none";
+    zone.style.display = open ? "block" : "none";
+    btn.style.color = open ? "var(--text)" : "var(--sub)";
+    if (open) { input.focus(); }
+    else { input.value = ""; chargerAlertes(); }
   }
 
   // ── Filtres ─────────────────────────────────────────────────────────────

@@ -780,21 +780,21 @@ def partager_alerte(alerte_id):
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta property="og:title" content="{titre}"/>
 <meta property="og:description" content="{accroche}"/>
-<title>{titre} — News Alert</title>
+<title>{titre}</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:#0a0a0a;color:#f0f0f0;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 20px}}
-.card{{max-width:560px;width:100%;background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:28px 24px;margin-top:24px}}
-.badge{{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}}
-h1{{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:18px}}
-.section{{margin-top:14px}}
-.label{{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#555;margin-bottom:4px}}
-.text{{font-size:14px;color:#ccc;line-height:1.6}}
-.lien{{display:block;margin-top:24px;padding:12px 16px;background:#1a1a1a;border-radius:10px;color:#f0f0f0;text-decoration:none;font-size:13px;word-break:break-all}}
-.lien:hover{{background:#222}}
-.cta{{margin-top:28px;text-align:center}}
-.cta a{{display:inline-block;padding:10px 20px;background:#f0f0f0;color:#000;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none}}
-.footer{{margin-top:20px;font-size:12px;color:#444;text-align:center}}
+body{{background:#0a0a0a;color:#f0f0f0;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 20px 48px}}
+.card{{max-width:560px;width:100%}}
+.badge{{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px}}
+h1{{font-size:22px;font-weight:700;line-height:1.35;margin-bottom:20px}}
+.section{{margin-top:18px;padding-top:18px;border-top:1px solid #1a1a1a}}
+.label{{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#444;margin-bottom:6px}}
+.text{{font-size:15px;color:#ccc;line-height:1.65}}
+.lien{{display:block;margin-top:28px;padding:14px 16px;background:#111;border:1px solid #1e1e1e;border-radius:12px;color:#888;text-decoration:none;font-size:12px;word-break:break-all}}
+.lien:hover{{color:#f0f0f0}}
+.footer{{margin-top:48px;font-size:12px;color:#333;text-align:center}}
+.footer a{{color:#444;text-decoration:none}}
+.footer a:hover{{color:#666}}
 </style></head>
 <body>
 <div class="card">
@@ -803,10 +803,9 @@ h1{{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:18px}}
   {"<div class='section'><div class='label'>En bref</div><div class='text'>" + accroche + "</div></div>" if accroche else ""}
   {"<div class='section'><div class='label'>Contexte</div><div class='text'>" + contexte + "</div></div>" if contexte else ""}
   {"<div class='section'><div class='label'>À suivre</div><div class='text'>" + suite + "</div></div>" if suite else ""}
-  {"<a class='lien' href='" + lien + "' target='_blank' rel='noopener'>🔗 " + lien + "</a>" if lien else ""}
+  {"<a class='lien' href='" + lien + "' target='_blank' rel='noopener'>Lire l'article complet ↗</a>" if lien else ""}
 </div>
-<div class="cta"><a href="{app_url}">Ouvrir News Alert →</a></div>
-<div class="footer">Partagé via News Alert</div>
+<div class="footer"><a href="{app_url}">News Alert</a></div>
 </body></html>"""
 
 @app.route("/")
