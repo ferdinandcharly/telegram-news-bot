@@ -790,11 +790,9 @@ h1{{font-size:22px;font-weight:700;line-height:1.35;margin-bottom:20px}}
 .section{{margin-top:18px;padding-top:18px;border-top:1px solid #1a1a1a}}
 .label{{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#444;margin-bottom:6px}}
 .text{{font-size:15px;color:#ccc;line-height:1.65}}
-.lien{{display:block;margin-top:28px;padding:14px 16px;background:#111;border:1px solid #1e1e1e;border-radius:12px;color:#888;text-decoration:none;font-size:12px;word-break:break-all}}
-.lien:hover{{color:#f0f0f0}}
-.footer{{margin-top:48px;font-size:12px;color:#333;text-align:center}}
-.footer a{{color:#444;text-decoration:none}}
-.footer a:hover{{color:#666}}
+.cta{{margin-top:36px;text-align:center}}
+.cta a{{display:inline-block;padding:12px 24px;background:#f0f0f0;color:#000;border-radius:12px;font-size:15px;font-weight:600;text-decoration:none}}
+.footer{{margin-top:20px;font-size:12px;color:#333;text-align:center}}
 </style></head>
 <body>
 <div class="card">
@@ -803,9 +801,9 @@ h1{{font-size:22px;font-weight:700;line-height:1.35;margin-bottom:20px}}
   {"<div class='section'><div class='label'>En bref</div><div class='text'>" + accroche + "</div></div>" if accroche else ""}
   {"<div class='section'><div class='label'>Contexte</div><div class='text'>" + contexte + "</div></div>" if contexte else ""}
   {"<div class='section'><div class='label'>À suivre</div><div class='text'>" + suite + "</div></div>" if suite else ""}
-  {"<a class='lien' href='" + lien + "' target='_blank' rel='noopener'>Lire l'article complet ↗</a>" if lien else ""}
 </div>
-<div class="footer"><a href="{app_url}">News Alert</a></div>
+<div class="cta"><a href="{app_url}">Ouvrir News Alert →</a></div>
+<div class="footer">Partagé via News Alert</div>
 </body></html>"""
 
 @app.route("/")
