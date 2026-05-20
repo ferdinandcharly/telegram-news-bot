@@ -39,6 +39,11 @@ FLUX = {
         "https://www.lemonde.fr/planete/rss_full.xml",
         "https://reporterre.net/spip.php?page=backend",
     ],
+    "⚽ Sport": [
+        "https://www.lequipe.fr/rss/actu_rss.xml",
+        "https://feeds.bbci.co.uk/sport/rss.xml",
+        "https://feeds.reuters.com/reuters/sportsNews",
+    ],
 }
 
 client = Groq(api_key=GROQ_KEY)

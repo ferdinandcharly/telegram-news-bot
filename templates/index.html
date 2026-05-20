@@ -18,6 +18,7 @@
       --tech:   #a855f7;
       --finance: #f59e0b;
       --env:    #22c55e;
+      --sport:  #f97316;
     }
 
     body {
@@ -174,7 +175,8 @@
     .carte-sci     .carte-domaine { color: var(--sci); }
     .carte-tech    .carte-domaine { color: var(--tech); }
     .carte-finance .carte-domaine { color: var(--finance); }
-    .carte-env     .carte-domaine { color: var(--env); }
+    .carte-env     .carte-domaine { color: var(--env);   }
+    .carte-sport   .carte-domaine { color: var(--sport); }
     .carte-heure { font-size: 11px; color: var(--sub); }
 
     .btn-save {
@@ -312,6 +314,7 @@
     .modal-tech    { color: var(--tech);    }
     .modal-finance { color: var(--finance); }
     .modal-env     { color: var(--env);     }
+    .modal-sport   { color: var(--sport);  }
 
     .modal-titre {
       font-size: 18px;
@@ -528,6 +531,7 @@
         <option value="Tech">Tech & IA</option>
         <option value="Finance">Finance</option>
         <option value="Environnement">Environnement</option>
+      <option value="Sport">Sport</option>
       </select>
     </div>
   </header>
@@ -558,7 +562,16 @@
 
 <!-- ── PAGE PARAMÈTRES ── -->
 <div id="page-params">
-  <h2>Paramètres</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <h2 style="margin:0">Paramètres</h2>
+    <a href="/logout" style="font-size:13px;color:var(--sub);text-decoration:none">Déconnexion</a>
+  </div>
+  <div class="params-bloc" style="margin-bottom:16px">
+    <div class="params-titre">Compte</div>
+    <div class="param-row">
+      <div><div class="param-label" id="user-email">—</div><div class="param-sub">Connecté</div></div>
+    </div>
+  </div>
 
   <div class="params-bloc">
     <div class="params-titre">Domaines surveillés</div>
@@ -581,6 +594,10 @@
     <div class="param-row">
       <div><div class="param-label">Environnement</div><div class="param-sub">Le Monde Planète · Reporterre</div></div>
       <label class="toggle"><input type="checkbox" id="toggle-env" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+    </div>
+    <div class="param-row">
+      <div><div class="param-label">Sport</div><div class="param-sub">L'Équipe · BBC Sport · Reuters Sports</div></div>
+      <label class="toggle"><input type="checkbox" id="toggle-sport" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
     </div>
   </div>
 
@@ -713,6 +730,7 @@
     { key: "Tech",         cls: "tech",    label: "Tech & IA"    },
     { key: "Finance",      cls: "finance", label: "Finance"      },
     { key: "Environnement",cls: "env",     label: "Environnement"},
+    { key: "Sport",        cls: "sport",   label: "Sport"        },
   ];
 
   function getDomaine(d) {
@@ -858,10 +876,12 @@
       ["toggle-tech",    "💻 Tech & IA"],
       ["toggle-finance", "💰 Finance"],
       ["toggle-env",     "🌱 Environnement"],
+      ["toggle-sport",   "⚽ Sport"],
     ];
     const domaines = map
       .filter(([id]) => document.getElementById(id)?.checked)
       .map(([, label]) => label);
+
     await fetch("/api/domaines", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -978,6 +998,10 @@
     }
     ouvrirModal(id);
   }
+
+  fetch("/api/me").then(r => r.json()).then(d => {
+    if (d.email) document.getElementById("user-email").textContent = d.email;
+  });
 
   init().then(checkNotifHash);
   initNotifications();
