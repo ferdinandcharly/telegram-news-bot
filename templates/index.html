@@ -841,9 +841,7 @@
     const saved = savedIds.has(a.id);
     const niv = a.niveau || 2;
     const dotColor = niv >= 3 ? '#ef4444' : '#f59e0b';
-    const clocheBtnHtml = niv < 3
-      ? `<button class="btn-notifier" onclick="event.stopPropagation(); notifierManuellement(${a.id})" title="Me notifier">🔔</button>`
-      : "";
+    const clocheBtnHtml = "";
 
     return `
       <div class="carte ${cls}" onclick="ouvrirModal(${a.id})">
