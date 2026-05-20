@@ -176,98 +176,143 @@ def logout():
 _ONBOARDING_HTML = """<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>News Alert — Bienvenue</title>
+<title>News Alert</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #000; color: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-       min-height: 100vh; padding: 40px 24px 60px; }
-h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-.sub { font-size: 14px; color: #666; margin-bottom: 32px; }
-.section { margin-bottom: 28px; }
-.section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
-                 color: #555; margin-bottom: 12px; }
-input[type=text] { width: 100%; padding: 13px 16px; background: #111; border: 1px solid #222;
-                   border-radius: 10px; color: #f0f0f0; font-size: 15px; outline: none; }
+body { background: #0a0a0a; color: #f0f0f0;
+       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+       min-height: 100vh; padding: 0 0 40px; }
+
+.hero { padding: 52px 24px 32px; border-bottom: 1px solid #1a1a1a; }
+.hero-label { font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+              text-transform: uppercase; color: #444; margin-bottom: 14px; }
+.hero h1 { font-size: 28px; font-weight: 700; line-height: 1.2;
+           letter-spacing: -0.5px; margin-bottom: 8px; }
+.hero p { font-size: 14px; color: #555; line-height: 1.6; }
+
+.step { padding: 28px 24px; border-bottom: 1px solid #1a1a1a; }
+.step-num { font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+            text-transform: uppercase; color: #333; margin-bottom: 6px; }
+.step-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+
+input[type=text] { width: 100%; padding: 14px 16px; background: #111;
+                   border: 1px solid #1e1e1e; border-radius: 12px; color: #f0f0f0;
+                   font-size: 15px; outline: none; transition: border-color 0.15s; }
 input[type=text]:focus { border-color: #444; }
-.domains { display: flex; flex-wrap: wrap; gap: 8px; }
-.domain-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #222; background: none;
-              color: #666; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-.domain-btn.on { border-color: #f0f0f0; color: #f0f0f0; background: #111; }
-.themes { display: flex; gap: 10px; }
-.theme-btn { flex: 1; padding: 14px 8px; border-radius: 12px; border: 2px solid #222;
-             background: none; cursor: pointer; display: flex; flex-direction: column;
-             align-items: center; gap: 6px; transition: all 0.15s; }
-.theme-btn.on { border-color: #f0f0f0; }
-.theme-preview { width: 100%; height: 28px; border-radius: 6px; }
-.t-dark { background: #000; }
-.t-dim { background: #161b22; }
-.t-light { background: #fff; border: 1px solid #ddd; }
-.theme-label { font-size: 12px; color: #888; }
-.theme-btn.on .theme-label { color: #f0f0f0; }
-button[type=submit] { width: 100%; padding: 14px; background: #f0f0f0; color: #000; border: none;
-                      border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;
-                      margin-top: 16px; }
+
+.topics { display: flex; flex-wrap: wrap; gap: 8px; }
+.topic { padding: 10px 18px; border-radius: 24px; border: 1px solid #1e1e1e;
+         background: none; color: #555; font-size: 14px; font-weight: 500;
+         cursor: pointer; transition: all 0.15s; user-select: none; }
+.topic.on { border-color: #f0f0f0; color: #f0f0f0; background: #1a1a1a; }
+.topic-hint { font-size: 12px; color: #333; margin-top: 12px; }
+
+.themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.theme-card { border: 1px solid #1e1e1e; border-radius: 14px; padding: 14px 10px;
+              cursor: pointer; text-align: center; transition: all 0.15s; background: none; }
+.theme-card.on { border-color: #f0f0f0; background: #111; }
+.theme-swatch { height: 40px; border-radius: 8px; margin-bottom: 8px; }
+.sw-dark { background: #000; border: 1px solid #222; }
+.sw-dim  { background: linear-gradient(135deg, #161b22, #1c2128); }
+.sw-light { background: #fff; border: 1px solid #ddd; }
+.theme-name { font-size: 12px; font-weight: 600; color: #888; }
+.theme-card.on .theme-name { color: #f0f0f0; }
+
+.cta { padding: 24px; }
+.btn-go { width: 100%; padding: 16px; background: #f0f0f0; color: #000; border: none;
+          border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer;
+          letter-spacing: -0.2px; transition: opacity 0.15s; }
+.btn-go:disabled { opacity: 0.3; cursor: default; }
+.error { font-size: 13px; color: #ef4444; text-align: center; margin-bottom: 12px; display: none; }
 </style></head>
 <body>
-<h1>Bienvenue 👋</h1>
-<p class="sub">Configure ton expérience en quelques secondes</p>
-<form id="form">
-  <div class="section">
-    <div class="section-title">Comment t'appeler ?</div>
-    <input type="text" id="display-name" placeholder="Ton prénom ou pseudo"/>
+
+<div class="hero">
+  <div class="hero-label">News Alert</div>
+  <h1>Personnalise<br>ton fil d'actu</h1>
+  <p>Choisis tes sujets, reçois uniquement<br>les événements qui comptent vraiment.</p>
+</div>
+
+<div class="step">
+  <div class="step-num">Étape 1</div>
+  <div class="step-title">Comment t'appeler ?</div>
+  <input type="text" id="display-name" placeholder="Ton prénom ou pseudo" maxlength="30"/>
+</div>
+
+<div class="step">
+  <div class="step-num">Étape 2</div>
+  <div class="step-title">Quels sujets t'intéressent ? <span style="color:#333;font-weight:400;font-size:14px">(choisis au moins 1)</span></div>
+  <div class="topics">
+    <button type="button" class="topic" data-d="🌍 Géopolitique">🌍 Géopolitique</button>
+    <button type="button" class="topic" data-d="🔬 Science">🔬 Science</button>
+    <button type="button" class="topic" data-d="💻 Tech & IA">💻 Tech &amp; IA</button>
+    <button type="button" class="topic" data-d="💰 Finance">💰 Finance</button>
+    <button type="button" class="topic" data-d="🌱 Environnement">🌱 Environnement</button>
+    <button type="button" class="topic" data-d="⚽ Sport">⚽ Sport</button>
   </div>
-  <div class="section">
-    <div class="section-title">Sujets qui t'intéressent</div>
-    <div class="domains" id="domains">
-      <button type="button" class="domain-btn on" data-d="🌍 Géopolitique">🌍 Géopolitique</button>
-      <button type="button" class="domain-btn on" data-d="🔬 Science">🔬 Science</button>
-      <button type="button" class="domain-btn on" data-d="💻 Tech &amp; IA">💻 Tech &amp; IA</button>
-      <button type="button" class="domain-btn on" data-d="💰 Finance">💰 Finance</button>
-      <button type="button" class="domain-btn on" data-d="🌱 Environnement">🌱 Environnement</button>
-      <button type="button" class="domain-btn on" data-d="⚽ Sport">⚽ Sport</button>
-    </div>
+  <div class="topic-hint" id="topic-hint">Appuie pour sélectionner</div>
+</div>
+
+<div class="step">
+  <div class="step-num">Étape 3</div>
+  <div class="step-title">Ton thème</div>
+  <div class="themes">
+    <button type="button" class="theme-card on" data-t="dark">
+      <div class="theme-swatch sw-dark"></div>
+      <div class="theme-name">Dark</div>
+    </button>
+    <button type="button" class="theme-card" data-t="dim">
+      <div class="theme-swatch sw-dim"></div>
+      <div class="theme-name">Dim</div>
+    </button>
+    <button type="button" class="theme-card" data-t="light">
+      <div class="theme-swatch sw-light"></div>
+      <div class="theme-name">Light</div>
+    </button>
   </div>
-  <div class="section">
-    <div class="section-title">Thème</div>
-    <div class="themes">
-      <button type="button" class="theme-btn on" data-t="dark">
-        <div class="theme-preview t-dark"></div>
-        <span class="theme-label">Dark</span>
-      </button>
-      <button type="button" class="theme-btn" data-t="dim">
-        <div class="theme-preview t-dim"></div>
-        <span class="theme-label">Dim</span>
-      </button>
-      <button type="button" class="theme-btn" data-t="light">
-        <div class="theme-preview t-light"></div>
-        <span class="theme-label">Light</span>
-      </button>
-    </div>
-  </div>
-  <button type="submit">C'est parti →</button>
-</form>
+</div>
+
+<div class="cta">
+  <div class="error" id="error">Sélectionne au moins un sujet</div>
+  <button class="btn-go" id="btn-go" onclick="submit()">Commencer →</button>
+</div>
+
 <script>
-  document.querySelectorAll(".domain-btn").forEach(b =>
-    b.addEventListener("click", () => b.classList.toggle("on"))
-  );
-  document.querySelectorAll(".theme-btn").forEach(b =>
+  document.querySelectorAll(".topic").forEach(b => {
     b.addEventListener("click", () => {
-      document.querySelectorAll(".theme-btn").forEach(x => x.classList.remove("on"));
+      b.classList.toggle("on");
+      const n = document.querySelectorAll(".topic.on").length;
+      document.getElementById("topic-hint").textContent =
+        n === 0 ? "Appuie pour sélectionner" : n + " sujet" + (n > 1 ? "s" : "") + " sélectionné" + (n > 1 ? "s" : "");
+    });
+  });
+
+  document.querySelectorAll(".theme-card").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".theme-card").forEach(x => x.classList.remove("on"));
       b.classList.add("on");
-    })
-  );
-  document.getElementById("form").addEventListener("submit", async e => {
-    e.preventDefault();
-    const domaines     = [...document.querySelectorAll(".domain-btn.on")].map(b => b.dataset.d);
-    const theme        = document.querySelector(".theme-btn.on")?.dataset.t || "dark";
+    });
+  });
+
+  async function submit() {
+    const domaines = [...document.querySelectorAll(".topic.on")].map(b => b.dataset.d);
+    if (!domaines.length) {
+      document.getElementById("error").style.display = "block";
+      return;
+    }
+    document.getElementById("error").style.display = "none";
+    document.getElementById("btn-go").disabled = true;
+
+    const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
     const display_name = document.getElementById("display-name").value.trim();
+
     await fetch("/api/preferences", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ display_name, theme, domaines })
     });
     window.location.href = "/";
-  });
+  }
 </script>
 </body></html>"""
 
@@ -579,8 +624,15 @@ def api_init():
         "domaines":     prefs_row.get("domaines")     or list(bot.FLUX.keys()) if prefs_row else list(bot.FLUX.keys()),
     }
 
+    # filtrer par domaines préférés
+    domaines_actifs = prefs["domaines"]
+    alertes_filtrees = [
+        a for a in alertes
+        if any(d in a.get("domaine", "") for d in domaines_actifs)
+    ] if domaines_actifs else alertes
+
     return jsonify({
-        "alertes":      alertes,
+        "alertes":      alertes_filtrees,
         "saved_ids":    saved_ids,
         "preferences":  prefs,
         "email":        session.get("user_email", ""),
