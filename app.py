@@ -11,14 +11,30 @@ import bot
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # ── Données en mémoire ────────────────────────────────────────────────────────
-alertes          = []
-sauvegardes      = set()
+alertes            = []
+sauvegardes        = set()
 subscriptions_push = []
 
 ALERTES_FILE       = "alertes.json"
 SAUVEGARDES_FILE   = "sauvegardes.json"
 SUBSCRIPTIONS_FILE = "subscriptions.json"
 DOMAINES_DEFAUT    = list(bot.FLUX.keys())
+
+# ── Supabase ──────────────────────────────────────────────────────────────────
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+
+SB_HEADERS = {}
+
+def init_supabase():
+    global SB_HEADERS
+    if SUPABASE_URL and SUPABASE_KEY:
+        SB_HEADERS = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+        }
+        print("Supabase configuré.")
 
 # ── VAPID (push notifications) ────────────────────────────────────────────────
 VAPID_PUBLIC  = os.getenv("VAPID_PUBLIC_KEY", "")
@@ -68,23 +84,75 @@ def envoyer_push(titre, body, url):
 
 # ── Persistance ───────────────────────────────────────────────────────────────
 
+def sb_url(table):
+    return f"{SUPABASE_URL}/rest/v1/{table}"
+
 def charger_alertes():
+    if SB_HEADERS:
+        try:
+            r = requests.get(
+                sb_url("alertes"),
+                headers={**SB_HEADERS, "Prefer": ""},
+                params={"order": "date.desc", "limit": "200"},
+                timeout=10
+            )
+            if r.ok:
+                return r.json()
+        except Exception as e:
+            print(f"Supabase charger_alertes : {e}")
     if os.path.exists(ALERTES_FILE):
         with open(ALERTES_FILE, encoding="utf-8") as f:
             return json.load(f)
     return []
 
-def sauver_alertes_fichier():
+def sauver_alerte(alerte):
+    if SB_HEADERS:
+        try:
+            requests.post(
+                sb_url("alertes"),
+                headers={**SB_HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                json=alerte,
+                timeout=10
+            )
+            return
+        except Exception as e:
+            print(f"Supabase sauver_alerte : {e}")
     with open(ALERTES_FILE, "w", encoding="utf-8") as f:
         json.dump(alertes, f, ensure_ascii=False, indent=2)
 
 def charger_sauvegardes():
+    if SB_HEADERS:
+        try:
+            r = requests.get(sb_url("sauvegardes"), headers=SB_HEADERS, timeout=10)
+            if r.ok:
+                return set(row["alerte_id"] for row in r.json())
+        except Exception as e:
+            print(f"Supabase charger_sauvegardes : {e}")
     if os.path.exists(SAUVEGARDES_FILE):
         with open(SAUVEGARDES_FILE, encoding="utf-8") as f:
             return set(json.load(f))
     return set()
 
-def sauver_sauvegardes_fichier():
+def sauver_sauvegarde(alerte_id, ajouter=True):
+    if SB_HEADERS:
+        try:
+            if ajouter:
+                requests.post(
+                    sb_url("sauvegardes"),
+                    headers={**SB_HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                    json={"alerte_id": alerte_id},
+                    timeout=10
+                )
+            else:
+                requests.delete(
+                    sb_url("sauvegardes"),
+                    headers=SB_HEADERS,
+                    params={"alerte_id": f"eq.{alerte_id}"},
+                    timeout=10
+                )
+            return
+        except Exception as e:
+            print(f"Supabase sauver_sauvegarde : {e}")
     with open(SAUVEGARDES_FILE, "w", encoding="utf-8") as f:
         json.dump(list(sauvegardes), f)
 
@@ -118,7 +186,7 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
     alertes.insert(0, alerte)
     if len(alertes) > 200:
         alertes.pop()
-    sauver_alertes_fichier()
+    sauver_alerte(alerte)
 
     # push auto uniquement pour les critiques (niveau 3)
     if niveau >= 3:
@@ -197,9 +265,10 @@ def api_sauvegardes_toggle(alerte_id):
         return jsonify({"erreur": "id invalide"}), 400
     if request.method == "POST":
         sauvegardes.add(aid)
+        sauver_sauvegarde(aid, ajouter=True)
     else:
         sauvegardes.discard(aid)
-    sauver_sauvegardes_fichier()
+        sauver_sauvegarde(aid, ajouter=False)
     return jsonify({"ok": True})
 
 @app.route("/api/sauvegardes/ids")
@@ -279,6 +348,7 @@ def boucle():
 
 
 if __name__ == "__main__":
+    init_supabase()
     init_vapid()
     alertes.extend(charger_alertes())
     sauvegardes.update(charger_sauvegardes())
