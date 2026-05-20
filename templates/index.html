@@ -766,6 +766,14 @@
 
 <script>
   let filtreCourant = "Tout";
+  let userDomaines  = []; // domaines préférés de l'utilisateur
+
+  function filtrerParPrefs(alertes) {
+    if (!userDomaines.length) return alertes;
+    return alertes.filter(a =>
+      userDomaines.some(d => (a.domaine || "").includes(d.replace(/^\S+\s/, "")))
+    );
+  }
 
   function esc(str) {
     return String(str)
@@ -864,8 +872,9 @@
     const url = filtreCourant === "Tout"
       ? "/api/alertes"
       : `/api/alertes?domaine=${encodeURIComponent(filtreCourant)}`;
-    const alertes = await fetch(url).then(r => r.json());
-    const feed = document.getElementById("feed");
+    const raw    = await fetch(url).then(r => r.json());
+    const alertes = filtreCourant === "Tout" ? filtrerParPrefs(raw) : raw;
+    const feed   = document.getElementById("feed");
     feed.innerHTML = alertes.length
       ? alertes.map(carteHTML).join("")
       : `<div class="vide">Aucune alerte pour le moment.<br>Vérification toutes les 15 min.</div>`;
@@ -964,6 +973,7 @@
     const domaines = map
       .filter(([id]) => document.getElementById(id)?.checked)
       .map(([, label]) => label);
+    userDomaines = domaines; // mise à jour locale immédiate
 
     await fetch("/api/preferences", {
       method: "POST",
@@ -1104,7 +1114,8 @@
       document.getElementById("user-email").textContent = data.email;
     }
 
-    // domaines
+    // domaines préférés
+    userDomaines = data.preferences.domaines || [];
     const map = [
       ["toggle-geo",     "🌍 Géopolitique"],
       ["toggle-sci",     "🔬 Science"],
