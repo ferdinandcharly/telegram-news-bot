@@ -513,6 +513,29 @@
       line-height: 1.6;
     }
 
+    .corr-section {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 10px;
+    }
+
+    .corr-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--sub);
+    }
+
+    .corr-text {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    .corr-section + .corr-section { margin-top: 8px; }
+
     /* ── Page Paramètres ── */
     #page-params { display: none; padding: 24px 20px; }
 
@@ -1027,6 +1050,21 @@
       const dom = (c.domaines || []).join(" · ") || "Général";
       const nb  = (c.alertes_ids || []).length;
       const d   = c.date ? new Date(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "";
+      // Nouvelles corrélations ont contexte/analyse/implication, anciennes ont synthese
+      const corps = c.contexte
+        ? `<div class="corr-section">
+             <span class="corr-label">Lien</span>
+             <span class="corr-text">${esc(c.contexte)}</span>
+           </div>
+           <div class="corr-section">
+             <span class="corr-label">Analyse</span>
+             <span class="corr-text">${esc(c.analyse || "")}</span>
+           </div>
+           <div class="corr-section">
+             <span class="corr-label">À surveiller</span>
+             <span class="corr-text">${esc(c.implication || "")}</span>
+           </div>`
+        : `<div class="corr-synthese">${esc(c.synthese || "")}</div>`;
       return `<div class="corr-card">
         <div class="corr-meta">
           <span class="corr-badge">${esc(dom)}</span>
@@ -1034,7 +1072,7 @@
           <span style="font-size:11px;color:var(--sub);margin-left:auto">${d}</span>
         </div>
         <div class="corr-titre">${esc(c.titre || "")}</div>
-        <div class="corr-synthese">${esc(c.synthese || "")}</div>
+        ${corps}
       </div>`;
     }).join("");
   }

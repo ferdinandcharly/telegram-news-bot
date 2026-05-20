@@ -785,7 +785,6 @@ def generer_correlations(user_id=None, domaines_user=None):
     depuis = (datetime.now() - timedelta(hours=24)).isoformat()
     alertes_24h = [a for a in alertes if a.get("date", "") >= depuis]
 
-    # Filtrer par domaines de l'utilisateur
     if domaines_user:
         mots = [d.split(" ", 1)[-1] for d in domaines_user]
         alertes_24h = [a for a in alertes_24h
@@ -796,26 +795,51 @@ def generer_correlations(user_id=None, domaines_user=None):
         return
 
     alertes_compact = [
-        {"id": a["id"], "titre": a["titre"],
-         "domaine": a["domaine"], "accroche": a.get("accroche", "")}
+        {
+            "id":      a["id"],
+            "titre":   a["titre"],
+            "domaine": a["domaine"],
+            "accroche": a.get("accroche", ""),
+            "contexte": a.get("contexte", ""),
+        }
         for a in alertes_24h
     ]
 
     prompt = (
-        "Tu es un analyste. Voici les alertes des dernières 24h :\n"
+        "Tu es un analyste géopolitique, scientifique et économique senior. "
+        "Voici les alertes d'actualité des dernières 24h :\n"
         + json.dumps(alertes_compact, ensure_ascii=False)
-        + "\n\nIdentifie les groupes d'événements liés (même sujet, région ou thème)."
-        " Pour chaque groupe de 2+ alertes corrélées, génère une synthèse en français."
-        " Réponds JSON uniquement :\n"
-        '[{"titre":"...","synthese":"3-4 phrases","alertes_ids":[id1,id2],"domaines":["🌍 Géopolitique"]}]\n'
-        "Si aucune corrélation, réponds []."
+        + """
+
+Identifie les groupes d'événements qui se répondent ou s'influencent mutuellement.
+Pour chaque groupe de 2 alertes ou plus, génère une analyse structurée en français.
+
+Critères pour former un groupe :
+- Même crise ou conflit qui évolue
+- Réaction en chaîne (décision A → conséquence B → réponse C)
+- Même acteur impliqué dans plusieurs événements
+- Tension entre deux infos contradictoires sur le même sujet
+
+Pour chaque groupe, fournis :
+- titre : formulation courte et percutante (max 10 mots)
+- contexte : pourquoi ces événements sont liés (1-2 phrases)
+- analyse : ce que ça signifie concrètement, l'enjeu réel (2-3 phrases)
+- implication : ce qui pourrait se passer ensuite ou ce qu'on surveille (1-2 phrases)
+- alertes_ids : liste des ids concernés
+- domaines : liste des domaines impliqués
+
+Réponds uniquement avec ce JSON, sans texte autour :
+[{"titre":"...","contexte":"...","analyse":"...","implication":"...","alertes_ids":[id1,id2],"domaines":["🌍 Géopolitique"]}]
+
+Si aucun groupe pertinent, réponds [].
+Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
     )
 
     try:
         rep = bot.client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=800, temperature=0.3,
+            max_tokens=1500, temperature=0.2,
         )
         contenu = rep.choices[0].message.content.strip()
         debut = contenu.find("[")
@@ -829,10 +853,11 @@ def generer_correlations(user_id=None, domaines_user=None):
         print(f"[Corrélation] Aucune corrélation pour {user_id or 'global'}")
         return
 
-    # Sauvegarder dans Supabase
+    # Sauvegarder dans Supabase (synthese = contexte + analyse + implication pour compat affichage)
     for i, c in enumerate(correlations):
-        c["id"]   = int(datetime.now().timestamp() * 1000) + i
-        c["date"] = datetime.now().isoformat()
+        c["id"]      = int(datetime.now().timestamp() * 1000) + i
+        c["date"]    = datetime.now().isoformat()
+        c["synthese"] = f"{c.get('contexte', '')} {c.get('analyse', '')} {c.get('implication', '')}".strip()
         try:
             http.post(sb("correlations"),
                       headers={**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"},
@@ -843,9 +868,10 @@ def generer_correlations(user_id=None, domaines_user=None):
     # Push à l'utilisateur spécifique
     if user_id and correlations:
         url = f"{APP_URL}/#correlations" if APP_URL else "/"
-        titre_push = f"🌅 {len(correlations)} corrélation(s) du jour"
-        body_push  = correlations[0]["titre"]
-        envoyer_push_user(user_id, titre_push, body_push, url)
+        titres = " · ".join(c["titre"] for c in correlations[:2])
+        envoyer_push_user(user_id,
+                          f"🌅 {len(correlations)} corrélation(s) du jour",
+                          titres[:120], url)
 
     # Telegram une seule fois par jour
     today = dt_date.today()
@@ -854,7 +880,12 @@ def generer_correlations(user_id=None, domaines_user=None):
         date_str = datetime.now().strftime("%d/%m/%Y")
         msg = f"🌅 *Résumé matinal — {date_str}*\n_{len(alertes_24h)} alertes analysées_\n\n"
         for c in correlations[:5]:
-            msg += f"*{c['titre']}*\n{c['synthese']}\n\n"
+            msg += (
+                f"*{c['titre']}*\n"
+                f"_{c.get('contexte', '')}_ \n"
+                f"{c.get('analyse', '')}\n"
+                f"👉 {c.get('implication', '')}\n\n"
+            )
         bot.envoyer(msg)
 
     print(f"[Corrélation] {len(correlations)} corrélation(s) pour {user_id or 'global'}")
@@ -866,13 +897,19 @@ def check_resumes_matinaux(heure):
         return
     today = dt_date.today().isoformat()
     try:
+        # Récupérer aussi last_recap_date pour éviter les doublons au redémarrage
         r = http.get(sb("user_preferences"), headers=SB_SERVICE,
                      params={"heure_recap": f"eq.{heure}",
-                             "select": "user_id,domaines"}, timeout=5)
+                             "select": "user_id,domaines,last_recap_date"}, timeout=5)
         for u in (r.json() if r.ok else []):
             uid = u.get("user_id")
-            if uid and _resumes_envoyes.get(uid) != today:
+            last = u.get("last_recap_date", "")
+            if uid and last != today and _resumes_envoyes.get(uid) != today:
                 _resumes_envoyes[uid] = today
+                # Marquer dans Supabase avant de générer (évite doublon si crash)
+                http.patch(sb("user_preferences"), headers=SB_SERVICE,
+                           params={"user_id": f"eq.{uid}"},
+                           json={"last_recap_date": today}, timeout=5)
                 generer_correlations(user_id=uid, domaines_user=u.get("domaines") or [])
     except Exception as e:
         print(f"[Resume] Erreur : {e}")
@@ -906,6 +943,12 @@ def nettoyer_vieilles_alertes():
 
         if r1.ok or r2.ok:
             print("Nettoyage Supabase : alertes non sauvegardées > 3j et sauvegardées > 30j supprimées")
+
+        # Supprimer corrélations > 30 jours
+        r3 = http.delete(sb("correlations"), headers=SB_SERVICE,
+                         params={"date": f"lt.{limite_sauvegardees}"}, timeout=10)
+        if r3.ok:
+            print("Nettoyage Supabase : corrélations > 30j supprimées")
     except Exception as e:
         print(f"Erreur nettoyage : {e}")
 
