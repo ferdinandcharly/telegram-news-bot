@@ -720,7 +720,7 @@ def api_preferences():
         return jsonify({"erreur": "non authentifié"}), 401
     data  = request.get_json()
     prefs = {"user_id": user_id}
-    for key in ("display_name", "theme", "domaines"):
+    for key in ("display_name", "theme", "domaines", "niveau_notif", "heure_recap"):
         if key in data:
             prefs[key] = data[key]
     http.post(sb("user_preferences"),
