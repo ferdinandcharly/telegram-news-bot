@@ -944,11 +944,12 @@ def nettoyer_vieilles_alertes():
         if r1.ok or r2.ok:
             print("Nettoyage Supabase : alertes non sauvegardées > 3j et sauvegardées > 30j supprimées")
 
-        # Supprimer corrélations > 30 jours
+        # Supprimer corrélations > 3 jours
+        limite_corr = (datetime.now() - timedelta(days=3)).isoformat()
         r3 = http.delete(sb("correlations"), headers=SB_SERVICE,
-                         params={"date": f"lt.{limite_sauvegardees}"}, timeout=10)
+                         params={"date": f"lt.{limite_corr}"}, timeout=10)
         if r3.ok:
-            print("Nettoyage Supabase : corrélations > 30j supprimées")
+            print("Nettoyage Supabase : corrélations > 3j supprimées")
     except Exception as e:
         print(f"Erreur nettoyage : {e}")
 
