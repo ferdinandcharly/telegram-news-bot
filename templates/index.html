@@ -757,10 +757,35 @@
     </div>
     <div class="param-row">
       <div><div class="param-label">Nom d'affichage</div></div>
-      <input type="text" id="input-display-name" placeholder="Ton prénom"
-             style="width:130px;padding:7px 10px;background:var(--surface);border:1px solid var(--line);
-                    border-radius:8px;color:var(--text);font-size:13px;outline:none"
-             onblur="sauverDisplayName(this.value)"/>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="dn-texte" style="font-size:14px;color:var(--sub)">—</span>
+        <button id="dn-btn-edit" onclick="toggleEditNom()"
+                style="background:none;border:none;color:var(--sub);cursor:pointer;font-size:14px;padding:2px">✎</button>
+        <input type="text" id="dn-input" maxlength="30"
+               style="display:none;width:100px;padding:5px 8px;background:var(--surface);
+                      border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:13px;outline:none"/>
+        <button id="dn-btn-save" onclick="sauverNomEdit()"
+                style="display:none;background:none;border:none;color:var(--text);cursor:pointer;font-size:14px;padding:2px">✓</button>
+      </div>
+    </div>
+    <div class="param-row">
+      <div>
+        <div class="param-label">Résumé matinal</div>
+        <div class="param-sub">Heure des corrélations</div>
+      </div>
+      <select id="select-heure-recap" onchange="sauverHeureRecap(this.value)"
+              style="padding:6px 10px;background:var(--surface);border:1px solid var(--line);
+                     border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="6">6h00</option>
+        <option value="7">7h00</option>
+        <option value="8">8h00</option>
+        <option value="9">9h00</option>
+        <option value="10">10h00</option>
+        <option value="12">12h00</option>
+        <option value="18">18h00</option>
+        <option value="20">20h00</option>
+        <option value="21">21h00</option>
+      </select>
     </div>
   </div>
 
@@ -1171,11 +1196,41 @@
     }
   }
 
-  function sauverDisplayName(val) {
-    if (!val.trim()) return;
-    fetch("/api/preferences", { method: "POST",
+  function toggleEditNom() {
+    const texte  = document.getElementById("dn-texte");
+    const input  = document.getElementById("dn-input");
+    const btnEdit = document.getElementById("dn-btn-edit");
+    const btnSave = document.getElementById("dn-btn-save");
+    input.value = texte.textContent === "—" ? "" : texte.textContent;
+    texte.style.display  = "none";
+    btnEdit.style.display = "none";
+    input.style.display  = "inline-block";
+    btnSave.style.display = "inline-block";
+    input.focus();
+  }
+
+  async function sauverNomEdit() {
+    const input  = document.getElementById("dn-input");
+    const texte  = document.getElementById("dn-texte");
+    const btnEdit = document.getElementById("dn-btn-edit");
+    const btnSave = document.getElementById("dn-btn-save");
+    const val = input.value.trim();
+    if (!val) return;
+    await fetch("/api/preferences", { method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ display_name: val.trim() }) });
+      body: JSON.stringify({ display_name: val }) });
+    texte.textContent = val;
+    document.getElementById("user-email").textContent = val;
+    input.style.display  = "none";
+    btnSave.style.display = "none";
+    texte.style.display  = "inline";
+    btnEdit.style.display = "inline-block";
+  }
+
+  async function sauverHeureRecap(val) {
+    await fetch("/api/preferences", { method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ heure_recap: parseInt(val) }) });
   }
 
   // ── Init ─────────────────────────────────────────────────────────────────
@@ -1187,13 +1242,18 @@
 
     // nom d'affichage
     const dn = data.preferences.display_name;
+    const dnTexte = document.getElementById("dn-texte");
     if (dn) {
       document.getElementById("user-email").textContent = dn;
-      const inp = document.getElementById("input-display-name");
-      if (inp) inp.value = dn;
+      if (dnTexte) dnTexte.textContent = dn;
     } else {
       document.getElementById("user-email").textContent = data.email;
+      if (dnTexte) dnTexte.textContent = data.email;
     }
+
+    // heure recap
+    const selectHeure = document.getElementById("select-heure-recap");
+    if (selectHeure) selectHeure.value = String(data.preferences.heure_recap ?? 8);
 
     // domaines préférés
     userDomaines = data.preferences.domaines || [];

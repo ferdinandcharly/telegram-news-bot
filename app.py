@@ -274,6 +274,27 @@ input[type=text]:focus { border-color: var(--sub); }
   </div>
 </div>
 
+<div class="step">
+  <div class="step-num">Étape 4</div>
+  <div class="step-title">Résumé matinal</div>
+  <div style="font-size:13px;color:var(--sub);margin-bottom:14px">Reçois chaque matin une synthèse des infos de la nuit</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <label style="font-size:14px;color:var(--text)">Heure de la corrélation</label>
+    <select id="select-heure-recap-ob"
+            style="padding:6px 10px;background:var(--surface);border:1px solid var(--line);
+                   border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      <option value="5">5h00</option>
+      <option value="6">6h00</option>
+      <option value="7">7h00</option>
+      <option value="8" selected>8h00</option>
+      <option value="9">9h00</option>
+      <option value="10">10h00</option>
+      <option value="11">11h00</option>
+      <option value="12">12h00</option>
+    </select>
+  </div>
+</div>
+
 <div class="cta">
   <button class="btn-go" id="btn-go" onclick="submit()">Commencer →</button>
   <a href="/cancel-register" style="display:block;text-align:center;margin-top:16px;
@@ -299,11 +320,12 @@ input[type=text]:focus { border-color: var(--sub); }
 
     const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
     const display_name = document.getElementById("display-name").value.trim();
+    const heure_recap  = parseInt(document.getElementById("select-heure-recap-ob").value);
 
     await fetch("/api/preferences", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ display_name, theme, domaines })
+      body: JSON.stringify({ display_name, theme, domaines, heure_recap })
     });
     window.location.href = "/";
   }
@@ -350,7 +372,7 @@ def charger_alertes():
     if SUPABASE_URL:
         try:
             r = http.get(sb("alertes"), headers=SB_SERVICE,
-                         params={"order": "date.desc", "limit": "200"}, timeout=10)
+                         params={"order": "date.desc", "limit": "500"}, timeout=10)
             if r.ok:
                 return r.json()
         except Exception as e:
@@ -421,7 +443,7 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
         "niveau":      niveau,
     }
     alertes.insert(0, alerte)
-    if len(alertes) > 200:
+    if len(alertes) > 500:
         alertes.pop()
     sauver_alerte(alerte)
 
@@ -670,6 +692,7 @@ def api_init():
         "theme":        prefs_row.get("theme")        or "dark"             if prefs_row else "dark",
         "domaines":     prefs_row.get("domaines")     or list(bot.FLUX.keys()) if prefs_row else list(bot.FLUX.keys()),
         "niveau_notif": prefs_row.get("niveau_notif") or 3                 if prefs_row else 3,
+        "heure_recap":  prefs_row.get("heure_recap")  or 8                 if prefs_row else 8,
     }
 
     # filtrer par domaines préférés
@@ -730,17 +753,46 @@ def index():
 
 
 # ── Bot en arrière-plan ───────────────────────────────────────────────────────
-_dernier_resume = None
+_resumes_envoyes   = {}  # {user_id: date_string}
+_telegram_envoye   = None
 
-def generer_correlations():
-    """Analyse les alertes des dernières 24h, détecte les corrélations, envoie le résumé Telegram."""
-    global _dernier_resume
+def envoyer_push_user(user_id, titre, body, url):
+    """Envoie une push notification à un utilisateur spécifique."""
+    if not VAPID_PRIVATE_FILE:
+        return
+    try:
+        from pywebpush import webpush
+        r = http.get(sb("user_subscriptions"), headers=SB_SERVICE,
+                     params={"user_id": f"eq.{user_id}"}, timeout=5)
+        for item in (r.json() if r.ok else []):
+            sub = item.get("subscription")
+            if not sub:
+                continue
+            try:
+                webpush(subscription_info=sub,
+                        data=json.dumps({"title": titre, "body": body, "url": url}),
+                        vapid_private_key=VAPID_PRIVATE_FILE,
+                        vapid_claims={"sub": "mailto:ferdinandcharly@gmail.com"})
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[Push user] {e}")
+
+def generer_correlations(user_id=None, domaines_user=None):
+    """Analyse les alertes des dernières 24h filtrées par domaines, génère les corrélations."""
+    global _telegram_envoye
 
     depuis = (datetime.now() - timedelta(hours=24)).isoformat()
     alertes_24h = [a for a in alertes if a.get("date", "") >= depuis]
 
+    # Filtrer par domaines de l'utilisateur
+    if domaines_user:
+        mots = [d.split(" ", 1)[-1] for d in domaines_user]
+        alertes_24h = [a for a in alertes_24h
+                       if any(m in a.get("domaine", "") for m in mots)]
+
     if len(alertes_24h) < 2:
-        print("[Corrélation] Pas assez d'alertes pour analyser.")
+        print(f"[Corrélation] Pas assez d'alertes ({len(alertes_24h)}) pour {user_id or 'global'}")
         return
 
     alertes_compact = [
@@ -774,12 +826,12 @@ def generer_correlations():
         return
 
     if not correlations:
-        print("[Corrélation] Aucune corrélation détectée.")
+        print(f"[Corrélation] Aucune corrélation pour {user_id or 'global'}")
         return
 
     # Sauvegarder dans Supabase
-    for c in correlations:
-        c["id"]   = int(datetime.now().timestamp() * 1000) + correlations.index(c)
+    for i, c in enumerate(correlations):
+        c["id"]   = int(datetime.now().timestamp() * 1000) + i
         c["date"] = datetime.now().isoformat()
         try:
             http.post(sb("correlations"),
@@ -788,28 +840,72 @@ def generer_correlations():
         except Exception as e:
             print(f"[Corrélation] Erreur sauvegarde : {e}")
 
-    # Résumé Telegram
-    date_str = datetime.now().strftime("%d/%m/%Y")
-    msg = f"🌅 *Résumé matinal — {date_str}*\n_{len(alertes_24h)} alertes hier_\n\n"
-    for c in correlations[:5]:
-        msg += f"*{c['titre']}*\n{c['synthese']}\n\n"
-    bot.envoyer(msg)
+    # Push à l'utilisateur spécifique
+    if user_id and correlations:
+        url = f"{APP_URL}/#correlations" if APP_URL else "/"
+        titre_push = f"🌅 {len(correlations)} corrélation(s) du jour"
+        body_push  = correlations[0]["titre"]
+        envoyer_push_user(user_id, titre_push, body_push, url)
 
-    _dernier_resume = dt_date.today()
-    print(f"[Corrélation] {len(correlations)} corrélation(s) générée(s) et envoyées.")
+    # Telegram une seule fois par jour
+    today = dt_date.today()
+    if _telegram_envoye != today:
+        _telegram_envoye = today
+        date_str = datetime.now().strftime("%d/%m/%Y")
+        msg = f"🌅 *Résumé matinal — {date_str}*\n_{len(alertes_24h)} alertes analysées_\n\n"
+        for c in correlations[:5]:
+            msg += f"*{c['titre']}*\n{c['synthese']}\n\n"
+        bot.envoyer(msg)
+
+    print(f"[Corrélation] {len(correlations)} corrélation(s) pour {user_id or 'global'}")
+
+
+def check_resumes_matinaux(heure):
+    """Envoie le résumé aux utilisateurs qui ont choisi cette heure."""
+    if not SUPABASE_URL:
+        return
+    today = dt_date.today().isoformat()
+    try:
+        r = http.get(sb("user_preferences"), headers=SB_SERVICE,
+                     params={"heure_recap": f"eq.{heure}",
+                             "select": "user_id,domaines"}, timeout=5)
+        for u in (r.json() if r.ok else []):
+            uid = u.get("user_id")
+            if uid and _resumes_envoyes.get(uid) != today:
+                _resumes_envoyes[uid] = today
+                generer_correlations(user_id=uid, domaines_user=u.get("domaines") or [])
+    except Exception as e:
+        print(f"[Resume] Erreur : {e}")
 
 
 def nettoyer_vieilles_alertes():
-    """Supprime les alertes Supabase de plus de 30 jours."""
+    """Supprime les alertes non sauvegardées de plus de 3 jours, conserve les sauvegardées jusqu'à 30 jours."""
     if not SUPABASE_URL:
         return
     try:
         from datetime import timedelta
-        limite = (datetime.now() - timedelta(days=30)).isoformat()
-        r = http.delete(sb("alertes"), headers=SB_SERVICE,
-                        params={"date": f"lt.{limite}"}, timeout=10)
-        if r.ok:
-            print(f"Nettoyage Supabase : alertes > 30j supprimées")
+        # Récupérer tous les IDs sauvegardés par des utilisateurs
+        r_saved = http.get(sb("user_sauvegardes"), headers=SB_SERVICE,
+                           params={"select": "alerte_id"}, timeout=10)
+        saved_ids = []
+        if r_saved.ok:
+            saved_ids = [str(row["alerte_id"]) for row in r_saved.json()]
+
+        # Supprimer alertes non sauvegardées > 3 jours
+        limite_non_sauvegardees = (datetime.now() - timedelta(days=3)).isoformat()
+        params_non_sauvegardees = {"date": f"lt.{limite_non_sauvegardees}"}
+        if saved_ids:
+            params_non_sauvegardees["id"] = f"not.in.({','.join(saved_ids)})"
+        r1 = http.delete(sb("alertes"), headers=SB_SERVICE,
+                         params=params_non_sauvegardees, timeout=10)
+
+        # Supprimer alertes sauvegardées > 30 jours
+        limite_sauvegardees = (datetime.now() - timedelta(days=30)).isoformat()
+        r2 = http.delete(sb("alertes"), headers=SB_SERVICE,
+                         params={"date": f"lt.{limite_sauvegardees}"}, timeout=10)
+
+        if r1.ok or r2.ok:
+            print("Nettoyage Supabase : alertes non sauvegardées > 3j et sauvegardées > 30j supprimées")
     except Exception as e:
         print(f"Erreur nettoyage : {e}")
 
@@ -827,10 +923,10 @@ def boucle():
         bot.verifier()
         cycles += 1
 
-        # résumé matinal + corrélations à 8h
+        # résumé matinal : vérifier chaque heure
         now = datetime.now()
-        if now.hour == 8 and _dernier_resume != dt_date.today():
-            generer_correlations()
+        if now.minute < 15:  # fenêtre de 15 min par heure
+            check_resumes_matinaux(now.hour)
 
         # nettoyage Supabase une fois par jour
         if cycles % 96 == 0:
