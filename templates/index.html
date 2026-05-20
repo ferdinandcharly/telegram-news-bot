@@ -593,6 +593,16 @@
       </div>
       <button class="btn-notif" id="btn-notif" onclick="toggleNotifications()">Activer</button>
     </div>
+    <div class="param-row" id="row-notif-important" style="display:none">
+      <div>
+        <div class="param-label">Push pour Important</div>
+        <div class="param-sub">Recevoir aussi les alertes niveau 🟡</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-notif-important" onchange="updateNiveauNotif()" />
+        <span class="slider"></span>
+      </label>
+    </div>
   </div>
 
   <div class="params-bloc">
@@ -868,6 +878,28 @@
     return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
   }
 
+  function getNiveauMin() {
+    return document.getElementById("toggle-notif-important").checked ? 2 : 3;
+  }
+
+  async function abonner(niveauMin) {
+    if (!VAPID_PUBLIC) {
+      const data = await fetch("/api/vapid-public").then(r => r.json());
+      VAPID_PUBLIC = data.key;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC),
+    });
+    await fetch("/api/subscribe", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ subscription: sub.toJSON(), niveau_min: niveauMin })
+    });
+    return sub;
+  }
+
   async function toggleNotifications() {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       document.getElementById("notif-status").textContent = "Non supportées par ce navigateur";
@@ -875,7 +907,6 @@
     }
     const btn = document.getElementById("btn-notif");
     if (btn.classList.contains("active")) {
-      // Désactiver
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
@@ -885,6 +916,7 @@
       btn.textContent = "Activer";
       btn.classList.remove("active");
       document.getElementById("notif-status").textContent = "Non activées";
+      document.getElementById("row-notif-important").style.display = "none";
       return;
     }
     const permission = await Notification.requestPermission();
@@ -893,22 +925,21 @@
       return;
     }
     try {
-      if (!VAPID_PUBLIC) {
-        const data = await fetch("/api/vapid-public").then(r => r.json());
-        VAPID_PUBLIC = data.key;
-      }
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC),
-      });
-      await fetch("/api/subscribe", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(sub.toJSON()) });
+      await abonner(getNiveauMin());
       btn.textContent = "Activées ✓";
       btn.classList.add("active");
       document.getElementById("notif-status").textContent = "Activées sur cet appareil";
+      document.getElementById("row-notif-important").style.display = "flex";
     } catch (e) {
       document.getElementById("notif-status").textContent = "Erreur : " + e.message;
     }
+  }
+
+  async function updateNiveauNotif() {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return;
+    await abonner(getNiveauMin());
   }
 
   async function initNotifications() {
@@ -921,6 +952,7 @@
       btn.textContent = "Activées ✓";
       btn.classList.add("active");
       document.getElementById("notif-status").textContent = "Activées sur cet appareil";
+      document.getElementById("row-notif-important").style.display = "flex";
     }
   }
 

@@ -5,10 +5,12 @@ import base64
 import threading
 import tempfile
 from datetime import datetime
-from flask import Flask, jsonify, send_from_directory, request
+from flask import Flask, jsonify, send_from_directory, request, session, redirect
 import bot
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
+APP_PASSWORD = os.getenv("APP_PASSWORD", "")
 
 # ── Données en mémoire ────────────────────────────────────────────────────────
 alertes            = []
@@ -55,7 +57,7 @@ def init_vapid():
         except Exception as e:
             print(f"Erreur décodage VAPID : {e}")
 
-def envoyer_push(titre, body, url):
+def envoyer_push(titre, body, url, niveau=3):
     if not VAPID_PRIVATE_FILE or not subscriptions_push:
         return
     try:
@@ -63,7 +65,11 @@ def envoyer_push(titre, body, url):
     except ImportError:
         return
     morts = []
-    for sub in subscriptions_push:
+    for item in subscriptions_push:
+        sub = item.get("sub", item) if isinstance(item, dict) else item
+        niveau_min = item.get("niveau_min", 3) if isinstance(item, dict) else 3
+        if niveau < niveau_min:
+            continue
         try:
             webpush(
                 subscription_info=sub,
@@ -73,11 +79,11 @@ def envoyer_push(titre, body, url):
             )
         except Exception as e:
             if hasattr(e, "response") and e.response and e.response.status_code in [404, 410]:
-                morts.append(sub)
+                morts.append(item)
             else:
                 print(f"Push error : {e}")
-    for sub in morts:
-        subscriptions_push.remove(sub)
+    for item in morts:
+        subscriptions_push.remove(item)
     if morts:
         sauver_subscriptions()
 
@@ -188,11 +194,11 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
         alertes.pop()
     sauver_alerte(alerte)
 
-    # push auto uniquement pour les critiques (niveau 3)
-    if niveau >= 3:
-        body = accroche or titre
-        notif_url = f"{APP_URL}/#synthese/{alerte['id']}" if APP_URL else lien
-        envoyer_push(titre=f"🔴 {domaine} — {titre[:50]}", body=body[:120], url=notif_url)
+    # push filtré par préférence de chaque abonné
+    body = accroche or titre
+    notif_url = f"{APP_URL}/#synthese/{alerte['id']}" if APP_URL else lien
+    prefix = "🔴" if niveau >= 3 else "🟡"
+    envoyer_push(titre=f"{prefix} {domaine[:25]} — {titre[:40]}", body=body[:120], url=notif_url, niveau=niveau)
 
 bot.on_alerte = ajouter_alerte
 
@@ -297,10 +303,19 @@ def api_notifier(alerte_id):
 
 @app.route("/api/subscribe", methods=["POST"])
 def api_subscribe():
-    sub = request.get_json()
-    if sub and sub not in subscriptions_push:
-        subscriptions_push.append(sub)
-        sauver_subscriptions()
+    data = request.get_json()
+    if not data:
+        return jsonify({"erreur": "données manquantes"}), 400
+    sub = data.get("subscription") or data
+    niveau_min = int(data.get("niveau_min", 3))
+    endpoint = sub.get("endpoint", "")
+    # remplacer si déjà abonné (mise à jour préférence)
+    subscriptions_push[:] = [
+        i for i in subscriptions_push
+        if (i.get("sub", i) if isinstance(i, dict) else i).get("endpoint") != endpoint
+    ]
+    subscriptions_push.append({"sub": sub, "niveau_min": niveau_min})
+    sauver_subscriptions()
     return jsonify({"ok": True})
 
 @app.route("/api/unsubscribe", methods=["POST"])
@@ -322,6 +337,56 @@ def api_vapid_public():
 def service_worker():
     return send_from_directory("static", "sw.js",
                                mimetype="application/javascript")
+
+_LOGIN_HTML = """<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>News Alert</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#000;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}}
+.box{{width:100%;max-width:320px;padding:0 24px;text-align:center}}
+h1{{font-size:20px;font-weight:700;margin-bottom:8px}}
+p{{font-size:13px;color:#666;margin-bottom:32px}}
+input{{width:100%;padding:14px 16px;background:#111;border:1px solid #222;border-radius:12px;color:#f0f0f0;font-size:16px;margin-bottom:12px;outline:none}}
+button{{width:100%;padding:14px;background:#f0f0f0;color:#000;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}}
+.err{{color:#ef4444;font-size:13px;margin-bottom:12px}}
+</style></head>
+<body><div class="box">
+<h1>News Alert</h1>
+<p>Accès privé</p>
+{error}
+<form method="POST" action="/login">
+<input type="password" name="password" placeholder="Mot de passe" autofocus/>
+<button type="submit">Entrer</button>
+</form>
+</div></body></html>"""
+
+@app.before_request
+def check_auth():
+    if not APP_PASSWORD:
+        return
+    exempts = ["/health", "/sw.js", "/login"]
+    if request.path in exempts:
+        return
+    if not session.get("authenticated"):
+        if request.path.startswith("/api"):
+            return jsonify({"erreur": "non authentifié"}), 401
+        return redirect("/login")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        if request.form.get("password") == APP_PASSWORD:
+            session["authenticated"] = True
+            return redirect("/")
+        return _LOGIN_HTML.format(error='<p class="err">Mot de passe incorrect</p>')
+    return _LOGIN_HTML.format(error="")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
 
 @app.route("/health")
 def health():
