@@ -7,12 +7,31 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
+    :root, [data-theme="dark"] {
       --bg: #000;
       --surface: #0e0e0e;
       --line: #1e1e1e;
       --text: #f0f0f0;
       --sub: #666;
+    }
+
+    [data-theme="dim"] {
+      --bg: #161b22;
+      --surface: #1c2128;
+      --line: #30363d;
+      --text: #e6edf3;
+      --sub: #8b949e;
+    }
+
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --surface: #f6f8fa;
+      --line: #e1e4e8;
+      --text: #24292f;
+      --sub: #57606a;
+    }
+
+    :root {
       --geo:    #e07b39;
       --sci:    #5b8dee;
       --tech:   #a855f7;
@@ -180,18 +199,26 @@
     .carte-heure { font-size: 11px; color: var(--sub); }
 
     .btn-save {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
       background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      line-height: 1;
-      padding: 2px;
       color: var(--sub);
-      transition: color 0.15s;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
       flex-shrink: 0;
+      white-space: nowrap;
     }
 
-    .btn-save.saved { color: var(--text); }
+    .btn-save.saved {
+      border-color: var(--text);
+      color: var(--text);
+    }
 
     .carte-titre {
       font-size: 15px;
@@ -446,6 +473,23 @@
     .param-label { font-size: 14px; font-weight: 500; }
     .param-sub   { font-size: 12px; color: var(--sub); margin-top: 2px; }
 
+    .btn-theme {
+      padding: 5px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: none;
+      color: var(--sub);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-theme.actif {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
     .btn-notif {
       padding: 7px 14px;
       background: none;
@@ -623,6 +667,25 @@
   </div>
 
   <div class="params-bloc">
+    <div class="params-titre">Apparence</div>
+    <div class="param-row">
+      <div><div class="param-label">Thème</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-theme" data-t="dark" onclick="setTheme('dark')">Dark</button>
+        <button class="btn-theme" data-t="dim" onclick="setTheme('dim')">Dim</button>
+        <button class="btn-theme" data-t="light" onclick="setTheme('light')">Light</button>
+      </div>
+    </div>
+    <div class="param-row">
+      <div><div class="param-label">Nom d'affichage</div></div>
+      <input type="text" id="input-display-name" placeholder="Ton prénom"
+             style="width:130px;padding:7px 10px;background:var(--surface);border:1px solid var(--line);
+                    border-radius:8px;color:var(--text);font-size:13px;outline:none"
+             onblur="sauverDisplayName(this.value)"/>
+    </div>
+  </div>
+
+  <div class="params-bloc">
     <div class="params-titre">Système</div>
     <div class="param-row">
       <div><div class="param-label">Fréquence</div><div class="param-sub">Vérification toutes les 15 min</div></div>
@@ -757,12 +820,11 @@
             <span class="carte-domaine">${dom.label}</span>
             <span class="carte-heure">${formatHeure(a.date)}</span>
           </div>
-          <div style="display:flex;gap:4px;align-items:center">
+          <div style="display:flex;gap:6px;align-items:center">
             ${clocheBtnHtml}
             <button class="btn-save ${saved ? 'saved' : ''}"
-              onclick="event.stopPropagation(); toggleSave(${a.id}, this)"
-              title="${saved ? 'Retirer' : 'Sauvegarder'}">
-              ${saved ? '◆' : '◇'}
+              onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
+              ${saved ? '◆ Sauvegardé' : '◇ Sauvegarder'}
             </button>
           </div>
         </div>
@@ -791,10 +853,6 @@
   }
 
   // ── Sauvegardés ─────────────────────────────────────────────────────────
-  async function chargerSavedIds() {
-    const ids = await fetch("/api/sauvegardes/ids").then(r => r.json());
-    savedIds = new Set(ids);
-  }
 
   async function chargerSauvegardes() {
     const alertes = await fetch("/api/sauvegardes").then(r => r.json());
@@ -882,7 +940,7 @@
       .filter(([id]) => document.getElementById(id)?.checked)
       .map(([, label]) => label);
 
-    await fetch("/api/domaines", {
+    await fetch("/api/preferences", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ domaines }),
@@ -976,10 +1034,45 @@
     }
   }
 
-  // ── Préférences domaines ─────────────────────────────────────────────────
-  async function chargerPreferences() {
-    const domaines = await fetch("/api/domaines").then(r => r.json()).catch(() => []);
-    if (!domaines.length) return;
+
+  // ── Thème ─────────────────────────────────────────────────────────────────
+  function setTheme(t, save = true) {
+    document.documentElement.setAttribute("data-theme", t);
+    document.querySelectorAll(".btn-theme").forEach(b => {
+      b.classList.toggle("actif", b.dataset.t === t);
+    });
+    if (save) {
+      fetch("/api/preferences", { method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ theme: t }) });
+    }
+  }
+
+  function sauverDisplayName(val) {
+    if (!val.trim()) return;
+    fetch("/api/preferences", { method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ display_name: val.trim() }) });
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  async function init() {
+    const data = await fetch("/api/init").then(r => r.json());
+
+    // thème
+    setTheme(data.preferences.theme || "dark", false);
+
+    // nom d'affichage
+    const dn = data.preferences.display_name;
+    if (dn) {
+      document.getElementById("user-email").textContent = dn;
+      const inp = document.getElementById("input-display-name");
+      if (inp) inp.value = dn;
+    } else {
+      document.getElementById("user-email").textContent = data.email;
+    }
+
+    // domaines
     const map = [
       ["toggle-geo",     "🌍 Géopolitique"],
       ["toggle-sci",     "🔬 Science"],
@@ -990,16 +1083,12 @@
     ];
     map.forEach(([id, label]) => {
       const el = document.getElementById(id);
-      if (el) el.checked = domaines.includes(label);
+      if (el) el.checked = data.preferences.domaines.includes(label);
     });
-  }
 
-  // ── Init ─────────────────────────────────────────────────────────────────
-  async function init() {
-    await chargerSavedIds();
-    await chargerPreferences();
-    const data = await fetch("/api/alertes").then(r => r.json());
-    alertesCache = data;
+    // alertes & sauvegardes
+    savedIds    = new Set(data.saved_ids);
+    alertesCache = data.alertes;
     chargerAlertes();
     chargerStats();
   }

@@ -5,6 +5,7 @@ import base64
 import threading
 import tempfile
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, send_from_directory, request, session, redirect
 import requests as http
 import bot
@@ -114,6 +115,13 @@ def login():
                 session["refresh_token"] = d.get("refresh_token")
                 session["user_id"]       = d["user"]["id"]
                 session["user_email"]    = d["user"]["email"]
+                # vérifier si nouvel utilisateur
+                r2 = http.get(sb("user_preferences"),
+                              headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {d['access_token']}",
+                                       "Content-Type": "application/json"},
+                              params={"user_id": f"eq.{d['user']['id']}"}, timeout=5)
+                if r2.ok and not r2.json():
+                    return redirect("/onboarding")
                 return redirect("/")
             return _page_auth("Connexion", _FORM_LOGIN,
                               "Email ou mot de passe incorrect",
@@ -148,7 +156,7 @@ def register():
                     session["refresh_token"] = d.get("refresh_token")
                     session["user_id"]       = d["user"]["id"]
                     session["user_email"]    = d["user"]["email"]
-                    return redirect("/")
+                    return redirect("/onboarding")
                 return _page_auth("Vérifie tes emails",
                                   "<p style='color:#888;font-size:14px'>Lien de confirmation envoyé.</p>",
                                   "", '<a href="/login">Se connecter</a>')
@@ -165,9 +173,113 @@ def logout():
     session.clear()
     return redirect("/login")
 
+_ONBOARDING_HTML = """<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>News Alert — Bienvenue</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#000;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      min-height:100vh;padding:40px 24px 60px}}
+h1{{font-size:22px;font-weight:700;margin-bottom:6px}}
+.sub{{font-size:14px;color:#666;margin-bottom:32px}}
+.section{{margin-bottom:28px}}
+.section-title{{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;
+                color:#555;margin-bottom:12px}}
+input[type=text]{{width:100%;padding:13px 16px;background:#111;border:1px solid #222;
+                  border-radius:10px;color:#f0f0f0;font-size:15px;outline:none}}
+input[type=text]:focus{{border-color:#444}}
+.domains{{display:flex;flex-wrap:wrap;gap:8px}}
+.domain-btn{{padding:8px 16px;border-radius:20px;border:1px solid #222;background:none;
+             color:#666;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s}}
+.domain-btn.on{{border-color:#f0f0f0;color:#f0f0f0;background:#111}}
+.themes{{display:flex;gap:10px}}
+.theme-btn{{flex:1;padding:14px 8px;border-radius:12px;border:2px solid #222;
+            background:none;cursor:pointer;display:flex;flex-direction:column;
+            align-items:center;gap:6px;transition:all 0.15s}}
+.theme-btn.on{{border-color:#f0f0f0}}
+.theme-preview{{width:100%;height:28px;border-radius:6px}}
+.t-dark{{background:#000}}
+.t-dim{{background:#161b22}}
+.t-light{{background:#fff;border:1px solid #ddd}}
+.theme-label{{font-size:12px;color:#888}}
+.theme-btn.on .theme-label{{color:#f0f0f0}}
+button[type=submit]{{width:100%;padding:14px;background:#f0f0f0;color:#000;border:none;
+                     border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;
+                     margin-top:16px}}
+</style></head>
+<body>
+<h1>Bienvenue 👋</h1>
+<p class="sub">Configure ton expérience en quelques secondes</p>
+<form id="form">
+  <div class="section">
+    <div class="section-title">Comment t'appeler ?</div>
+    <input type="text" id="display-name" placeholder="Ton prénom ou pseudo"/>
+  </div>
+  <div class="section">
+    <div class="section-title">Sujets qui t'intéressent</div>
+    <div class="domains" id="domains">
+      <button type="button" class="domain-btn on" data-d="🌍 Géopolitique">🌍 Géopolitique</button>
+      <button type="button" class="domain-btn on" data-d="🔬 Science">🔬 Science</button>
+      <button type="button" class="domain-btn on" data-d="💻 Tech &amp; IA">💻 Tech &amp; IA</button>
+      <button type="button" class="domain-btn on" data-d="💰 Finance">💰 Finance</button>
+      <button type="button" class="domain-btn on" data-d="🌱 Environnement">🌱 Environnement</button>
+      <button type="button" class="domain-btn on" data-d="⚽ Sport">⚽ Sport</button>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Thème</div>
+    <div class="themes">
+      <button type="button" class="theme-btn on" data-t="dark">
+        <div class="theme-preview t-dark"></div>
+        <span class="theme-label">Dark</span>
+      </button>
+      <button type="button" class="theme-btn" data-t="dim">
+        <div class="theme-preview t-dim"></div>
+        <span class="theme-label">Dim</span>
+      </button>
+      <button type="button" class="theme-btn" data-t="light">
+        <div class="theme-preview t-light"></div>
+        <span class="theme-label">Light</span>
+      </button>
+    </div>
+  </div>
+  <button type="submit">C'est parti →</button>
+</form>
+<script>
+  document.querySelectorAll(".domain-btn").forEach(b =>
+    b.addEventListener("click", () => b.classList.toggle("on"))
+  );
+  document.querySelectorAll(".theme-btn").forEach(b =>
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".theme-btn").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+    })
+  );
+  document.getElementById("form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const domaines = [...document.querySelectorAll(".domain-btn.on")].map(b => b.dataset.d);
+    const theme    = document.querySelector(".theme-btn.on")?.dataset.t || "dark";
+    const display_name = document.getElementById("display-name").value.trim();
+    await fetch("/api/preferences", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify({{ display_name, theme, domaines }})
+    }});
+    window.location.href = "/";
+  }};
+</script>
+</body></html>"""
+
+@app.route("/onboarding")
+def onboarding():
+    if not session.get("access_token"):
+        return redirect("/login")
+    return _ONBOARDING_HTML
+
 @app.before_request
 def check_auth():
-    exempts = ["/health", "/sw.js", "/login", "/register"]
+    exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding"]
     if request.path in exempts:
         return
     if not session.get("access_token"):
@@ -435,11 +547,70 @@ def api_domaines():
     return jsonify(list(bot.FLUX.keys()))
 
 
+# ── API init (1 seul appel au démarrage) ─────────────────────────────────────
+@app.route("/api/init")
+def api_init():
+    hdrs    = user_headers()
+    user_id = session.get("user_id")
+
+    saved_ids = []
+    prefs_row = None
+
+    if hdrs and user_id:
+        def _get_saved():
+            r = http.get(sb("user_sauvegardes"), headers=hdrs,
+                         params={"select": "alerte_id"}, timeout=8)
+            return [row["alerte_id"] for row in r.json()] if r.ok else []
+
+        def _get_prefs():
+            r = http.get(sb("user_preferences"), headers=hdrs,
+                         params={"user_id": f"eq.{user_id}"}, timeout=8)
+            return r.json()[0] if (r.ok and r.json()) else None
+
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            f_ids   = ex.submit(_get_saved)
+            f_prefs = ex.submit(_get_prefs)
+            saved_ids = f_ids.result()
+            prefs_row = f_prefs.result()
+
+    prefs = {
+        "display_name": prefs_row.get("display_name") or "" if prefs_row else "",
+        "theme":        prefs_row.get("theme")        or "dark" if prefs_row else "dark",
+        "domaines":     prefs_row.get("domaines")     or list(bot.FLUX.keys()) if prefs_row else list(bot.FLUX.keys()),
+    }
+
+    return jsonify({
+        "alertes":      alertes,
+        "saved_ids":    saved_ids,
+        "preferences":  prefs,
+        "email":        session.get("user_email", ""),
+        "is_new_user":  prefs_row is None,
+    })
+
+
+# ── API préférences unifiées ──────────────────────────────────────────────────
+@app.route("/api/preferences", methods=["POST"])
+def api_preferences():
+    hdrs    = user_headers()
+    user_id = session.get("user_id")
+    if not hdrs or not user_id:
+        return jsonify({"erreur": "non authentifié"}), 401
+    data  = request.get_json()
+    prefs = {"user_id": user_id}
+    for key in ("display_name", "theme", "domaines"):
+        if key in data:
+            prefs[key] = data[key]
+    http.post(sb("user_preferences"),
+              headers={**hdrs, "Prefer": "resolution=merge-duplicates,return=minimal"},
+              json=prefs, timeout=10)
+    return jsonify({"ok": True})
+
+
 # ── API info utilisateur ──────────────────────────────────────────────────────
 @app.route("/api/me")
 def api_me():
     return jsonify({
-        "email": session.get("user_email", ""),
+        "email":   session.get("user_email", ""),
         "user_id": session.get("user_id", ""),
     })
 
