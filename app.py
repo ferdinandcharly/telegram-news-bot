@@ -6,43 +6,43 @@ import threading
 import tempfile
 from datetime import datetime
 from flask import Flask, jsonify, send_from_directory, request, session, redirect
+import requests as http
 import bot
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
-APP_PASSWORD = os.getenv("APP_PASSWORD", "")
 
-# ── Données en mémoire ────────────────────────────────────────────────────────
-alertes            = []
-sauvegardes        = set()
-subscriptions_push = []
-
-ALERTES_FILE       = "alertes.json"
-SAUVEGARDES_FILE   = "sauvegardes.json"
-SUBSCRIPTIONS_FILE = "subscriptions.json"
-DOMAINES_DEFAUT    = list(bot.FLUX.keys())
+# ── Mémoire ───────────────────────────────────────────────────────────────────
+alertes   = []
+ALERTES_FILE = "alertes.json"
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
-SB_HEADERS = {}
+SB_SERVICE = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+}
 
-def init_supabase():
-    global SB_HEADERS
-    if SUPABASE_URL and SUPABASE_KEY:
-        SB_HEADERS = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json",
-        }
-        print("Supabase configuré.")
+def sb(table):
+    return f"{SUPABASE_URL}/rest/v1/{table}"
 
-# ── VAPID (push notifications) ────────────────────────────────────────────────
-VAPID_PUBLIC  = os.getenv("VAPID_PUBLIC_KEY", "")
+def sb_auth(path):
+    return f"{SUPABASE_URL}/auth/v1{path}"
+
+def user_headers():
+    token = session.get("access_token")
+    if not token:
+        return None
+    return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+# ── VAPID ─────────────────────────────────────────────────────────────────────
+VAPID_PUBLIC       = os.getenv("VAPID_PUBLIC_KEY", "")
 _VAPID_PRIVATE_B64 = os.getenv("VAPID_PRIVATE_KEY", "")
 VAPID_PRIVATE_FILE = None
-APP_URL = os.getenv("APP_URL", "").rstrip("/")
+APP_URL            = os.getenv("APP_URL", "").rstrip("/")
 
 def init_vapid():
     global VAPID_PRIVATE_FILE
@@ -55,53 +55,133 @@ def init_vapid():
             tmp.write(pem); tmp.close()
             VAPID_PRIVATE_FILE = tmp.name
         except Exception as e:
-            print(f"Erreur décodage VAPID : {e}")
+            print(f"Erreur VAPID : {e}")
 
-def envoyer_push(titre, body, url, niveau=3):
-    if not VAPID_PRIVATE_FILE or not subscriptions_push:
-        return
-    try:
-        from pywebpush import webpush, WebPushException
-    except ImportError:
-        return
-    morts = []
-    for item in subscriptions_push:
-        sub = item.get("sub", item) if isinstance(item, dict) else item
-        niveau_min = item.get("niveau_min", 3) if isinstance(item, dict) else 3
-        if niveau < niveau_min:
-            continue
+
+# ── Pages auth ────────────────────────────────────────────────────────────────
+def _page_auth(sous_titre, form_html, erreur="", lien=""):
+    err = f'<p class="err">{erreur}</p>' if erreur else ""
+    return f"""<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>News Alert</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#000;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      display:flex;align-items:center;justify-content:center;min-height:100vh}}
+.box{{width:100%;max-width:340px;padding:0 24px;text-align:center}}
+h1{{font-size:20px;font-weight:700;margin-bottom:6px}}
+.sub{{font-size:13px;color:#666;margin-bottom:28px}}
+input{{width:100%;padding:13px 16px;background:#111;border:1px solid #222;border-radius:10px;
+       color:#f0f0f0;font-size:15px;margin-bottom:10px;outline:none}}
+input:focus{{border-color:#444}}
+button{{width:100%;padding:13px;background:#f0f0f0;color:#000;border:none;
+        border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}}
+.err{{color:#ef4444;font-size:13px;margin-bottom:10px}}
+.lien{{font-size:13px;color:#555;margin-top:20px}}
+.lien a{{color:#888;text-decoration:none}}
+</style></head>
+<body><div class="box">
+<h1>News Alert</h1>
+<p class="sub">{sous_titre}</p>
+{err}{form_html}
+<p class="lien">{lien}</p>
+</div></body></html>"""
+
+_FORM_LOGIN = """<form method="POST">
+<input type="email" name="email" placeholder="Email" autocomplete="email"/>
+<input type="password" name="password" placeholder="Mot de passe"/>
+<button type="submit">Se connecter</button></form>"""
+
+_FORM_REGISTER = """<form method="POST">
+<input type="email" name="email" placeholder="Email" autocomplete="email"/>
+<input type="password" name="password" placeholder="Mot de passe (6 min.)"/>
+<input type="password" name="confirm" placeholder="Confirmer le mot de passe"/>
+<button type="submit">Créer mon compte</button></form>"""
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        pwd   = request.form.get("password", "")
         try:
-            webpush(
-                subscription_info=sub,
-                data=json.dumps({"title": titre, "body": body, "url": url}),
-                vapid_private_key=VAPID_PRIVATE_FILE,
-                vapid_claims={"sub": "mailto:ferdinandcharly@gmail.com"},
-            )
+            r = http.post(sb_auth("/token?grant_type=password"),
+                          headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                          json={"email": email, "password": pwd}, timeout=10)
+            if r.ok:
+                d = r.json()
+                session["access_token"]  = d["access_token"]
+                session["refresh_token"] = d.get("refresh_token")
+                session["user_id"]       = d["user"]["id"]
+                session["user_email"]    = d["user"]["email"]
+                return redirect("/")
+            return _page_auth("Connexion", _FORM_LOGIN,
+                              "Email ou mot de passe incorrect",
+                              '<a href="/register">Créer un compte</a>')
         except Exception as e:
-            if hasattr(e, "response") and e.response and e.response.status_code in [404, 410]:
-                morts.append(item)
-            else:
-                print(f"Push error : {e}")
-    for item in morts:
-        subscriptions_push.remove(item)
-    if morts:
-        sauver_subscriptions()
+            return _page_auth("Connexion", _FORM_LOGIN, f"Erreur : {e}",
+                              '<a href="/register">Créer un compte</a>')
+    return _page_auth("Connexion", _FORM_LOGIN, "", '<a href="/register">Créer un compte</a>')
 
-
-# ── Persistance ───────────────────────────────────────────────────────────────
-
-def sb_url(table):
-    return f"{SUPABASE_URL}/rest/v1/{table}"
-
-def charger_alertes():
-    if SB_HEADERS:
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        email   = request.form.get("email", "").strip()
+        pwd     = request.form.get("password", "")
+        confirm = request.form.get("confirm", "")
+        if pwd != confirm:
+            return _page_auth("Créer un compte", _FORM_REGISTER,
+                              "Les mots de passe ne correspondent pas",
+                              '<a href="/login">Se connecter</a>')
+        if len(pwd) < 6:
+            return _page_auth("Créer un compte", _FORM_REGISTER,
+                              "Mot de passe trop court (6 min.)",
+                              '<a href="/login">Se connecter</a>')
         try:
-            r = requests.get(
-                sb_url("alertes"),
-                headers={**SB_HEADERS, "Prefer": ""},
-                params={"order": "date.desc", "limit": "200"},
-                timeout=10
-            )
+            r = http.post(sb_auth("/signup"),
+                          headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                          json={"email": email, "password": pwd}, timeout=10)
+            if r.ok:
+                d = r.json()
+                if d.get("access_token"):
+                    session["access_token"]  = d["access_token"]
+                    session["refresh_token"] = d.get("refresh_token")
+                    session["user_id"]       = d["user"]["id"]
+                    session["user_email"]    = d["user"]["email"]
+                    return redirect("/")
+                return _page_auth("Vérifie tes emails",
+                                  "<p style='color:#888;font-size:14px'>Lien de confirmation envoyé.</p>",
+                                  "", '<a href="/login">Se connecter</a>')
+            err = r.json().get("msg") or r.json().get("error_description") or "Erreur"
+            return _page_auth("Créer un compte", _FORM_REGISTER, err,
+                              '<a href="/login">Se connecter</a>')
+        except Exception as e:
+            return _page_auth("Créer un compte", _FORM_REGISTER, f"Erreur : {e}",
+                              '<a href="/login">Se connecter</a>')
+    return _page_auth("Créer un compte", _FORM_REGISTER, "", '<a href="/login">Se connecter</a>')
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+@app.before_request
+def check_auth():
+    exempts = ["/health", "/sw.js", "/login", "/register"]
+    if request.path in exempts:
+        return
+    if not session.get("access_token"):
+        if request.path.startswith("/api"):
+            return jsonify({"erreur": "non authentifié"}), 401
+        return redirect("/login")
+
+
+# ── Alertes (globales) ────────────────────────────────────────────────────────
+def charger_alertes():
+    if SUPABASE_URL:
+        try:
+            r = http.get(sb("alertes"), headers=SB_SERVICE,
+                         params={"order": "date.desc", "limit": "200"}, timeout=10)
             if r.ok:
                 return r.json()
         except Exception as e:
@@ -112,69 +192,51 @@ def charger_alertes():
     return []
 
 def sauver_alerte(alerte):
-    if SB_HEADERS:
+    if SUPABASE_URL:
         try:
-            requests.post(
-                sb_url("alertes"),
-                headers={**SB_HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
-                json=alerte,
-                timeout=10
-            )
+            http.post(sb("alertes"),
+                      headers={**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                      json=alerte, timeout=10)
             return
         except Exception as e:
             print(f"Supabase sauver_alerte : {e}")
     with open(ALERTES_FILE, "w", encoding="utf-8") as f:
         json.dump(alertes, f, ensure_ascii=False, indent=2)
 
-def charger_sauvegardes():
-    if SB_HEADERS:
-        try:
-            r = requests.get(sb_url("sauvegardes"), headers=SB_HEADERS, timeout=10)
-            if r.ok:
-                return set(row["alerte_id"] for row in r.json())
-        except Exception as e:
-            print(f"Supabase charger_sauvegardes : {e}")
-    if os.path.exists(SAUVEGARDES_FILE):
-        with open(SAUVEGARDES_FILE, encoding="utf-8") as f:
-            return set(json.load(f))
-    return set()
 
-def sauver_sauvegarde(alerte_id, ajouter=True):
-    if SB_HEADERS:
+# ── Push notifications ────────────────────────────────────────────────────────
+def envoyer_push(titre, body, url, niveau=3):
+    if not VAPID_PRIVATE_FILE or not SUPABASE_URL:
+        return
+    try:
+        from pywebpush import webpush, WebPushException
+    except ImportError:
+        return
+    try:
+        r = http.get(sb("user_subscriptions"), headers=SB_SERVICE, timeout=5)
+        subs = r.json() if r.ok else []
+    except:
+        return
+    for item in subs:
+        if niveau < item.get("niveau_min", 3):
+            continue
+        sub = item.get("subscription")
+        if not sub:
+            continue
         try:
-            if ajouter:
-                requests.post(
-                    sb_url("sauvegardes"),
-                    headers={**SB_HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"},
-                    json={"alerte_id": alerte_id},
-                    timeout=10
-                )
+            webpush(subscription_info=sub,
+                    data=json.dumps({"title": titre, "body": body, "url": url}),
+                    vapid_private_key=VAPID_PRIVATE_FILE,
+                    vapid_claims={"sub": "mailto:ferdinandcharly@gmail.com"})
+        except Exception as e:
+            if hasattr(e, "response") and e.response and e.response.status_code in [404, 410]:
+                http.delete(sb("user_subscriptions"), headers=SB_SERVICE,
+                            params={"id": f"eq.{item.get('id')}"}, timeout=5)
             else:
-                requests.delete(
-                    sb_url("sauvegardes"),
-                    headers=SB_HEADERS,
-                    params={"alerte_id": f"eq.{alerte_id}"},
-                    timeout=10
-                )
-            return
-        except Exception as e:
-            print(f"Supabase sauver_sauvegarde : {e}")
-    with open(SAUVEGARDES_FILE, "w", encoding="utf-8") as f:
-        json.dump(list(sauvegardes), f)
-
-def charger_subscriptions():
-    if os.path.exists(SUBSCRIPTIONS_FILE):
-        with open(SUBSCRIPTIONS_FILE, encoding="utf-8") as f:
-            return json.load(f)
-    return []
-
-def sauver_subscriptions():
-    with open(SUBSCRIPTIONS_FILE, "w", encoding="utf-8") as f:
-        json.dump(subscriptions_push, f)
+                print(f"Push error : {e}")
 
 
 # ── Callback bot ──────────────────────────────────────────────────────────────
-
 def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
     accroche = teaser.get("accroche", "") if isinstance(teaser, dict) else teaser
     alerte = {
@@ -194,17 +256,15 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
         alertes.pop()
     sauver_alerte(alerte)
 
-    # push filtré par préférence de chaque abonné
-    body = accroche or titre
     notif_url = f"{APP_URL}/#synthese/{alerte['id']}" if APP_URL else lien
     prefix = "🔴" if niveau >= 3 else "🟡"
-    envoyer_push(titre=f"{prefix} {domaine[:25]} — {titre[:40]}", body=body[:120], url=notif_url, niveau=niveau)
+    envoyer_push(titre=f"{prefix} {domaine[:25]} — {titre[:40]}",
+                 body=(accroche or titre)[:120], url=notif_url, niveau=niveau)
 
 bot.on_alerte = ajouter_alerte
 
 
 # ── API alertes ───────────────────────────────────────────────────────────────
-
 @app.route("/api/alertes")
 def api_alertes():
     domaine = request.args.get("domaine")
@@ -223,7 +283,6 @@ def api_stats():
 
 
 # ── API synthèse ──────────────────────────────────────────────────────────────
-
 @app.route("/api/synthese/<alerte_id>")
 def api_synthese(alerte_id):
     try:
@@ -231,7 +290,6 @@ def api_synthese(alerte_id):
         alerte = next((a for a in alertes if a["id"] == alerte_id), None)
         if not alerte:
             return jsonify({"erreur": "introuvable"}), 404
-
         accroche = alerte.get("accroche") or alerte.get("resume", "")
         contexte_txt = "\n".join(filter(None, [
             f"Titre : {alerte.get('titre', '')}",
@@ -240,7 +298,6 @@ def api_synthese(alerte_id):
             f"Suite : {alerte.get('suite', '')}",
             f"Description : {alerte.get('description', '')[:800]}",
         ]))
-
         rep = bot.client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": (
@@ -248,8 +305,7 @@ def api_synthese(alerte_id):
                 "claires, objectives et accessibles. Ne commence pas par 'Voici' ou 'Cet article'.\n\n"
                 + contexte_txt
             )}],
-            max_tokens=400,
-            temperature=0.3,
+            max_tokens=400, temperature=0.3,
         )
         return jsonify({"synthese": rep.choices[0].message.content.strip()})
     except Exception as e:
@@ -257,30 +313,92 @@ def api_synthese(alerte_id):
         return jsonify({"erreur": str(e)}), 500
 
 
-# ── API sauvegardes ───────────────────────────────────────────────────────────
-
+# ── API sauvegardes (par utilisateur) ─────────────────────────────────────────
 @app.route("/api/sauvegardes")
 def api_sauvegardes_get():
-    return jsonify([a for a in alertes if a["id"] in sauvegardes])
+    hdrs = user_headers()
+    if not hdrs:
+        return jsonify([])
+    try:
+        r = http.get(sb("user_sauvegardes"), headers=hdrs,
+                     params={"select": "alerte_id"}, timeout=10)
+        ids = {row["alerte_id"] for row in (r.json() if r.ok else [])}
+        return jsonify([a for a in alertes if a["id"] in ids])
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+@app.route("/api/sauvegardes/ids")
+def api_sauvegardes_ids():
+    hdrs = user_headers()
+    if not hdrs:
+        return jsonify([])
+    try:
+        r = http.get(sb("user_sauvegardes"), headers=hdrs,
+                     params={"select": "alerte_id"}, timeout=10)
+        return jsonify([row["alerte_id"] for row in (r.json() if r.ok else [])])
+    except:
+        return jsonify([])
 
 @app.route("/api/sauvegardes/<alerte_id>", methods=["POST", "DELETE"])
 def api_sauvegardes_toggle(alerte_id):
+    hdrs = user_headers()
+    if not hdrs:
+        return jsonify({"erreur": "non authentifié"}), 401
     try:
         aid = int(alerte_id)
     except ValueError:
         return jsonify({"erreur": "id invalide"}), 400
-    if request.method == "POST":
-        sauvegardes.add(aid)
-        sauver_sauvegarde(aid, ajouter=True)
-    else:
-        sauvegardes.discard(aid)
-        sauver_sauvegarde(aid, ajouter=False)
+    user_id = session.get("user_id")
+    try:
+        if request.method == "POST":
+            http.post(sb("user_sauvegardes"),
+                      headers={**hdrs, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                      json={"user_id": user_id, "alerte_id": aid}, timeout=10)
+        else:
+            http.delete(sb("user_sauvegardes"), headers=hdrs,
+                        params={"user_id": f"eq.{user_id}", "alerte_id": f"eq.{aid}"},
+                        timeout=10)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+
+# ── API push subscriptions (par utilisateur) ──────────────────────────────────
+@app.route("/api/subscribe", methods=["POST"])
+def api_subscribe():
+    hdrs = user_headers()
+    if not hdrs:
+        return jsonify({"erreur": "non authentifié"}), 401
+    data    = request.get_json()
+    sub     = data.get("subscription") or data
+    niveau_min = int(data.get("niveau_min", 3))
+    endpoint   = sub.get("endpoint", "")
+    user_id    = session.get("user_id")
+    try:
+        http.post(sb("user_subscriptions"),
+                  headers={**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                  json={"user_id": user_id, "endpoint": endpoint,
+                        "subscription": sub, "niveau_min": niveau_min},
+                  timeout=10)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+@app.route("/api/unsubscribe", methods=["POST"])
+def api_unsubscribe():
+    data = request.get_json()
+    endpoint = (data.get("subscription") or data).get("endpoint", "")
+    if endpoint:
+        http.delete(sb("user_subscriptions"), headers=SB_SERVICE,
+                    params={"endpoint": f"eq.{endpoint}"}, timeout=10)
     return jsonify({"ok": True})
 
-@app.route("/api/sauvegardes/ids")
-def api_sauvegardes_ids():
-    return jsonify(list(sauvegardes))
+@app.route("/api/vapid-public")
+def api_vapid_public():
+    return jsonify({"key": VAPID_PUBLIC})
 
+
+# ── API notif manuelle ────────────────────────────────────────────────────────
 @app.route("/api/notifier/<alerte_id>", methods=["POST"])
 def api_notifier(alerte_id):
     try:
@@ -289,104 +407,47 @@ def api_notifier(alerte_id):
             return jsonify({"erreur": "introuvable"}), 404
         notif_url = f"{APP_URL}/#synthese/{alerte['id']}" if APP_URL else alerte["lien"]
         body = alerte.get("accroche") or alerte.get("resume", alerte["titre"])
-        envoyer_push(
-            titre=f"🟡 {alerte['domaine']} — {alerte['titre'][:50]}",
-            body=body[:120],
-            url=notif_url
-        )
+        envoyer_push(titre=f"🟡 {alerte['domaine'][:25]} — {alerte['titre'][:40]}",
+                     body=body[:120], url=notif_url, niveau=2)
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"erreur": str(e)}), 500
 
 
-# ── API push subscriptions ────────────────────────────────────────────────────
-
-@app.route("/api/subscribe", methods=["POST"])
-def api_subscribe():
-    data = request.get_json()
-    if not data:
-        return jsonify({"erreur": "données manquantes"}), 400
-    sub = data.get("subscription") or data
-    niveau_min = int(data.get("niveau_min", 3))
-    endpoint = sub.get("endpoint", "")
-    # remplacer si déjà abonné (mise à jour préférence)
-    subscriptions_push[:] = [
-        i for i in subscriptions_push
-        if (i.get("sub", i) if isinstance(i, dict) else i).get("endpoint") != endpoint
-    ]
-    subscriptions_push.append({"sub": sub, "niveau_min": niveau_min})
-    sauver_subscriptions()
-    return jsonify({"ok": True})
-
-@app.route("/api/unsubscribe", methods=["POST"])
-def api_unsubscribe():
-    sub = request.get_json()
-    if sub in subscriptions_push:
-        subscriptions_push.remove(sub)
-        sauver_subscriptions()
-    return jsonify({"ok": True})
-
-@app.route("/api/vapid-public")
-def api_vapid_public():
-    return jsonify({"key": VAPID_PUBLIC})
+# ── API préférences utilisateur ───────────────────────────────────────────────
+@app.route("/api/domaines", methods=["GET", "POST"])
+def api_domaines():
+    hdrs = user_headers()
+    user_id = session.get("user_id")
+    if request.method == "POST":
+        data = request.get_json()
+        domaines = data.get("domaines", [])
+        if hdrs and user_id:
+            http.post(sb("user_preferences"),
+                      headers={**hdrs, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                      json={"user_id": user_id, "domaines": domaines}, timeout=10)
+        return jsonify({"ok": True})
+    if hdrs and user_id:
+        r = http.get(sb("user_preferences"), headers=hdrs,
+                     params={"user_id": f"eq.{user_id}", "select": "domaines"}, timeout=10)
+        if r.ok and r.json():
+            return jsonify(r.json()[0].get("domaines") or list(bot.FLUX.keys()))
+    return jsonify(list(bot.FLUX.keys()))
 
 
-# ── Fichiers statiques & pages ────────────────────────────────────────────────
+# ── API info utilisateur ──────────────────────────────────────────────────────
+@app.route("/api/me")
+def api_me():
+    return jsonify({
+        "email": session.get("user_email", ""),
+        "user_id": session.get("user_id", ""),
+    })
 
+
+# ── Fichiers statiques ────────────────────────────────────────────────────────
 @app.route("/sw.js")
 def service_worker():
-    return send_from_directory("static", "sw.js",
-                               mimetype="application/javascript")
-
-_LOGIN_HTML = """<!DOCTYPE html>
-<html lang="fr"><head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>News Alert</title>
-<style>
-*{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:#000;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}}
-.box{{width:100%;max-width:320px;padding:0 24px;text-align:center}}
-h1{{font-size:20px;font-weight:700;margin-bottom:8px}}
-p{{font-size:13px;color:#666;margin-bottom:32px}}
-input{{width:100%;padding:14px 16px;background:#111;border:1px solid #222;border-radius:12px;color:#f0f0f0;font-size:16px;margin-bottom:12px;outline:none}}
-button{{width:100%;padding:14px;background:#f0f0f0;color:#000;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}}
-.err{{color:#ef4444;font-size:13px;margin-bottom:12px}}
-</style></head>
-<body><div class="box">
-<h1>News Alert</h1>
-<p>Accès privé</p>
-{error}
-<form method="POST" action="/login">
-<input type="password" name="password" placeholder="Mot de passe" autofocus/>
-<button type="submit">Entrer</button>
-</form>
-</div></body></html>"""
-
-@app.before_request
-def check_auth():
-    if not APP_PASSWORD:
-        return
-    exempts = ["/health", "/sw.js", "/login"]
-    if request.path in exempts:
-        return
-    if not session.get("authenticated"):
-        if request.path.startswith("/api"):
-            return jsonify({"erreur": "non authentifié"}), 401
-        return redirect("/login")
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        if request.form.get("password") == APP_PASSWORD:
-            session["authenticated"] = True
-            return redirect("/")
-        return _LOGIN_HTML.format(error='<p class="err">Mot de passe incorrect</p>')
-    return _LOGIN_HTML.format(error="")
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
+    return send_from_directory("static", "sw.js", mimetype="application/javascript")
 
 @app.route("/health")
 def health():
@@ -398,7 +459,6 @@ def index():
 
 
 # ── Bot en arrière-plan ───────────────────────────────────────────────────────
-
 def boucle():
     premiere_fois = not os.path.exists(bot.SEEN_FILE)
     bot.verifier(premiere_fois=premiere_fois)
@@ -413,11 +473,8 @@ def boucle():
 
 
 if __name__ == "__main__":
-    init_supabase()
     init_vapid()
     alertes.extend(charger_alertes())
-    sauvegardes.update(charger_sauvegardes())
-    subscriptions_push.extend(charger_subscriptions())
     t = threading.Thread(target=boucle, daemon=True)
     t.start()
     port = int(os.environ.get("PORT", 5000))
