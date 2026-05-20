@@ -936,13 +936,13 @@ def nettoyer_vieilles_alertes():
         r1 = http.delete(sb("alertes"), headers=SB_SERVICE,
                          params=params_non_sauvegardees, timeout=10)
 
-        # Supprimer alertes sauvegardées > 30 jours
-        limite_sauvegardees = (datetime.now() - timedelta(days=30)).isoformat()
+        # Supprimer alertes sauvegardées > 6 mois
+        limite_sauvegardees = (datetime.now() - timedelta(days=180)).isoformat()
         r2 = http.delete(sb("alertes"), headers=SB_SERVICE,
                          params={"date": f"lt.{limite_sauvegardees}"}, timeout=10)
 
         if r1.ok or r2.ok:
-            print("Nettoyage Supabase : alertes non sauvegardées > 3j et sauvegardées > 30j supprimées")
+            print("Nettoyage Supabase : alertes non sauvegardées > 3j et sauvegardées > 6 mois supprimées")
 
         # Supprimer corrélations > 3 jours
         limite_corr = (datetime.now() - timedelta(days=3)).isoformat()
