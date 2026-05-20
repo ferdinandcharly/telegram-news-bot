@@ -178,35 +178,35 @@ _ONBOARDING_HTML = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>News Alert — Bienvenue</title>
 <style>
-*{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:#000;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      min-height:100vh;padding:40px 24px 60px}}
-h1{{font-size:22px;font-weight:700;margin-bottom:6px}}
-.sub{{font-size:14px;color:#666;margin-bottom:32px}}
-.section{{margin-bottom:28px}}
-.section-title{{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;
-                color:#555;margin-bottom:12px}}
-input[type=text]{{width:100%;padding:13px 16px;background:#111;border:1px solid #222;
-                  border-radius:10px;color:#f0f0f0;font-size:15px;outline:none}}
-input[type=text]:focus{{border-color:#444}}
-.domains{{display:flex;flex-wrap:wrap;gap:8px}}
-.domain-btn{{padding:8px 16px;border-radius:20px;border:1px solid #222;background:none;
-             color:#666;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s}}
-.domain-btn.on{{border-color:#f0f0f0;color:#f0f0f0;background:#111}}
-.themes{{display:flex;gap:10px}}
-.theme-btn{{flex:1;padding:14px 8px;border-radius:12px;border:2px solid #222;
-            background:none;cursor:pointer;display:flex;flex-direction:column;
-            align-items:center;gap:6px;transition:all 0.15s}}
-.theme-btn.on{{border-color:#f0f0f0}}
-.theme-preview{{width:100%;height:28px;border-radius:6px}}
-.t-dark{{background:#000}}
-.t-dim{{background:#161b22}}
-.t-light{{background:#fff;border:1px solid #ddd}}
-.theme-label{{font-size:12px;color:#888}}
-.theme-btn.on .theme-label{{color:#f0f0f0}}
-button[type=submit]{{width:100%;padding:14px;background:#f0f0f0;color:#000;border:none;
-                     border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;
-                     margin-top:16px}}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #000; color: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+       min-height: 100vh; padding: 40px 24px 60px; }
+h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.sub { font-size: 14px; color: #666; margin-bottom: 32px; }
+.section { margin-bottom: 28px; }
+.section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+                 color: #555; margin-bottom: 12px; }
+input[type=text] { width: 100%; padding: 13px 16px; background: #111; border: 1px solid #222;
+                   border-radius: 10px; color: #f0f0f0; font-size: 15px; outline: none; }
+input[type=text]:focus { border-color: #444; }
+.domains { display: flex; flex-wrap: wrap; gap: 8px; }
+.domain-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #222; background: none;
+              color: #666; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.domain-btn.on { border-color: #f0f0f0; color: #f0f0f0; background: #111; }
+.themes { display: flex; gap: 10px; }
+.theme-btn { flex: 1; padding: 14px 8px; border-radius: 12px; border: 2px solid #222;
+             background: none; cursor: pointer; display: flex; flex-direction: column;
+             align-items: center; gap: 6px; transition: all 0.15s; }
+.theme-btn.on { border-color: #f0f0f0; }
+.theme-preview { width: 100%; height: 28px; border-radius: 6px; }
+.t-dark { background: #000; }
+.t-dim { background: #161b22; }
+.t-light { background: #fff; border: 1px solid #ddd; }
+.theme-label { font-size: 12px; color: #888; }
+.theme-btn.on .theme-label { color: #f0f0f0; }
+button[type=submit] { width: 100%; padding: 14px; background: #f0f0f0; color: #000; border: none;
+                      border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;
+                      margin-top: 16px; }
 </style></head>
 <body>
 <h1>Bienvenue 👋</h1>
@@ -258,16 +258,16 @@ button[type=submit]{{width:100%;padding:14px;background:#f0f0f0;color:#000;borde
   );
   document.getElementById("form").addEventListener("submit", async e => {
     e.preventDefault();
-    const domaines = [...document.querySelectorAll(".domain-btn.on")].map(b => b.dataset.d);
-    const theme    = document.querySelector(".theme-btn.on")?.dataset.t || "dark";
+    const domaines     = [...document.querySelectorAll(".domain-btn.on")].map(b => b.dataset.d);
+    const theme        = document.querySelector(".theme-btn.on")?.dataset.t || "dark";
     const display_name = document.getElementById("display-name").value.trim();
-    await fetch("/api/preferences", {{
+    await fetch("/api/preferences", {
       method: "POST",
-      headers: {{"Content-Type": "application/json"}},
-      body: JSON.stringify({{ display_name, theme, domaines }})
-    }});
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ display_name, theme, domaines })
+    });
     window.location.href = "/";
-  }};
+  });
 </script>
 </body></html>"""
 
