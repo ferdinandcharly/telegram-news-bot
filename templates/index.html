@@ -10,25 +10,52 @@
     :root, [data-theme="dark"] {
       --bg: #000;
       --surface: #0e0e0e;
+      --surface2: #0a0a0a;
       --line: #1e1e1e;
       --text: #f0f0f0;
       --sub: #666;
+      --muted2: #333;
+      --header-bg: rgba(0,0,0,0.96);
+      --nav-bg: rgba(0,0,0,0.97);
+      --overlay-bg: rgba(0,0,0,0.7);
+      --modal-handle: #333;
+      --slider-bg: #2a2a2a;
+      --btn-bg: #f0f0f0;
+      --btn-text: #000;
     }
 
     [data-theme="dim"] {
       --bg: #161b22;
       --surface: #1c2128;
+      --surface2: #13161c;
       --line: #30363d;
       --text: #e6edf3;
       --sub: #8b949e;
+      --muted2: #444c56;
+      --header-bg: rgba(22,27,34,0.96);
+      --nav-bg: rgba(22,27,34,0.97);
+      --overlay-bg: rgba(0,0,0,0.7);
+      --modal-handle: #444c56;
+      --slider-bg: #444c56;
+      --btn-bg: #e6edf3;
+      --btn-text: #161b22;
     }
 
     [data-theme="light"] {
       --bg: #ffffff;
       --surface: #f6f8fa;
+      --surface2: #eaeef2;
       --line: #e1e4e8;
       --text: #24292f;
       --sub: #57606a;
+      --muted2: #d0d7de;
+      --header-bg: rgba(255,255,255,0.96);
+      --nav-bg: rgba(255,255,255,0.97);
+      --overlay-bg: rgba(0,0,0,0.5);
+      --modal-handle: #d0d7de;
+      --slider-bg: #d0d7de;
+      --btn-bg: #24292f;
+      --btn-text: #ffffff;
     }
 
     :root {
@@ -54,7 +81,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(0,0,0,0.96);
+      background: var(--header-bg);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--line);
       padding: 16px 20px 0;
@@ -172,7 +199,7 @@
       position: relative;
     }
 
-    .carte:active { background: #0a0a0a; }
+    .carte:active { background: var(--surface2); }
 
     .carte-meta {
       display: flex;
@@ -237,7 +264,7 @@
 
     .carte-hint {
       font-size: 11px;
-      color: #333;
+      color: var(--muted2);
     }
 
     .badge-niveau {
@@ -275,7 +302,7 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
+      background: var(--overlay-bg);
       z-index: 100;
       display: none;
       align-items: flex-end;
@@ -285,7 +312,7 @@
 
     .modal {
       width: 100%;
-      background: #0e0e0e;
+      background: var(--surface);
       border-top: 1px solid var(--line);
       border-radius: 20px 20px 0 0;
       padding: 0 0 32px;
@@ -309,7 +336,7 @@
 
     .modal-handle {
       width: 36px; height: 4px;
-      background: #333;
+      background: var(--modal-handle);
       border-radius: 2px;
     }
 
@@ -407,8 +434,8 @@
       display: block;
       width: 100%;
       padding: 14px;
-      background: var(--text);
-      color: #000;
+      background: var(--btn-bg);
+      color: var(--btn-text);
       border: none;
       border-radius: 12px;
       font-size: 14px;
@@ -509,7 +536,7 @@
     .toggle input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute; inset: 0;
-      background: #2a2a2a;
+      background: var(--slider-bg);
       border-radius: 12px;
       cursor: pointer;
       transition: 0.2s;
@@ -529,7 +556,7 @@
     nav {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      background: rgba(0,0,0,0.97);
+      background: var(--nav-bg);
       backdrop-filter: blur(12px);
       border-top: 1px solid var(--line);
       display: flex;

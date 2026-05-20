@@ -275,6 +275,8 @@ input[type=text]:focus { border-color: #444; }
 <div class="cta">
   <div class="error" id="error">Sélectionne au moins un sujet</div>
   <button class="btn-go" id="btn-go" onclick="submit()">Commencer →</button>
+  <a href="/cancel-register" style="display:block;text-align:center;margin-top:16px;
+     font-size:13px;color:#444;text-decoration:none;">Annuler et supprimer mon compte</a>
 </div>
 
 <script>
@@ -322,9 +324,27 @@ def onboarding():
         return redirect("/login")
     return _ONBOARDING_HTML
 
+@app.route("/cancel-register")
+def cancel_register():
+    """Supprime le compte créé si l'utilisateur annule l'onboarding."""
+    token   = session.get("access_token")
+    user_id = session.get("user_id")
+    if token and user_id:
+        try:
+            # supprimer via l'API admin Supabase (service key)
+            http.delete(
+                f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                headers={**SB_SERVICE, "Content-Type": "application/json"},
+                timeout=10
+            )
+        except Exception as e:
+            print(f"Erreur suppression compte : {e}")
+    session.clear()
+    return redirect("/login")
+
 @app.before_request
 def check_auth():
-    exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding"]
+    exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding", "/cancel-register"]
     if request.path in exempts:
         return
     if not session.get("access_token"):
