@@ -19,8 +19,10 @@ INTERVALLE = 900  # 15 minutes
 FLUX = {
     "🌍 Géopolitique": [
         "http://feeds.bbci.co.uk/news/world/rss.xml",
-        "https://www.lemonde.fr/international/rss_full.xml",
         "https://www.rfi.fr/fr/rss",
+        "https://www.france24.com/fr/rss",
+        "https://feeds.reuters.com/reuters/worldNews",
+        "https://www.lemonde.fr/international/rss_full.xml",
     ],
     "🔬 Science": [
         "https://www.nasa.gov/rss/dyn/breaking_news.rss",
@@ -28,16 +30,22 @@ FLUX = {
         "https://www.futura-sciences.com/rss/actualites.xml",
     ],
     "💻 Tech & IA": [
-        "https://www.wired.com/feed/rss",
+        "https://www.theverge.com/rss/index.xml",
+        "https://arstechnica.com/feed/",
         "https://www.technologyreview.com/feed/",
+        "https://www.wired.com/feed/rss",
     ],
     "💰 Finance": [
         "https://feeds.reuters.com/reuters/businessNews",
+        "https://www.bfmtv.com/rss/economie/",
+        "https://feeds.reuters.com/reuters/companyNews",
         "https://services.lesechos.fr/rss/les-echos-economie.xml",
     ],
     "🌱 Environnement": [
-        "https://www.lemonde.fr/planete/rss_full.xml",
         "https://reporterre.net/spip.php?page=backend",
+        "https://feeds.reuters.com/reuters/environment",
+        "https://www.futura-sciences.com/planete/rss/actualites.xml",
+        "https://www.lemonde.fr/planete/rss_full.xml",
     ],
     "⚽ Sport": [
         "https://www.lequipe.fr/rss/actu_rss.xml",
