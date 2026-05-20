@@ -832,9 +832,7 @@
     const cls   = "carte-" + dom.cls;
     const saved = savedIds.has(a.id);
     const niv = a.niveau || 2;
-    const badgeHtml = niv >= 3
-      ? `<span class="badge-niveau badge-critique">● CRITIQUE</span>`
-      : `<span class="badge-niveau badge-important">● IMPORTANT</span>`;
+    const dotColor = niv >= 3 ? '#ef4444' : '#f59e0b';
     const clocheBtnHtml = niv < 3
       ? `<button class="btn-notifier" onclick="event.stopPropagation(); notifierManuellement(${a.id})" title="Me notifier">🔔</button>`
       : "";
@@ -843,7 +841,7 @@
       <div class="carte ${cls}" onclick="ouvrirModal(${a.id})">
         <div class="carte-meta">
           <div class="carte-gauche">
-            ${badgeHtml}
+            <span style="width:7px;height:7px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0;margin-right:2px"></span>
             <span class="carte-domaine">${dom.label}</span>
             <span class="carte-heure">${formatHeure(a.date)}</span>
           </div>

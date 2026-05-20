@@ -253,7 +253,6 @@ input[type=text]:focus { border-color: var(--sub); }
     <button type="button" class="topic" data-d="🌱 Environnement">🌱 Environnement</button>
     <button type="button" class="topic" data-d="⚽ Sport">⚽ Sport</button>
   </div>
-  <div class="topic-hint" id="topic-hint">Appuie pour sélectionner</div>
 </div>
 
 <div class="step">
@@ -276,20 +275,14 @@ input[type=text]:focus { border-color: var(--sub); }
 </div>
 
 <div class="cta">
-  <div class="error" id="error">Sélectionne au moins un sujet</div>
   <button class="btn-go" id="btn-go" onclick="submit()">Commencer →</button>
   <a href="/cancel-register" style="display:block;text-align:center;margin-top:16px;
-     font-size:13px;color:#444;text-decoration:none;">Annuler et supprimer mon compte</a>
+     font-size:13px;color:var(--sub);text-decoration:none;">Annuler et supprimer mon compte</a>
 </div>
 
 <script>
   document.querySelectorAll(".topic").forEach(b => {
-    b.addEventListener("click", () => {
-      b.classList.toggle("on");
-      const n = document.querySelectorAll(".topic.on").length;
-      document.getElementById("topic-hint").textContent =
-        n === 0 ? "Appuie pour sélectionner" : n + " sujet" + (n > 1 ? "s" : "") + " sélectionné" + (n > 1 ? "s" : "");
-    });
+    b.addEventListener("click", () => b.classList.toggle("on"));
   });
 
   document.querySelectorAll(".theme-card").forEach(b => {
@@ -302,11 +295,6 @@ input[type=text]:focus { border-color: var(--sub); }
 
   async function submit() {
     const domaines = [...document.querySelectorAll(".topic.on")].map(b => b.dataset.d);
-    if (!domaines.length) {
-      document.getElementById("error").style.display = "block";
-      return;
-    }
-    document.getElementById("error").style.display = "none";
     document.getElementById("btn-go").disabled = true;
 
     const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
