@@ -821,19 +821,27 @@
         <div class="param-label">Résumé matinal</div>
         <div class="param-sub">Heure des corrélations</div>
       </div>
-      <select id="select-heure-recap" onchange="sauverHeureRecap(this.value)"
-              style="padding:6px 10px;background:var(--surface);border:1px solid var(--line);
-                     border-radius:8px;color:var(--text);font-size:13px;outline:none">
-        <option value="6">6h00</option>
-        <option value="7">7h00</option>
-        <option value="8">8h00</option>
-        <option value="9">9h00</option>
-        <option value="10">10h00</option>
-        <option value="12">12h00</option>
-        <option value="18">18h00</option>
-        <option value="20">20h00</option>
-        <option value="21">21h00</option>
-      </select>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="hr-texte" style="font-size:14px;color:var(--sub)">8h00</span>
+        <button id="hr-btn-edit" onclick="toggleEditHeure()"
+                style="background:none;border:none;color:var(--sub);cursor:pointer;font-size:14px;padding:2px">✎</button>
+        <select id="select-heure-recap"
+                style="display:none;padding:6px 10px;background:var(--surface);border:1px solid var(--line);
+                       border-radius:8px;color:var(--text);font-size:13px;outline:none">
+          <option value="5">5h00</option>
+          <option value="6">6h00</option>
+          <option value="7">7h00</option>
+          <option value="8">8h00</option>
+          <option value="9">9h00</option>
+          <option value="10">10h00</option>
+          <option value="12">12h00</option>
+          <option value="18">18h00</option>
+          <option value="20">20h00</option>
+          <option value="21">21h00</option>
+        </select>
+        <button id="hr-btn-save" onclick="sauverHeureRecap()"
+                style="display:none;background:none;border:none;color:var(--text);cursor:pointer;font-size:14px;padding:2px">✓</button>
+      </div>
     </div>
   </div>
 
@@ -1312,10 +1320,24 @@
     btnEdit.style.display = "inline-block";
   }
 
-  async function sauverHeureRecap(val) {
+  function toggleEditHeure() {
+    document.getElementById("hr-texte").style.display    = "none";
+    document.getElementById("hr-btn-edit").style.display  = "none";
+    document.getElementById("select-heure-recap").style.display = "inline-block";
+    document.getElementById("hr-btn-save").style.display  = "inline-block";
+  }
+
+  async function sauverHeureRecap() {
+    const select = document.getElementById("select-heure-recap");
+    const val = parseInt(select.value);
     await fetch("/api/preferences", { method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ heure_recap: parseInt(val) }) });
+      body: JSON.stringify({ heure_recap: val }) });
+    document.getElementById("hr-texte").textContent      = select.options[select.selectedIndex].text;
+    document.getElementById("hr-texte").style.display    = "inline";
+    document.getElementById("hr-btn-edit").style.display  = "inline-block";
+    select.style.display = "none";
+    document.getElementById("hr-btn-save").style.display  = "none";
   }
 
   // ── Init ─────────────────────────────────────────────────────────────────
@@ -1338,7 +1360,10 @@
 
     // heure recap
     const selectHeure = document.getElementById("select-heure-recap");
-    if (selectHeure) selectHeure.value = String(data.preferences.heure_recap ?? 8);
+    const hrTexte = document.getElementById("hr-texte");
+    const h = data.preferences.heure_recap ?? 8;
+    if (selectHeure) selectHeure.value = String(h);
+    if (hrTexte) hrTexte.textContent = `${h}h00`;
 
     // domaines préférés
     userDomaines = data.preferences.domaines || [];
