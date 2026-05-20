@@ -976,9 +976,28 @@
     }
   }
 
+  // ── Préférences domaines ─────────────────────────────────────────────────
+  async function chargerPreferences() {
+    const domaines = await fetch("/api/domaines").then(r => r.json()).catch(() => []);
+    if (!domaines.length) return;
+    const map = [
+      ["toggle-geo",     "🌍 Géopolitique"],
+      ["toggle-sci",     "🔬 Science"],
+      ["toggle-tech",    "💻 Tech & IA"],
+      ["toggle-finance", "💰 Finance"],
+      ["toggle-env",     "🌱 Environnement"],
+      ["toggle-sport",   "⚽ Sport"],
+    ];
+    map.forEach(([id, label]) => {
+      const el = document.getElementById(id);
+      if (el) el.checked = domaines.includes(label);
+    });
+  }
+
   // ── Init ─────────────────────────────────────────────────────────────────
   async function init() {
     await chargerSavedIds();
+    await chargerPreferences();
     const data = await fetch("/api/alertes").then(r => r.json());
     alertesCache = data;
     chargerAlertes();
