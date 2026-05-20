@@ -691,8 +691,14 @@
         <option value="Tech">Tech & IA</option>
         <option value="Finance">Finance</option>
         <option value="Environnement">Environnement</option>
-      <option value="Sport">Sport</option>
+        <option value="Sport">Sport</option>
       </select>
+    </div>
+    <div style="padding:0 16px 10px">
+      <input id="recherche" type="search" placeholder="Rechercher..."
+             oninput="chargerAlertes()"
+             style="width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--line);
+                    border-radius:10px;color:var(--text);font-size:13px;outline:none;-webkit-appearance:none"/>
     </div>
   </header>
 
@@ -1016,6 +1022,8 @@
               onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
               ${saved ? '◆ Sauvegardé' : '◇ Sauvegarder'}
             </button>
+            <button class="btn-save" title="Copier le lien"
+              onclick="event.stopPropagation(); partagerAlerte(${a.id})">↗</button>
           </div>
         </div>
         <div class="carte-titre">${esc(a.titre)}</div>
@@ -1029,12 +1037,23 @@
     const url = filtreCourant === "Tout"
       ? "/api/alertes"
       : `/api/alertes?domaine=${encodeURIComponent(filtreCourant)}`;
-    const raw    = await fetch(url).then(r => r.json());
-    const alertes = filtreCourant === "Tout" ? filtrerParPrefs(raw) : raw;
-    const feed   = document.getElementById("feed");
+    const raw  = await fetch(url).then(r => r.json());
+    let alertes = filtreCourant === "Tout" ? filtrerParPrefs(raw) : raw;
+
+    const q = (document.getElementById("recherche")?.value || "").trim().toLowerCase();
+    if (q) {
+      alertes = alertes.filter(a =>
+        (a.titre    || "").toLowerCase().includes(q) ||
+        (a.accroche || "").toLowerCase().includes(q) ||
+        (a.contexte || "").toLowerCase().includes(q) ||
+        (a.domaine  || "").toLowerCase().includes(q)
+      );
+    }
+
+    const feed = document.getElementById("feed");
     feed.innerHTML = alertes.length
       ? alertes.map(carteHTML).join("")
-      : `<div class="vide">Aucune alerte pour le moment.<br>Vérification toutes les 15 min.</div>`;
+      : `<div class="vide">${q ? "Aucun résultat pour « " + esc(q) + " »." : "Aucune alerte pour le moment.<br>Vérification toutes les 15 min."}</div>`;
   }
 
   async function chargerStats() {
@@ -1097,6 +1116,20 @@
 
   async function notifierManuellement(id) {
     await fetch(`/api/notifier/${id}`, { method: "POST" });
+  }
+
+  function partagerAlerte(id) {
+    const url = `${location.origin}/a/${id}`;
+    if (navigator.share) {
+      navigator.share({ title: "News Alert", url });
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = event.target;
+        const old = btn.textContent;
+        btn.textContent = "✓";
+        setTimeout(() => btn.textContent = old, 1500);
+      });
+    }
   }
 
   async function toggleSave(id, btn) {

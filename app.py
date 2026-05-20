@@ -747,6 +747,68 @@ def service_worker():
 def health():
     return "OK", 200
 
+
+@app.route("/a/<int:alerte_id>")
+def partager_alerte(alerte_id):
+    """Page publique de partage d'une alerte (sans login)."""
+    alerte = next((a for a in alertes if a["id"] == alerte_id), None)
+    if not alerte:
+        # Chercher dans Supabase
+        try:
+            r = http.get(sb("alertes"), headers=SB_SERVICE,
+                         params={"id": f"eq.{alerte_id}"}, timeout=8)
+            data = r.json()
+            alerte = data[0] if r.ok and data else None
+        except Exception:
+            alerte = None
+    if not alerte:
+        return "Alerte introuvable.", 404
+
+    titre   = alerte.get("titre", "")
+    domaine = alerte.get("domaine", "")
+    accroche = alerte.get("accroche", "")
+    contexte = alerte.get("contexte", "")
+    suite    = alerte.get("suite", "")
+    lien     = alerte.get("lien", "")
+    niveau   = alerte.get("niveau", 2)
+    dot      = "🔴" if niveau >= 3 else "🟡"
+    app_url  = APP_URL or request.host_url.rstrip("/")
+
+    return f"""<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta property="og:title" content="{titre}"/>
+<meta property="og:description" content="{accroche}"/>
+<title>{titre} — News Alert</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#0a0a0a;color:#f0f0f0;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 20px}}
+.card{{max-width:560px;width:100%;background:#111;border:1px solid #1e1e1e;border-radius:16px;padding:28px 24px;margin-top:24px}}
+.badge{{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}}
+h1{{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:18px}}
+.section{{margin-top:14px}}
+.label{{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#555;margin-bottom:4px}}
+.text{{font-size:14px;color:#ccc;line-height:1.6}}
+.lien{{display:block;margin-top:24px;padding:12px 16px;background:#1a1a1a;border-radius:10px;color:#f0f0f0;text-decoration:none;font-size:13px;word-break:break-all}}
+.lien:hover{{background:#222}}
+.cta{{margin-top:28px;text-align:center}}
+.cta a{{display:inline-block;padding:10px 20px;background:#f0f0f0;color:#000;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none}}
+.footer{{margin-top:20px;font-size:12px;color:#444;text-align:center}}
+</style></head>
+<body>
+<div class="card">
+  <div class="badge">{dot} {domaine}</div>
+  <h1>{titre}</h1>
+  {"<div class='section'><div class='label'>En bref</div><div class='text'>" + accroche + "</div></div>" if accroche else ""}
+  {"<div class='section'><div class='label'>Contexte</div><div class='text'>" + contexte + "</div></div>" if contexte else ""}
+  {"<div class='section'><div class='label'>À suivre</div><div class='text'>" + suite + "</div></div>" if suite else ""}
+  {"<a class='lien' href='" + lien + "' target='_blank' rel='noopener'>🔗 " + lien + "</a>" if lien else ""}
+</div>
+<div class="cta"><a href="{app_url}">Ouvrir News Alert →</a></div>
+<div class="footer">Partagé via News Alert</div>
+</body></html>"""
+
 @app.route("/")
 def index():
     return send_from_directory("templates", "index.html")
@@ -778,7 +840,7 @@ def envoyer_push_user(user_id, titre, body, url):
     except Exception as e:
         print(f"[Push user] {e}")
 
-def generer_correlations(user_id=None, domaines_user=None):
+def generer_correlations(user_id=None, domaines_user=None, display_name=None):
     """Analyse les alertes des dernières 24h filtrées par domaines, génère les corrélations."""
     global _telegram_envoye
 
@@ -867,10 +929,12 @@ Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
 
     # Push à l'utilisateur spécifique
     if user_id and correlations:
-        url = f"{APP_URL}/#correlations" if APP_URL else "/"
+        url    = f"{APP_URL}/#correlations" if APP_URL else "/"
+        prenom = display_name.split()[0] if display_name else None
+        salut  = f"Bonjour {prenom} — " if prenom else ""
         titres = " · ".join(c["titre"] for c in correlations[:2])
         envoyer_push_user(user_id,
-                          f"🌅 {len(correlations)} corrélation(s) du jour",
+                          f"🌅 {salut}{len(correlations)} corrélation(s) du jour",
                           titres[:120], url)
 
     # Telegram une seule fois par jour
@@ -900,17 +964,18 @@ def check_resumes_matinaux(heure):
         # Récupérer aussi last_recap_date pour éviter les doublons au redémarrage
         r = http.get(sb("user_preferences"), headers=SB_SERVICE,
                      params={"heure_recap": f"eq.{heure}",
-                             "select": "user_id,domaines,last_recap_date"}, timeout=5)
+                             "select": "user_id,domaines,last_recap_date,display_name"}, timeout=5)
         for u in (r.json() if r.ok else []):
-            uid = u.get("user_id")
+            uid  = u.get("user_id")
             last = u.get("last_recap_date", "")
+            nom  = u.get("display_name") or None
             if uid and last != today and _resumes_envoyes.get(uid) != today:
                 _resumes_envoyes[uid] = today
-                # Marquer dans Supabase avant de générer (évite doublon si crash)
                 http.patch(sb("user_preferences"), headers=SB_SERVICE,
                            params={"user_id": f"eq.{uid}"},
                            json={"last_recap_date": today}, timeout=5)
-                generer_correlations(user_id=uid, domaines_user=u.get("domaines") or [])
+                generer_correlations(user_id=uid, domaines_user=u.get("domaines") or [],
+                                     display_name=nom)
     except Exception as e:
         print(f"[Resume] Erreur : {e}")
 
