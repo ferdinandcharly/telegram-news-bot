@@ -4,7 +4,7 @@ import json
 import base64
 import threading
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta, date as dt_date
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, send_from_directory, request, session, redirect
 import requests as http
@@ -568,6 +568,41 @@ def api_vapid_public():
 
 
 # ── API notif manuelle ────────────────────────────────────────────────────────
+@app.route("/api/correlations")
+def api_correlations():
+    hdrs    = user_headers()
+    user_id = session.get("user_id")
+
+    # domaines préférés de l'utilisateur
+    domaines_user = list(bot.FLUX.keys())
+    if hdrs and user_id:
+        try:
+            r = http.get(sb("user_preferences"), headers=hdrs,
+                         params={"user_id": f"eq.{user_id}", "select": "domaines"}, timeout=5)
+            if r.ok and r.json():
+                domaines_user = r.json()[0].get("domaines") or domaines_user
+        except:
+            pass
+
+    # récupérer les 30 dernières corrélations
+    try:
+        r = http.get(sb("correlations"), headers=SB_SERVICE,
+                     params={"order": "date.desc", "limit": "30"}, timeout=10)
+        all_corr = r.json() if r.ok else []
+    except:
+        return jsonify([])
+
+    # filtrer par domaines préférés
+    mots_cles = [d.split(" ", 1)[-1] for d in domaines_user]  # sans l'emoji
+    def match(c):
+        c_dom = c.get("domaines") or []
+        if not c_dom:
+            return True
+        return any(any(mk in cd for mk in mots_cles) for cd in c_dom)
+
+    return jsonify([c for c in all_corr if match(c)])
+
+
 @app.route("/api/notifier/<alerte_id>", methods=["POST"])
 def api_notifier(alerte_id):
     try:
@@ -695,6 +730,89 @@ def index():
 
 
 # ── Bot en arrière-plan ───────────────────────────────────────────────────────
+_dernier_resume = None
+
+def generer_correlations():
+    """Analyse les alertes des dernières 24h, détecte les corrélations, envoie le résumé Telegram."""
+    global _dernier_resume
+
+    depuis = (datetime.now() - timedelta(hours=24)).isoformat()
+    alertes_24h = [a for a in alertes if a.get("date", "") >= depuis]
+
+    if len(alertes_24h) < 2:
+        print("[Corrélation] Pas assez d'alertes pour analyser.")
+        return
+
+    alertes_compact = [
+        {"id": a["id"], "titre": a["titre"],
+         "domaine": a["domaine"], "accroche": a.get("accroche", "")}
+        for a in alertes_24h
+    ]
+
+    prompt = (
+        "Tu es un analyste. Voici les alertes des dernières 24h :\n"
+        + json.dumps(alertes_compact, ensure_ascii=False)
+        + "\n\nIdentifie les groupes d'événements liés (même sujet, région ou thème)."
+        " Pour chaque groupe de 2+ alertes corrélées, génère une synthèse en français."
+        " Réponds JSON uniquement :\n"
+        '[{"titre":"...","synthese":"3-4 phrases","alertes_ids":[id1,id2],"domaines":["🌍 Géopolitique"]}]\n'
+        "Si aucune corrélation, réponds []."
+    )
+
+    try:
+        rep = bot.client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=800, temperature=0.3,
+        )
+        contenu = rep.choices[0].message.content.strip()
+        debut = contenu.find("[")
+        fin   = contenu.rfind("]") + 1
+        correlations = json.loads(contenu[debut:fin])
+    except Exception as e:
+        print(f"[Corrélation] Erreur Groq : {e}")
+        return
+
+    if not correlations:
+        print("[Corrélation] Aucune corrélation détectée.")
+        return
+
+    # Sauvegarder dans Supabase
+    for c in correlations:
+        c["id"]   = int(datetime.now().timestamp() * 1000) + correlations.index(c)
+        c["date"] = datetime.now().isoformat()
+        try:
+            http.post(sb("correlations"),
+                      headers={**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                      json=c, timeout=10)
+        except Exception as e:
+            print(f"[Corrélation] Erreur sauvegarde : {e}")
+
+    # Résumé Telegram
+    date_str = datetime.now().strftime("%d/%m/%Y")
+    msg = f"🌅 *Résumé matinal — {date_str}*\n_{len(alertes_24h)} alertes hier_\n\n"
+    for c in correlations[:5]:
+        msg += f"*{c['titre']}*\n{c['synthese']}\n\n"
+    bot.envoyer(msg)
+
+    _dernier_resume = dt_date.today()
+    print(f"[Corrélation] {len(correlations)} corrélation(s) générée(s) et envoyées.")
+
+
+def nettoyer_vieilles_alertes():
+    """Supprime les alertes Supabase de plus de 30 jours."""
+    if not SUPABASE_URL:
+        return
+    try:
+        from datetime import timedelta
+        limite = (datetime.now() - timedelta(days=30)).isoformat()
+        r = http.delete(sb("alertes"), headers=SB_SERVICE,
+                        params={"date": f"lt.{limite}"}, timeout=10)
+        if r.ok:
+            print(f"Nettoyage Supabase : alertes > 30j supprimées")
+    except Exception as e:
+        print(f"Erreur nettoyage : {e}")
+
 def boucle():
     premiere_fois = not os.path.exists(bot.SEEN_FILE)
     bot.verifier(premiere_fois=premiere_fois)
@@ -703,9 +821,20 @@ def boucle():
         "Domaines : Géopolitique 🌍 | Science 🔬 | Tech 💻 | Finance 💰 | Environnement 🌱\n"
         "Fréquence : toutes les 15 min"
     )
+    cycles = 0
     while True:
         time.sleep(bot.INTERVALLE)
         bot.verifier()
+        cycles += 1
+
+        # résumé matinal + corrélations à 8h
+        now = datetime.now()
+        if now.hour == 8 and _dernier_resume != dt_date.today():
+            generer_correlations()
+
+        # nettoyage Supabase une fois par jour
+        if cycles % 96 == 0:
+            nettoyer_vieilles_alertes()
 
 
 if __name__ == "__main__":

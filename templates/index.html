@@ -465,6 +465,47 @@
     /* ── Page Sauvegardés ── */
     #page-saved { display: none; }
 
+    /* ── Page Corrélations ── */
+    #page-corr { display: none; }
+
+    .corr-card {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      border-left: 3px solid var(--sub);
+      cursor: default;
+    }
+
+    .corr-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .corr-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--sub);
+      border: 1px solid var(--line);
+    }
+
+    .corr-titre {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .corr-synthese {
+      font-size: 13px;
+      color: var(--sub);
+      line-height: 1.6;
+    }
+
     /* ── Page Paramètres ── */
     #page-params { display: none; padding: 24px 20px; }
 
@@ -621,6 +662,17 @@
   <div id="feed"></div>
 </div>
 
+<!-- ── PAGE CORRÉLATIONS ── -->
+<div id="page-corr">
+  <header>
+    <div class="header-row" style="margin-bottom:14px">
+      <h1>Corrélations</h1>
+      <div class="live"><div class="live-dot"></div>Analyse quotidienne</div>
+    </div>
+  </header>
+  <div id="feed-corr"></div>
+</div>
+
 <!-- ── PAGE SAUVEGARDÉS ── -->
 <div id="page-saved">
   <header>
@@ -756,6 +808,9 @@
   <button class="nav-btn actif" onclick="afficherPage('feed', this)">
     <span class="nav-icon">◈</span>Actualités
   </button>
+  <button class="nav-btn" onclick="afficherPage('corr', this)">
+    <span class="nav-icon">⊕</span>Corrélations
+  </button>
   <button class="nav-btn" onclick="afficherPage('saved', this)">
     <span class="nav-icon">◇</span>Sauvegardés
   </button>
@@ -787,13 +842,14 @@
 
   // ── Navigation ──────────────────────────────────────────────────────────
   function afficherPage(page, btn) {
-    ["feed","saved","params"].forEach(p => {
+    ["feed","corr","saved","params"].forEach(p => {
       document.getElementById("page-" + p).style.display = "none";
     });
     document.getElementById("page-" + page).style.display = "block";
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("actif"));
     btn.classList.add("actif");
     if (page === "saved") chargerSauvegardes();
+    if (page === "corr")  chargerCorrelations();
   }
 
   // ── Filtres ─────────────────────────────────────────────────────────────
@@ -882,6 +938,33 @@
     const s = await fetch("/api/stats").then(r => r.json());
     document.getElementById("stat-total").textContent = s.total;
     document.getElementById("stat-jour").textContent  = s.aujourd_hui;
+  }
+
+  // ── Corrélations ────────────────────────────────────────────────────────
+  async function chargerCorrelations() {
+    const feed = document.getElementById("feed-corr");
+    feed.innerHTML = `<div class="vide">Chargement...</div>`;
+    const corrs = await fetch("/api/correlations").then(r => r.json()).catch(() => []);
+
+    if (!corrs.length) {
+      feed.innerHTML = `<div class="vide">Aucune corrélation pour le moment.<br>Le résumé est généré chaque matin à 8h.</div>`;
+      return;
+    }
+
+    feed.innerHTML = corrs.map(c => {
+      const dom = (c.domaines || []).join(" · ") || "Général";
+      const nb  = (c.alertes_ids || []).length;
+      const d   = c.date ? new Date(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "";
+      return `<div class="corr-card">
+        <div class="corr-meta">
+          <span class="corr-badge">${esc(dom)}</span>
+          <span class="corr-badge">${nb} alerte${nb > 1 ? "s" : ""} liées</span>
+          <span style="font-size:11px;color:var(--sub);margin-left:auto">${d}</span>
+        </div>
+        <div class="corr-titre">${esc(c.titre || "")}</div>
+        <div class="corr-synthese">${esc(c.synthese || "")}</div>
+      </div>`;
+    }).join("");
   }
 
   // ── Sauvegardés ─────────────────────────────────────────────────────────
