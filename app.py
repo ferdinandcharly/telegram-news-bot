@@ -71,7 +71,7 @@ def _page_auth(sous_titre, form_html, erreur="", lien=""):
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:#000;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}}
-.box{{width:100%;max-width:360px}}
+.box{{width:100%;max-width:360px;text-align:center}}
 .brand{{font-size:13px;font-weight:600;color:#555;letter-spacing:0.04em;
         text-transform:uppercase;margin-bottom:40px}}
 h1{{font-size:22px;font-weight:700;letter-spacing:-0.3px;margin-bottom:6px}}
@@ -247,6 +247,16 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 .btn-go:disabled { opacity: 0.25; cursor: default; }
 .cancel { display: block; text-align: center; margin-top: 18px;
           font-size: 13px; color: var(--sub); text-decoration: none; }
+
+.notif-card { display: flex; align-items: center; justify-content: space-between;
+              gap: 16px; padding: 16px; background: var(--surface);
+              border: 1px solid var(--line); border-radius: 10px; }
+.notif-titre { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.notif-desc { font-size: 12px; color: var(--sub); line-height: 1.5; }
+.btn-notif-ob { flex-shrink: 0; padding: 9px 18px; background: var(--text); color: var(--bg);
+                border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+                cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
+.btn-notif-ob:disabled { opacity: 0.35; cursor: default; }
 </style></head>
 <body>
 
@@ -319,6 +329,20 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
   </div>
 </div>
 
+<div class="step">
+  <div class="step-num">Étape 5</div>
+  <div class="step-title">Notifications push</div>
+  <div class="step-sub">Reçois une alerte immédiate sur ton téléphone pour les événements critiques</div>
+  <div class="notif-card" id="notif-card">
+    <div class="notif-info">
+      <div class="notif-titre">Alertes en temps réel</div>
+      <div class="notif-desc">Guerres, catastrophes, découvertes majeures — uniquement ce qui compte.</div>
+    </div>
+    <button type="button" class="btn-notif-ob" id="btn-notif-ob" onclick="demanderNotifs()">Activer</button>
+  </div>
+  <div id="notif-state" style="font-size:13px;color:var(--sub);margin-top:12px;display:none"></div>
+</div>
+
 <div class="cta">
   <button class="btn-go" id="btn-go" onclick="submit()">Commencer →</button>
   <a href="/cancel-register" class="cancel">Annuler et supprimer mon compte</a>
@@ -336,6 +360,57 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
       document.documentElement.setAttribute("data-theme", b.dataset.t);
     });
   });
+
+  function urlB64ToUint8Array(b64) {
+    const pad = "=".repeat((4 - b64.length % 4) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
+  }
+
+  async function demanderNotifs() {
+    const btn   = document.getElementById("btn-notif-ob");
+    const state = document.getElementById("notif-state");
+    btn.disabled = true;
+    btn.textContent = "…";
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        state.textContent = "Notifications refusées — tu pourras les activer plus tard dans les paramètres.";
+        state.style.display = "block";
+        btn.textContent = "Refusé";
+        return;
+      }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      const { key } = await fetch("/api/vapid-key").then(r => r.json());
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlB64ToUint8Array(key)
+      });
+      await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub)
+      });
+      btn.textContent = "✓ Activées";
+      state.textContent = "Tu recevras les alertes critiques en temps réel.";
+      state.style.display = "block";
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = "Activer";
+      state.textContent = "Erreur — réessaie depuis les paramètres.";
+      state.style.display = "block";
+    }
+  }
+
+  // Vérifier si déjà accordé
+  if (Notification.permission === "granted") {
+    const btn = document.getElementById("btn-notif-ob");
+    if (btn) { btn.textContent = "✓ Activées"; btn.disabled = true; }
+  } else if (Notification.permission === "denied") {
+    const btn = document.getElementById("btn-notif-ob");
+    if (btn) { btn.textContent = "Bloquées"; btn.disabled = true; }
+  }
 
   async function submit() {
     const domaines = [...document.querySelectorAll(".topic.on")].map(b => b.dataset.d);
