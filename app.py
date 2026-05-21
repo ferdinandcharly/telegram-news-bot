@@ -71,37 +71,40 @@ def _page_login(erreur=""):
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:#0d0d0d;color:#fff;
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      min-height:100vh;display:flex;align-items:center;justify-content:center}}
-.card{{background:#0d0d0d;border:0.5px solid #222;border-radius:16px;
-       padding:36px 32px;width:320px}}
-.brand{{font-size:9px;letter-spacing:3px;color:#555;text-transform:uppercase;
-        text-align:center;margin-bottom:20px}}
-h1{{font-size:20px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px}}
-.sub{{font-size:11px;color:#555;text-align:center;margin-bottom:24px}}
-input{{width:100%;padding:9px 13px;background:#1a1a1a;border:0.5px solid #2e2e2e;
-       border-radius:9px;color:#fff;font-size:12px;outline:none;
-       transition:border-color 0.15s;margin-bottom:9px;display:block}}
-input::placeholder{{color:#4a4a4a}}
-input:focus{{border-color:#444}}
-button[type=submit]{{width:100%;padding:10px;background:#fff;color:#000;border:none;
-       border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;margin-top:4px}}
-.err{{font-size:11px;color:#e05252;text-align:center;margin-bottom:12px}}
-.lien{{font-size:10px;color:#444;text-align:center;margin-top:18px}}
-.lien a{{color:#444;text-decoration:none}}
-.lien a:hover{{color:#777}}
+      min-height:100vh;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:0 32px}}
+.brand{{font-size:9px;letter-spacing:3px;color:#333;text-transform:uppercase;
+        font-weight:600;text-align:center;margin-bottom:48px}}
+h1{{font-size:24px;font-weight:700;color:#fff;text-align:center;
+    letter-spacing:-0.5px;margin-bottom:4px}}
+.sub{{font-size:12px;color:#444;text-align:center;margin-bottom:32px}}
+.form{{width:100%;max-width:280px}}
+input{{width:100%;padding:11px 14px;background:#111;border:0.5px solid #222;
+       border-radius:10px;color:#fff;font-size:13px;outline:none;
+       transition:border-color 0.2s;margin-bottom:8px;display:block}}
+input::placeholder{{color:#3a3a3a}}
+input:focus{{border-color:#3a3a3a}}
+button[type=submit]{{width:100%;padding:12px;background:#fff;color:#000;border:none;
+       border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}}
+.err{{font-size:11px;color:#c0392b;text-align:center;margin-bottom:14px}}
+.lien{{font-size:11px;color:#333;text-align:center;margin-top:22px}}
+.lien a{{color:#555;text-decoration:none}}
+.lien a:hover{{color:#888}}
 </style></head>
-<body><div class="card">
+<body>
 <div class="brand">News Alert</div>
 <h1>Connexion</h1>
 <p class="sub">Ton fil d'actu filtré par IA.</p>
+<div class="form">
 {err}
 <form method="POST">
 <input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
 <button type="submit">Continuer</button>
 </form>
+</div>
 <p class="lien"><a href="/register">Créer un compte</a></p>
-</div></body></html>"""
+</body></html>"""
 
 def _page_auth(sous_titre, form_html, erreur="", lien=""):
     err = f'<p class="err">{erreur}</p>' if erreur else ""
