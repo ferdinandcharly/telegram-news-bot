@@ -1460,6 +1460,17 @@
     if (d.email) document.getElementById("user-email").textContent = d.email;
   });
 
+  async function refreshToken() {
+    try { await fetch("/api/refresh-token", { method: "POST" }); } catch {}
+  }
+
+  // Rafraîchir le token Supabase toutes les 50 min
+  setInterval(refreshToken, 50 * 60 * 1000);
+  // Rafraîchir au retour sur l'app (après mise en veille / changement d'onglet)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshToken();
+  });
+
   init().then(checkNotifHash);
   initNotifications();
   setInterval(async () => {

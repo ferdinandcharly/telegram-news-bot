@@ -12,6 +12,7 @@ import bot
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 
 # ── Mémoire ───────────────────────────────────────────────────────────────────
 alertes   = []
@@ -111,6 +112,7 @@ def login():
                           json={"email": email, "password": pwd}, timeout=10)
             if r.ok:
                 d = r.json()
+                session.permanent        = True
                 session["access_token"]  = d["access_token"]
                 session["refresh_token"] = d.get("refresh_token")
                 session["user_id"]       = d["user"]["id"]
@@ -152,6 +154,7 @@ def register():
             if r.ok:
                 d = r.json()
                 if d.get("access_token"):
+                    session.permanent        = True
                     session["access_token"]  = d["access_token"]
                     session["refresh_token"] = d.get("refresh_token")
                     session["user_id"]       = d["user"]["id"]
@@ -356,10 +359,32 @@ def cancel_register():
     session.clear()
     return redirect("/login")
 
+@app.route("/api/refresh-token", methods=["POST"])
+def refresh_token():
+    rt = session.get("refresh_token")
+    if not rt:
+        return jsonify({"erreur": "pas de refresh token"}), 401
+    try:
+        r = http.post(sb_auth("/token?grant_type=refresh_token"),
+                      headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                      json={"refresh_token": rt}, timeout=10)
+        if r.ok:
+            d = r.json()
+            session.permanent       = True
+            session["access_token"] = d["access_token"]
+            if d.get("refresh_token"):
+                session["refresh_token"] = d["refresh_token"]
+            return jsonify({"ok": True})
+        return jsonify({"erreur": "refresh échoué"}), 401
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+
 @app.before_request
 def check_auth():
-    exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding", "/cancel-register"]
-    if request.path in exempts:
+    exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding", "/cancel-register",
+               "/api/refresh-token"]
+    if request.path in exempts or request.path.startswith("/a/"):
         return
     if not session.get("access_token"):
         if request.path.startswith("/api"):
