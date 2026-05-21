@@ -70,36 +70,45 @@ def _page_auth(sous_titre, form_html, erreur="", lien=""):
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:#000;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      display:flex;align-items:center;justify-content:center;min-height:100vh}}
-.box{{width:100%;max-width:340px;padding:0 24px;text-align:center}}
-h1{{font-size:20px;font-weight:700;margin-bottom:6px}}
-.sub{{font-size:13px;color:#666;margin-bottom:28px}}
-input{{width:100%;padding:13px 16px;background:#111;border:1px solid #222;border-radius:10px;
-       color:#f0f0f0;font-size:15px;margin-bottom:10px;outline:none}}
-input:focus{{border-color:#444}}
-button{{width:100%;padding:13px;background:#f0f0f0;color:#000;border:none;
-        border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}}
-.err{{color:#ef4444;font-size:13px;margin-bottom:10px}}
-.lien{{font-size:13px;color:#555;margin-top:20px}}
-.lien a{{color:#888;text-decoration:none}}
+      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}}
+.box{{width:100%;max-width:360px}}
+.brand{{font-size:13px;font-weight:600;color:#555;letter-spacing:0.04em;
+        text-transform:uppercase;margin-bottom:40px}}
+h1{{font-size:22px;font-weight:700;letter-spacing:-0.3px;margin-bottom:6px}}
+.sub{{font-size:14px;color:#555;margin-bottom:32px;line-height:1.5}}
+input{{width:100%;padding:14px 16px;background:#0e0e0e;border:1px solid #1e1e1e;
+       border-radius:10px;color:#f0f0f0;font-size:15px;margin-bottom:10px;outline:none;
+       transition:border-color 0.15s}}
+input:focus{{border-color:#333}}
+button[type=submit]{{width:100%;padding:14px;background:#f0f0f0;color:#000;border:none;
+        border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:6px;
+        letter-spacing:-0.1px}}
+.err{{color:#ef4444;font-size:13px;margin-bottom:14px;padding:12px 14px;
+      background:#1a0a0a;border:1px solid #3a1010;border-radius:8px}}
+.lien{{font-size:13px;color:#444;margin-top:24px}}
+.lien a{{color:#666;text-decoration:none}}
+.lien a:hover{{color:#999}}
 </style></head>
 <body><div class="box">
-<h1>News Alert</h1>
-<p class="sub">{sous_titre}</p>
+<div class="brand">News Alert</div>
+<h1>{sous_titre}</h1>
+<p class="sub">Ton fil d'actu filtré par IA.</p>
 {err}{form_html}
 <p class="lien">{lien}</p>
 </div></body></html>"""
 
 _FORM_LOGIN = """<form method="POST">
-<input type="email" name="email" placeholder="Email" autocomplete="email"/>
-<input type="password" name="password" placeholder="Mot de passe"/>
-<button type="submit">Se connecter</button></form>"""
+<input type="email" name="email" placeholder="Adresse email" autocomplete="email"/>
+<input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
+<button type="submit">Continuer</button>
+</form>"""
 
 _FORM_REGISTER = """<form method="POST">
-<input type="email" name="email" placeholder="Email" autocomplete="email"/>
-<input type="password" name="password" placeholder="Mot de passe (6 min.)"/>
-<input type="password" name="confirm" placeholder="Confirmer le mot de passe"/>
-<button type="submit">Créer mon compte</button></form>"""
+<input type="email" name="email" placeholder="Adresse email" autocomplete="email"/>
+<input type="password" name="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="new-password"/>
+<input type="password" name="confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"/>
+<button type="submit">Créer mon compte</button>
+</form>"""
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -181,60 +190,68 @@ _ONBOARDING_HTML = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>News Alert</title>
 <style>
-:root, [data-theme="dark"] { --bg:#0a0a0a; --text:#f0f0f0; --sub:#555; --line:#1a1a1a; --surface:#111; }
+:root, [data-theme="dark"] { --bg:#000; --text:#f0f0f0; --sub:#555; --line:#1a1a1a; --surface:#0e0e0e; }
 [data-theme="dim"]   { --bg:#161b22; --text:#e6edf3; --sub:#8b949e; --line:#30363d; --surface:#1c2128; }
-[data-theme="light"] { --bg:#ffffff; --text:#24292f; --sub:#57606a; --line:#e1e4e8; --surface:#f6f8fa; }
+[data-theme="light"] { --bg:#fff; --text:#111; --sub:#888; --line:#e8e8e8; --surface:#f5f5f5; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--text);
        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-       min-height: 100vh; padding: 0 0 40px; }
+       min-height: 100vh; padding-bottom: 48px; }
 
-.hero { padding: 52px 24px 32px; border-bottom: 1px solid var(--line); }
-.hero-label { font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
-              text-transform: uppercase; color: var(--sub); margin-bottom: 14px; }
-.hero h1 { font-size: 28px; font-weight: 700; line-height: 1.2;
-           letter-spacing: -0.5px; margin-bottom: 8px; }
-.hero p { font-size: 14px; color: var(--sub); line-height: 1.6; }
+.hero { padding: 56px 28px 36px; border-bottom: 1px solid var(--line); }
+.hero-brand { font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+              text-transform: uppercase; color: var(--sub); margin-bottom: 20px; }
+.hero h1 { font-size: 26px; font-weight: 700; line-height: 1.25;
+           letter-spacing: -0.4px; margin-bottom: 10px; }
+.hero p { font-size: 14px; color: var(--sub); line-height: 1.65; }
 
-.step { padding: 28px 24px; border-bottom: 1px solid var(--line); }
-.step-num { font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
-            text-transform: uppercase; color: var(--sub); margin-bottom: 6px; }
-.step-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.step { padding: 32px 28px; border-bottom: 1px solid var(--line); }
+.step-num { font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+            text-transform: uppercase; color: var(--sub); margin-bottom: 8px; }
+.step-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.step-sub { font-size: 13px; color: var(--sub); margin-bottom: 20px; line-height: 1.5; }
 
 input[type=text] { width: 100%; padding: 14px 16px; background: var(--surface);
-                   border: 1px solid var(--line); border-radius: 12px; color: var(--text);
+                   border: 1px solid var(--line); border-radius: 10px; color: var(--text);
                    font-size: 15px; outline: none; transition: border-color 0.15s; }
 input[type=text]:focus { border-color: var(--sub); }
 
 .topics { display: flex; flex-wrap: wrap; gap: 8px; }
-.topic { padding: 10px 18px; border-radius: 24px; border: 1px solid var(--line);
+.topic { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line);
          background: none; color: var(--sub); font-size: 14px; font-weight: 500;
          cursor: pointer; transition: all 0.15s; user-select: none; }
 .topic.on { border-color: var(--text); color: var(--text); background: var(--surface); }
-.topic-hint { font-size: 12px; color: var(--sub); margin-top: 12px; opacity: 0.6; }
 
 .themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.theme-card { border: 1px solid var(--line); border-radius: 14px; padding: 14px 10px;
+.theme-card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 10px;
               cursor: pointer; text-align: center; transition: all 0.15s; background: none; }
 .theme-card.on { border-color: var(--text); background: var(--surface); }
-.theme-swatch { height: 40px; border-radius: 8px; margin-bottom: 8px; }
-.sw-dark { background: #000; border: 1px solid #222; }
-.sw-dim  { background: linear-gradient(135deg, #161b22, #1c2128); }
-.sw-light { background: #fff; border: 1px solid #ddd; }
-.theme-name { font-size: 12px; font-weight: 600; color: var(--sub); }
+.theme-swatch { height: 36px; border-radius: 6px; margin-bottom: 10px; }
+.sw-dark  { background: #000; border: 1px solid #222; }
+.sw-dim   { background: #161b22; border: 1px solid #30363d; }
+.sw-light { background: #fff; border: 1px solid #e8e8e8; }
+.theme-name { font-size: 12px; font-weight: 500; color: var(--sub); }
 .theme-card.on .theme-name { color: var(--text); }
 
-.cta { padding: 24px; }
-.btn-go { width: 100%; padding: 16px; background: var(--text); color: var(--bg); border: none;
-          border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer;
-          letter-spacing: -0.2px; transition: opacity 0.15s; }
-.btn-go:disabled { opacity: 0.3; cursor: default; }
-.error { font-size: 13px; color: #ef4444; text-align: center; margin-bottom: 12px; display: none; }
+.heure-row { display: flex; align-items: center; justify-content: space-between;
+             padding: 14px 16px; background: var(--surface);
+             border: 1px solid var(--line); border-radius: 10px; }
+.heure-label { font-size: 14px; color: var(--text); }
+select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line);
+         border-radius: 8px; color: var(--text); font-size: 14px; outline: none; }
+
+.cta { padding: 28px; }
+.btn-go { width: 100%; padding: 15px; background: var(--text); color: var(--bg); border: none;
+          border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+          letter-spacing: -0.1px; transition: opacity 0.15s; }
+.btn-go:disabled { opacity: 0.25; cursor: default; }
+.cancel { display: block; text-align: center; margin-top: 18px;
+          font-size: 13px; color: var(--sub); text-decoration: none; }
 </style></head>
 <body>
 
 <div class="hero">
-  <div class="hero-label">News Alert</div>
+  <div class="hero-brand">News Alert</div>
   <h1>Personnalise<br>ton fil d'actu</h1>
   <p>Choisis tes sujets, reçois uniquement<br>les événements qui comptent vraiment.</p>
 </div>
@@ -242,12 +259,14 @@ input[type=text]:focus { border-color: var(--sub); }
 <div class="step">
   <div class="step-num">Étape 1</div>
   <div class="step-title">Comment t'appeler ?</div>
-  <input type="text" id="display-name" placeholder="Ton prénom ou pseudo" maxlength="30"/>
+  <div class="step-sub">Optionnel — utilisé dans tes notifications matinales</div>
+  <input type="text" id="display-name" placeholder="Prénom ou pseudo" maxlength="30"/>
 </div>
 
 <div class="step">
   <div class="step-num">Étape 2</div>
-  <div class="step-title">Quels sujets t'intéressent ? <span style="color:#333;font-weight:400;font-size:14px">(choisis au moins 1)</span></div>
+  <div class="step-title">Quels sujets t'intéressent ?</div>
+  <div class="step-sub">Choisis au moins un domaine</div>
   <div class="topics">
     <button type="button" class="topic" data-d="🌍 Géopolitique">🌍 Géopolitique</button>
     <button type="button" class="topic" data-d="🔬 Science">🔬 Science</button>
@@ -261,6 +280,7 @@ input[type=text]:focus { border-color: var(--sub); }
 <div class="step">
   <div class="step-num">Étape 3</div>
   <div class="step-title">Ton thème</div>
+  <div class="step-sub">Tu pourras le changer dans les paramètres</div>
   <div class="themes">
     <button type="button" class="theme-card on" data-t="dark">
       <div class="theme-swatch sw-dark"></div>
@@ -280,12 +300,10 @@ input[type=text]:focus { border-color: var(--sub); }
 <div class="step">
   <div class="step-num">Étape 4</div>
   <div class="step-title">Résumé matinal</div>
-  <div style="font-size:13px;color:var(--sub);margin-bottom:14px">Reçois chaque matin une synthèse des infos de la nuit</div>
-  <div style="display:flex;align-items:center;gap:12px">
-    <label style="font-size:14px;color:var(--text)">Heure de la corrélation</label>
-    <select id="select-heure-recap-ob"
-            style="padding:6px 10px;background:var(--surface);border:1px solid var(--line);
-                   border-radius:8px;color:var(--text);font-size:13px;outline:none">
+  <div class="step-sub">Reçois chaque matin une synthèse des événements de la nuit</div>
+  <div class="heure-row">
+    <span class="heure-label">Heure du résumé</span>
+    <select id="select-heure-recap-ob">
       <option value="5">5h00</option>
       <option value="6">6h00</option>
       <option value="7">7h00</option>
@@ -303,8 +321,7 @@ input[type=text]:focus { border-color: var(--sub); }
 
 <div class="cta">
   <button class="btn-go" id="btn-go" onclick="submit()">Commencer →</button>
-  <a href="/cancel-register" style="display:block;text-align:center;margin-top:16px;
-     font-size:13px;color:var(--sub);text-decoration:none;">Annuler et supprimer mon compte</a>
+  <a href="/cancel-register" class="cancel">Annuler et supprimer mon compte</a>
 </div>
 
 <script>
