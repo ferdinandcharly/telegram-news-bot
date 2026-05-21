@@ -72,6 +72,31 @@ def sauver_vus(vus):
         json.dump(list(vus), f)
 
 
+def _mots_cles(titre):
+    """Extrait les mots significatifs d'un titre pour la déduplication."""
+    bruit = {"le","la","les","un","une","des","de","du","en","au","aux","et","ou",
+             "est","sont","a","ont","the","a","an","in","of","to","for","is","are"}
+    return {m for m in titre.lower().split() if len(m) > 3 and m not in bruit}
+
+# Titres récents pour déduplication (les 200 derniers)
+_titres_recents = []
+
+def est_doublon(titre):
+    """Retourne True si un article très similaire a déjà été vu récemment."""
+    mots = _mots_cles(titre)
+    if not mots:
+        return False
+    for t_ancien in _titres_recents[-200:]:
+        mots_ancien = _mots_cles(t_ancien)
+        if not mots_ancien:
+            continue
+        communs = mots & mots_ancien
+        # Doublon si >55% des mots clés sont partagés
+        if len(communs) / max(len(mots), len(mots_ancien)) > 0.55:
+            return True
+    return False
+
+
 def est_important(titre, resume, domaine):
     try:
         rep = client.chat.completions.create(
@@ -84,13 +109,16 @@ def est_important(titre, resume, domaine):
                     f"Résumé : {resume[:400]}\n\n"
                     "Évalue l'importance de cet événement sur 3 niveaux :\n"
                     "- niveau 3 (CRITIQUE) : guerre déclarée, catastrophe naturelle massive, "
-                    "découverte scientifique historique mondiale, krach financier, "
-                    "catastrophe environnementale irréversible, percée technologique majeure.\n"
-                    "- niveau 2 (IMPORTANT) : événement significatif qui mérite attention "
-                    "sans être une urgence absolue (tension diplomatique, découverte notable, "
-                    "décision économique importante, incident environnemental grave).\n"
-                    "- niveau 0 : tout le reste (produit, mise à jour, rapport, nomination, "
-                    "conférence, sondage, opinion). Rejette au moins 90% des articles.\n"
+                    "découverte scientifique historique mondiale, krach financier majeur, "
+                    "catastrophe environnementale irréversible, percée technologique majeure "
+                    "changeant définitivement un secteur. Événement qui fera la une mondiale.\n"
+                    "- niveau 2 (IMPORTANT) : événement majeur et inhabituel qui change "
+                    "significativement une situation — pas une mise à jour d'un événement existant. "
+                    "Exemples : premier acte diplomatique d'ampleur, décision économique structurelle, "
+                    "découverte scientifique solide publiée, incident grave documenté.\n"
+                    "- niveau 0 : tout le reste — suivi d'un événement déjà connu, opinion, "
+                    "analyse, rapport, nomination, conférence, sondage, produit, mise à jour, "
+                    "rumeur, déclaration sans acte concret. Rejette au moins 95% des articles.\n"
                     "Si niveau vaut 2 ou 3, rédige un teaser en français.\n"
                     "Réponds JSON uniquement, avec niveau valant 0, 2 ou 3 :\n"
                     "{\"niveau\": 0, \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}\n"
@@ -151,6 +179,12 @@ def verifier(premiere_fois=False):
                     titre  = article.get("title", "")
                     resume = article.get("summary", article.get("description", ""))
                     lien   = article.get("link", "")
+
+                    if est_doublon(titre):
+                        print(f"  [Doublon] {titre[:60]}")
+                        continue
+
+                    _titres_recents.append(titre)
 
                     niveau, teaser = est_important(titre, resume, domaine)
 
