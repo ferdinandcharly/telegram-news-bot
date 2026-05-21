@@ -199,7 +199,7 @@
 
     /* ── Carte ── */
     .carte {
-      padding: 18px 20px 16px;
+      padding: 20px 20px 18px;
       border-bottom: 1px solid var(--line);
       cursor: pointer;
       transition: background 0.12s;
@@ -236,13 +236,13 @@
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 7px 14px;
-      border-radius: 20px;
+      padding: 6px 12px;
+      border-radius: 8px;
       border: 1px solid var(--line);
       background: none;
       color: var(--sub);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
       flex-shrink: 0;
@@ -257,21 +257,22 @@
     .carte-titre {
       font-size: 15px;
       font-weight: 600;
-      line-height: 1.4;
+      line-height: 1.45;
       color: var(--text);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .carte-resume {
       font-size: 13px;
       color: var(--sub);
-      line-height: 1.5;
-      margin-bottom: 12px;
+      line-height: 1.6;
+      margin-bottom: 14px;
     }
 
     .carte-hint {
       font-size: 11px;
       color: var(--muted2);
+      letter-spacing: 0.01em;
     }
 
     .badge-niveau {
@@ -401,9 +402,9 @@
 
     .modal-synthese {
       font-size: 14px;
-      line-height: 1.7;
-      color: #ccc;
-      margin-bottom: 24px;
+      line-height: 1.75;
+      color: var(--sub);
+      margin-bottom: 28px;
       min-height: 60px;
     }
 
@@ -444,7 +445,7 @@
       background: var(--btn-bg);
       color: var(--btn-text);
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       font-size: 14px;
       font-weight: 600;
       text-align: center;
@@ -459,9 +460,9 @@
       background: none;
       color: var(--sub);
       border: 1px solid var(--line);
-      border-radius: 12px;
+      border-radius: 10px;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 500;
       text-align: center;
       cursor: pointer;
       transition: color 0.15s, border-color 0.15s;
@@ -476,65 +477,71 @@
     #page-corr { display: none; }
 
     .corr-card {
-      padding: 18px 20px;
+      padding: 22px 20px;
       border-bottom: 1px solid var(--line);
-      border-left: 3px solid var(--sub);
       cursor: default;
     }
 
     .corr-meta {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+      gap: 6px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
 
     .corr-badge {
       font-size: 10px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 4px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
       background: var(--surface);
       color: var(--sub);
       border: 1px solid var(--line);
     }
 
+    .corr-badge-date {
+      font-size: 11px;
+      color: var(--sub);
+      margin-left: auto;
+    }
+
     .corr-titre {
       font-size: 15px;
       font-weight: 600;
-      line-height: 1.4;
-      margin-bottom: 8px;
+      line-height: 1.45;
+      margin-bottom: 14px;
     }
 
     .corr-synthese {
       font-size: 13px;
       color: var(--sub);
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     .corr-section {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      margin-top: 10px;
+      gap: 4px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
     }
 
     .corr-label {
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.07em;
       color: var(--sub);
     }
 
     .corr-text {
       font-size: 13px;
       color: var(--text);
-      line-height: 1.55;
+      line-height: 1.6;
     }
 
-    .corr-section + .corr-section { margin-top: 8px; }
+    .corr-section + .corr-section { margin-top: 10px; }
 
     /* ── Page Paramètres ── */
     #page-params { display: none; padding: 24px 20px; }
@@ -568,8 +575,8 @@
     }
 
     .param-row:last-child { border-bottom: none; }
-    .param-label { font-size: 14px; font-weight: 500; }
-    .param-sub   { font-size: 12px; color: var(--sub); margin-top: 2px; }
+    .param-label { font-size: 14px; font-weight: 500; letter-spacing: -0.1px; }
+    .param-sub   { font-size: 11px; color: var(--sub); margin-top: 3px; line-height: 1.4; }
 
     .btn-theme {
       padding: 5px 12px;
@@ -1112,8 +1119,8 @@
       return `<div class="corr-card">
         <div class="corr-meta">
           <span class="corr-badge">${esc(dom)}</span>
-          <span class="corr-badge">${nb} alerte${nb > 1 ? "s" : ""} liées</span>
-          <span style="font-size:11px;color:var(--sub);margin-left:auto">${d}</span>
+          <span class="corr-badge" style="color:var(--sub)">${nb} alerte${nb > 1 ? "s" : ""}</span>
+          <span class="corr-badge-date">${d}</span>
         </div>
         <div class="corr-titre">${esc(c.titre || "")}</div>
         ${corps}
