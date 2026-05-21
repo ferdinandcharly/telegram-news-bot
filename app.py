@@ -73,7 +73,7 @@ body{{background:#0d0d0d;color:#fff;
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       min-height:100vh;display:flex;align-items:center;justify-content:center}}
 .card{{background:#0d0d0d;border:0.5px solid #222;border-radius:16px;
-       padding:32px 28px;width:260px}}
+       padding:36px 32px;width:320px}}
 .brand{{font-size:9px;letter-spacing:3px;color:#555;text-transform:uppercase;
         text-align:center;margin-bottom:20px}}
 h1{{font-size:20px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px}}

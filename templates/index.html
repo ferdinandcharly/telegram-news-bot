@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>News Alert</title>
   <link rel="manifest" href="/static/manifest.json" />
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -90,29 +92,53 @@
       z-index: 10;
       background: var(--header-bg);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--line);
-      padding: 16px 20px 0;
+      border-bottom: 0.5px solid #1e1e1e;
     }
 
-    .header-row {
+    .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
+      padding: 10px 14px;
     }
 
-    .header-row h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+    .topbar-brand {
+      font-size: 7px;
+      letter-spacing: 2px;
+      color: #444;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      color: var(--sub);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      font-size: 18px;
+      padding: 2px;
+    }
+
+    .btn-icon.actif { color: var(--text); }
 
     .live {
       display: flex;
       align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      color: var(--sub);
+      gap: 4px;
+      font-size: 9px;
+      color: #333;
     }
 
     .live-dot {
-      width: 6px; height: 6px;
+      width: 5px; height: 5px;
       background: #3ecf5e;
       border-radius: 50%;
       animation: blink 2.5s infinite;
@@ -127,8 +153,8 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 20px;
-      border-bottom: 1px solid var(--line);
+      padding: 8px 14px;
+      border-bottom: 0.5px solid #1e1e1e;
     }
 
     .filtre-tout {
@@ -189,11 +215,15 @@
     .stat-label { font-size: 10px; color: var(--sub); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* ── Feed ── */
-    #feed, #feed-saved {
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    #feed, #feed-saved { display: block; }
+
+    .section-label {
+      font-size: 8px;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 14px 4px;
+      font-weight: 600;
     }
 
     .vide {
@@ -206,91 +236,108 @@
 
     /* ── Carte ── */
     .carte {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      border-left: 3px solid transparent;
-      padding: 16px 16px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 9px 14px;
+      border-bottom: 0.5px solid #181818;
       cursor: pointer;
-      transition: border-color 0.15s, background 0.12s;
-      position: relative;
-      overflow: hidden;
+      transition: background 0.1s;
+    }
+
+    .carte-featured {
+      background: #141414;
+      border-bottom: 0.5px solid #222;
+      padding: 10px 14px;
     }
 
     .carte:active { background: var(--surface2); }
 
-    .carte-geo     { border-left-color: var(--geo); }
-    .carte-sci     { border-left-color: var(--sci); }
-    .carte-tech    { border-left-color: var(--tech); }
-    .carte-finance { border-left-color: var(--finance); }
-    .carte-env     { border-left-color: var(--env); }
-    .carte-sport   { border-left-color: var(--sport); }
+    .carte-body { flex: 1; min-width: 0; }
 
-    .carte-meta {
+    .carte-source-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .source-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .source-name { font-size: 8px; color: #555; font-weight: 500; }
+    .source-sep  { font-size: 8px; color: #3a3a3a; }
+    .source-time { font-size: 8px; color: #555; }
+    .source-critique { font-size: 7px; color: #ef4444; margin-left: 2px; }
+
+    .carte-geo     .source-dot { background: var(--geo); }
+    .carte-sci     .source-dot { background: var(--sci); }
+    .carte-tech    .source-dot { background: var(--tech); }
+    .carte-finance .source-dot { background: var(--finance); }
+    .carte-env     .source-dot { background: var(--env); }
+    .carte-sport   .source-dot { background: var(--sport); }
+
+    .carte-titre {
+      font-size: 10px;
+      font-weight: 500;
+      line-height: 1.45;
+      color: #ddd;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .carte-resume {
+      font-size: 8px;
+      color: #555;
+      line-height: 1.4;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .carte-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 10px;
     }
 
-    .carte-gauche { display: flex; align-items: center; gap: 8px; }
+    .carte-category { font-size: 8px; color: #383838; }
 
-    .carte-domaine {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-
-    .carte-geo     .carte-domaine { color: var(--geo); }
-    .carte-sci     .carte-domaine { color: var(--sci); }
-    .carte-tech    .carte-domaine { color: var(--tech); }
-    .carte-finance .carte-domaine { color: var(--finance); }
-    .carte-env     .carte-domaine { color: var(--env); }
-    .carte-sport   .carte-domaine { color: var(--sport); }
-    .carte-heure { font-size: 11px; color: var(--sub); }
+    .carte-actions { display: flex; gap: 4px; }
 
     .btn-save {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 5px 10px;
-      border-radius: 6px;
-      border: 1px solid var(--line);
+      padding: 3px 7px;
+      border-radius: 5px;
+      border: 0.5px solid #2a2a2a;
       background: none;
-      color: var(--sub);
-      font-size: 11px;
-      font-weight: 500;
+      color: #444;
+      font-size: 10px;
       cursor: pointer;
       transition: all 0.15s;
       flex-shrink: 0;
-      white-space: nowrap;
     }
 
-    .btn-save.saved {
-      border-color: var(--text);
-      color: var(--text);
-    }
+    .btn-save.saved { border-color: #555; color: #ccc; }
 
-    .carte-titre {
-      font-size: 14px;
-      font-weight: 600;
-      line-height: 1.45;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
-
-    .carte-resume {
-      font-size: 12px;
-      color: var(--sub);
-      line-height: 1.6;
-      margin-bottom: 12px;
-    }
-
-    .carte-hint {
-      font-size: 10px;
-      color: var(--muted2);
-      letter-spacing: 0.01em;
+    .carte-thumb {
+      flex-shrink: 0;
+      background: #1e1e1e;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #2e2e2e;
     }
 
     .badge-niveau {
@@ -661,11 +708,10 @@
     nav {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      background: var(--nav-bg);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid var(--line);
+      background: #0d0d0d;
+      border-top: 0.5px solid #1e1e1e;
       display: flex;
-      padding: 6px 0 14px;
+      padding: 8px 0 12px;
     }
 
     .nav-btn {
@@ -676,17 +722,17 @@
       gap: 3px;
       background: none;
       border: none;
-      color: var(--sub);
-      font-size: 10px;
+      color: #444;
+      font-size: 7px;
       font-weight: 500;
       cursor: pointer;
-      padding: 6px;
+      padding: 4px 6px;
       letter-spacing: 0.3px;
       transition: color 0.15s;
     }
 
-    .nav-btn.actif { color: var(--text); }
-    .nav-icon { font-size: 18px; line-height: 1; }
+    .nav-btn.actif { color: #fff; }
+    .nav-icon { font-size: 20px; line-height: 1; display: flex; }
 
     .nav-badge {
       position: absolute;
@@ -712,12 +758,13 @@
 <!-- ── PAGE FEED ── -->
 <div id="page-feed">
   <header>
-    <div class="header-row">
-      <h1>News Alert</h1>
-      <div style="display:flex;align-items:center;gap:12px">
-        <button id="btn-recherche" onclick="toggleRecherche()"
-                style="background:none;border:none;color:var(--sub);cursor:pointer;font-size:24px;padding:4px 2px;line-height:1">⌕</button>
+    <div class="topbar">
+      <span class="topbar-brand">News Alert</span>
+      <div class="topbar-right">
         <div class="live"><div class="live-dot"></div>En direct</div>
+        <button id="btn-recherche" class="btn-icon" onclick="toggleRecherche()">
+          <ion-icon name="search-outline"></ion-icon>
+        </button>
       </div>
     </div>
     <div id="zone-recherche" style="display:none;padding:0 16px 10px">
@@ -932,17 +979,21 @@
 <!-- ── Nav ── -->
 <nav>
   <button class="nav-btn actif" id="nav-btn-feed" onclick="afficherPage('feed', this)">
-    <span class="nav-icon">◈</span>Actualités
+    <span class="nav-icon"><ion-icon name="home-outline"></ion-icon></span>
+    Accueil
     <span class="nav-badge" id="badge-nonlus"></span>
   </button>
   <button class="nav-btn" onclick="afficherPage('corr', this)">
-    <span class="nav-icon">⊕</span>Corrélations
+    <span class="nav-icon"><ion-icon name="git-network-outline"></ion-icon></span>
+    Corrélations
   </button>
   <button class="nav-btn" onclick="afficherPage('saved', this)">
-    <span class="nav-icon">◇</span>Sauvegardés
+    <span class="nav-icon"><ion-icon name="bookmark-outline"></ion-icon></span>
+    Enregistrés
   </button>
   <button class="nav-btn" onclick="afficherPage('params', this)">
-    <span class="nav-icon">◎</span>Paramètres
+    <span class="nav-icon"><ion-icon name="person-circle-outline"></ion-icon></span>
+    Compte
   </button>
 </nav>
 
@@ -1007,7 +1058,7 @@
     const btn = document.getElementById("btn-recherche");
     const open = zone.style.display === "none";
     zone.style.display = open ? "block" : "none";
-    btn.style.color = open ? "var(--text)" : "var(--sub)";
+    btn.classList.toggle("actif", open);
     if (open) { input.focus(); }
     else { input.value = ""; chargerAlertes(); }
   }
@@ -1051,37 +1102,39 @@
     return DOMAINES_MAP.find(m => d.includes(m.key)) || { cls: "geo", label: d };
   }
 
-  function carteHTML(a) {
-    const dom   = getDomaine(a.domaine);
-    const cls   = "carte-" + dom.cls;
-    const saved = savedIds.has(a.id);
-    const niv = a.niveau || 2;
-    const niveauDot = niv >= 3
-      ? `<span style="width:6px;height:6px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0"></span>`
-      : "";
-    const clocheBtnHtml = "";
+  function carteHTML(a, featured = false) {
+    const dom    = getDomaine(a.domaine);
+    const cls    = "carte-" + dom.cls;
+    const saved  = savedIds.has(a.id);
+    const niv    = a.niveau || 2;
+    const critique = niv >= 3 ? `<span class="source-critique">●</span>` : "";
+    const thumb  = featured ? 52 : 42;
+    const domEmoji = { geo:"🌍", sci:"🔬", tech:"💻", finance:"💰", env:"🌱", sport:"⚽" };
+    const icon   = domEmoji[dom.cls] || "📰";
 
     return `
-      <div class="carte ${cls}" onclick="ouvrirModal(${a.id})">
-        <div class="carte-meta">
-          <div class="carte-gauche">
-            ${niveauDot}
-            <span class="carte-domaine">${dom.label}</span>
-            <span class="carte-heure">${formatHeure(a.date)}</span>
+      <div class="carte ${cls}${featured ? " carte-featured" : ""}" onclick="ouvrirModal(${a.id})">
+        <div class="carte-body">
+          <div class="carte-source-row">
+            <span class="source-dot"></span>
+            <span class="source-name">${esc(dom.label)}</span>
+            <span class="source-sep">·</span>
+            <span class="source-time">${formatHeure(a.date)}</span>
+            ${critique}
           </div>
-          <div style="display:flex;gap:6px;align-items:center">
-            ${clocheBtnHtml}
-            <button class="btn-save ${saved ? 'saved' : ''}"
-              onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
-              ${saved ? '◆ Sauvegardé' : '◇ Sauvegarder'}
-            </button>
-            <button class="btn-save" title="Copier le lien"
-              onclick="event.stopPropagation(); partagerAlerte(${a.id})">↗</button>
+          <div class="carte-titre">${esc(a.titre)}</div>
+          ${a.accroche ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
+          <div class="carte-footer">
+            <span class="carte-category">${esc(a.domaine.replace(/^\S+\s/, ""))}</span>
+            <div class="carte-actions">
+              <button class="btn-save ${saved ? "saved" : ""}"
+                onclick="event.stopPropagation(); toggleSave(${a.id}, this)">${saved ? "◆" : "◇"}</button>
+              <button class="btn-save"
+                onclick="event.stopPropagation(); partagerAlerte(${a.id})">↗</button>
+            </div>
           </div>
         </div>
-        <div class="carte-titre">${esc(a.titre)}</div>
-        <div class="carte-resume">${esc(a.accroche || a.resume || '')}</div>
-        <span class="carte-hint">Appuyer pour la synthèse →</span>
+        <div class="carte-thumb" style="width:${thumb}px;height:${thumb}px">${icon}</div>
       </div>`;
   }
 
@@ -1104,9 +1157,17 @@
     }
 
     const feed = document.getElementById("feed");
-    feed.innerHTML = alertes.length
-      ? alertes.map(carteHTML).join("")
-      : `<div class="vide">${q ? "Aucun résultat pour « " + esc(q) + " »." : "Aucune alerte pour le moment.<br>Vérification toutes les 15 min."}</div>`;
+    if (!alertes.length) {
+      feed.innerHTML = `<div class="vide">${q ? "Aucun résultat pour « " + esc(q) + " »." : "Aucune alerte pour le moment.<br>Vérification toutes les 15 min."}</div>`;
+    } else {
+      let html = "";
+      alertes.forEach((a, i) => {
+        if (i === 0) html += `<div class="section-label">À la une</div>`;
+        if (i === 1) html += `<div class="section-label">Récents</div>`;
+        html += carteHTML(a, i === 0);
+      });
+      feed.innerHTML = html;
+    }
   }
 
   async function chargerStats() {
