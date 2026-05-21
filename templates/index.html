@@ -198,22 +198,6 @@
       color: var(--text);
     }
 
-    /* ── Stats ── */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .stat {
-      padding: 14px 0;
-      text-align: center;
-      border-right: 1px solid var(--line);
-    }
-    .stat:last-child { border-right: none; }
-    .stat-num   { font-size: 20px; font-weight: 600; }
-    .stat-label { font-size: 10px; color: var(--sub); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
-
     /* ── Feed ── */
     #feed, #feed-saved {
       display: flex;
@@ -250,8 +234,7 @@
     }
 
     .carte-featured {
-      background: #141414;
-      border-color: #222;
+      border-color: var(--line);
     }
 
     .carte:active { opacity: 0.8; }
@@ -774,17 +757,6 @@
     </div>
   </header>
 
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-num" id="stat-total">—</div>
-      <div class="stat-label">Total</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num" id="stat-jour">—</div>
-      <div class="stat-label">Aujourd'hui</div>
-    </div>
-  </div>
-
   <div id="feed"></div>
 </div>
 
@@ -921,6 +893,18 @@
         <button id="hr-btn-save" onclick="sauverHeureRecap()"
                 style="display:none;background:none;border:none;color:var(--text);cursor:pointer;font-size:14px;padding:2px">✓</button>
       </div>
+    </div>
+  </div>
+
+  <div class="params-bloc">
+    <div class="params-titre">Activité</div>
+    <div class="param-row">
+      <div><div class="param-label">Articles aujourd'hui</div></div>
+      <div class="param-label" id="stat-jour">—</div>
+    </div>
+    <div class="param-row">
+      <div><div class="param-label">Total des alertes</div></div>
+      <div class="param-label" id="stat-total">—</div>
     </div>
   </div>
 
