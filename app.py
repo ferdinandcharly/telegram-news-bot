@@ -103,7 +103,7 @@ button[type=submit]{{width:100%;padding:12px;background:#fff;color:#000;border:n
 <button type="submit">Continuer</button>
 </form>
 </div>
-<p class="lien"><a href="/register">Créer un compte</a></p>
+<p class="lien">Pas encore de compte ? <a href="/register">Inscrivez-vous</a></p>
 </body></html>"""
 
 def _page_auth(sous_titre, form_html, erreur="", lien=""):

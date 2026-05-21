@@ -1026,6 +1026,7 @@
 
   // ── Navigation ──────────────────────────────────────────────────────────
   function afficherPage(page, btn) {
+    document.activeElement?.blur();
     ["feed","corr","saved","params"].forEach(p => {
       document.getElementById("page-" + p).style.display = "none";
     });
@@ -1110,9 +1111,13 @@
           <span class="carte-category">${esc(a.domaine.replace(/^\S+\s/, ""))}</span>
           <div class="carte-actions">
             <button class="btn-save ${saved ? "saved" : ""}"
-              onclick="event.stopPropagation(); toggleSave(${a.id}, this)">${saved ? "◆" : "◇"}</button>
+              onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
+              <ion-icon name="${saved ? "bookmark" : "bookmark-outline"}"></ion-icon>
+            </button>
             <button class="btn-save"
-              onclick="event.stopPropagation(); partagerAlerte(${a.id})">↗</button>
+              onclick="event.stopPropagation(); partagerAlerte(${a.id})">
+              <ion-icon name="share-outline"></ion-icon>
+            </button>
           </div>
         </div>
       </div>`;
@@ -1142,7 +1147,6 @@
     } else {
       let html = "";
       alertes.forEach((a, i) => {
-        if (i === 0) html += `<div class="section-label">À la une</div>`;
         if (i === 1) html += `<div class="section-label">Récents</div>`;
         html += carteHTML(a, i === 0);
       });
@@ -1230,8 +1234,8 @@
     const estSaved = savedIds.has(id);
     const method   = estSaved ? "DELETE" : "POST";
     await fetch(`/api/sauvegardes/${id}`, { method });
-    if (estSaved) { savedIds.delete(id); btn.textContent = "◇"; btn.classList.remove("saved"); }
-    else          { savedIds.add(id);    btn.textContent = "◆"; btn.classList.add("saved"); }
+    if (estSaved) { savedIds.delete(id); btn.innerHTML = '<ion-icon name="bookmark-outline"></ion-icon>'; btn.classList.remove("saved"); }
+    else          { savedIds.add(id);    btn.innerHTML = '<ion-icon name="bookmark"></ion-icon>';         btn.classList.add("saved"); }
   }
 
   // ── Modal synthèse ───────────────────────────────────────────────────────
