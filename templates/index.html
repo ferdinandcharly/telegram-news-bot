@@ -189,6 +189,13 @@
     .stat-label { font-size: 10px; color: var(--sub); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* ── Feed ── */
+    #feed, #feed-saved {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     .vide {
       text-align: center;
       color: var(--sub);
@@ -199,26 +206,37 @@
 
     /* ── Carte ── */
     .carte {
-      padding: 20px 20px 18px;
-      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      border-left: 3px solid transparent;
+      padding: 16px 16px 14px;
       cursor: pointer;
-      transition: background 0.12s;
+      transition: border-color 0.15s, background 0.12s;
       position: relative;
+      overflow: hidden;
     }
 
     .carte:active { background: var(--surface2); }
+
+    .carte-geo     { border-left-color: var(--geo); }
+    .carte-sci     { border-left-color: var(--sci); }
+    .carte-tech    { border-left-color: var(--tech); }
+    .carte-finance { border-left-color: var(--finance); }
+    .carte-env     { border-left-color: var(--env); }
+    .carte-sport   { border-left-color: var(--sport); }
 
     .carte-meta {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
-    .carte-gauche { display: flex; align-items: center; gap: 10px; }
+    .carte-gauche { display: flex; align-items: center; gap: 8px; }
 
     .carte-domaine {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
@@ -228,20 +246,20 @@
     .carte-sci     .carte-domaine { color: var(--sci); }
     .carte-tech    .carte-domaine { color: var(--tech); }
     .carte-finance .carte-domaine { color: var(--finance); }
-    .carte-env     .carte-domaine { color: var(--env);   }
+    .carte-env     .carte-domaine { color: var(--env); }
     .carte-sport   .carte-domaine { color: var(--sport); }
     .carte-heure { font-size: 11px; color: var(--sub); }
 
     .btn-save {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 6px 12px;
-      border-radius: 8px;
+      gap: 4px;
+      padding: 5px 10px;
+      border-radius: 6px;
       border: 1px solid var(--line);
       background: none;
       color: var(--sub);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.15s;
@@ -255,7 +273,7 @@
     }
 
     .carte-titre {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       line-height: 1.45;
       color: var(--text);
@@ -263,14 +281,14 @@
     }
 
     .carte-resume {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--sub);
       line-height: 1.6;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .carte-hint {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted2);
       letter-spacing: 0.01em;
     }
@@ -476,9 +494,18 @@
     /* ── Page Corrélations ── */
     #page-corr { display: none; }
 
+    #feed-corr {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     .corr-card {
-      padding: 22px 20px;
-      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 16px;
       cursor: default;
     }
 
@@ -1029,14 +1056,16 @@
     const cls   = "carte-" + dom.cls;
     const saved = savedIds.has(a.id);
     const niv = a.niveau || 2;
-    const dotColor = niv >= 3 ? '#ef4444' : '#f59e0b';
+    const niveauDot = niv >= 3
+      ? `<span style="width:6px;height:6px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0"></span>`
+      : "";
     const clocheBtnHtml = "";
 
     return `
       <div class="carte ${cls}" onclick="ouvrirModal(${a.id})">
         <div class="carte-meta">
           <div class="carte-gauche">
-            <span style="width:7px;height:7px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0;margin-right:2px"></span>
+            ${niveauDot}
             <span class="carte-domaine">${dom.label}</span>
             <span class="carte-heure">${formatHeure(a.date)}</span>
           </div>
