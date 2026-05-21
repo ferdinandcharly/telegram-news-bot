@@ -294,6 +294,9 @@ input[type=text]:focus { border-color: var(--sub); }
       <option value="10">10h00</option>
       <option value="11">11h00</option>
       <option value="12">12h00</option>
+      <option value="18">18h00</option>
+      <option value="20">20h00</option>
+      <option value="21">21h00</option>
     </select>
   </div>
 </div>
