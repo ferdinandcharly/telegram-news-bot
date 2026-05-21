@@ -61,6 +61,48 @@ def init_vapid():
 
 
 # ── Pages auth ────────────────────────────────────────────────────────────────
+def _page_login(erreur=""):
+    err = f'<p class="err">{erreur}</p>' if erreur else ""
+    return f"""<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>News Alert</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#0d0d0d;color:#fff;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      min-height:100vh;display:flex;align-items:center;justify-content:center}}
+.card{{background:#0d0d0d;border:0.5px solid #222;border-radius:16px;
+       padding:32px 28px;width:260px}}
+.brand{{font-size:9px;letter-spacing:3px;color:#555;text-transform:uppercase;
+        text-align:center;margin-bottom:20px}}
+h1{{font-size:20px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px}}
+.sub{{font-size:11px;color:#555;text-align:center;margin-bottom:24px}}
+input{{width:100%;padding:9px 13px;background:#1a1a1a;border:0.5px solid #2e2e2e;
+       border-radius:9px;color:#fff;font-size:12px;outline:none;
+       transition:border-color 0.15s;margin-bottom:9px;display:block}}
+input::placeholder{{color:#4a4a4a}}
+input:focus{{border-color:#444}}
+button[type=submit]{{width:100%;padding:10px;background:#fff;color:#000;border:none;
+       border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;margin-top:4px}}
+.err{{font-size:11px;color:#e05252;text-align:center;margin-bottom:12px}}
+.lien{{font-size:10px;color:#444;text-align:center;margin-top:18px}}
+.lien a{{color:#444;text-decoration:none}}
+.lien a:hover{{color:#777}}
+</style></head>
+<body><div class="card">
+<div class="brand">News Alert</div>
+<h1>Connexion</h1>
+<p class="sub">Ton fil d'actu filtré par IA.</p>
+{err}
+<form method="POST">
+<input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
+<input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
+<button type="submit">Continuer</button>
+</form>
+<p class="lien"><a href="/register">Créer un compte</a></p>
+</div></body></html>"""
+
 def _page_auth(sous_titre, form_html, erreur="", lien=""):
     err = f'<p class="err">{erreur}</p>' if erreur else ""
     return f"""<!DOCTYPE html>
@@ -69,25 +111,24 @@ def _page_auth(sous_titre, form_html, erreur="", lien=""):
 <title>News Alert</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:#000;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+body{{background:#0d0d0d;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}}
 .box{{width:100%;max-width:360px;text-align:center}}
-.brand{{font-size:13px;font-weight:600;color:#555;letter-spacing:0.04em;
+.brand{{font-size:9px;font-weight:600;color:#555;letter-spacing:3px;
         text-transform:uppercase;margin-bottom:40px}}
-h1{{font-size:22px;font-weight:700;letter-spacing:-0.3px;margin-bottom:6px}}
-.sub{{font-size:14px;color:#555;margin-bottom:32px;line-height:1.5}}
-input{{width:100%;padding:14px 16px;background:#0e0e0e;border:1px solid #1e1e1e;
-       border-radius:10px;color:#f0f0f0;font-size:15px;margin-bottom:10px;outline:none;
-       transition:border-color 0.15s}}
-input:focus{{border-color:#333}}
-button[type=submit]{{width:100%;padding:14px;background:#f0f0f0;color:#000;border:none;
-        border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:6px;
-        letter-spacing:-0.1px}}
-.err{{color:#ef4444;font-size:13px;margin-bottom:14px;padding:12px 14px;
-      background:#1a0a0a;border:1px solid #3a1010;border-radius:8px}}
-.lien{{font-size:13px;color:#444;margin-top:24px}}
-.lien a{{color:#666;text-decoration:none}}
-.lien a:hover{{color:#999}}
+h1{{font-size:20px;font-weight:700;margin-bottom:6px}}
+.sub{{font-size:11px;color:#555;margin-bottom:28px}}
+input{{width:100%;padding:9px 13px;background:#1a1a1a;border:0.5px solid #2e2e2e;
+       border-radius:9px;color:#fff;font-size:12px;margin-bottom:9px;outline:none;
+       transition:border-color 0.15s;display:block}}
+input::placeholder{{color:#4a4a4a}}
+input:focus{{border-color:#444}}
+button[type=submit]{{width:100%;padding:10px;background:#fff;color:#000;border:none;
+        border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;margin-top:4px}}
+.err{{color:#e05252;font-size:11px;text-align:center;margin-bottom:12px}}
+.lien{{font-size:10px;color:#444;margin-top:18px}}
+.lien a{{color:#444;text-decoration:none}}
+.lien a:hover{{color:#777}}
 </style></head>
 <body><div class="box">
 <div class="brand">News Alert</div>
@@ -98,7 +139,7 @@ button[type=submit]{{width:100%;padding:14px;background:#f0f0f0;color:#000;borde
 </div></body></html>"""
 
 _FORM_LOGIN = """<form method="POST">
-<input type="email" name="email" placeholder="Adresse email" autocomplete="email"/>
+<input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
 <button type="submit">Continuer</button>
 </form>"""
@@ -134,13 +175,10 @@ def login():
                 if r2.ok and not r2.json():
                     return redirect("/onboarding")
                 return redirect("/")
-            return _page_auth("Connexion", _FORM_LOGIN,
-                              "Email ou mot de passe incorrect",
-                              '<a href="/register">Créer un compte</a>')
+            return _page_login("Email ou mot de passe incorrect")
         except Exception as e:
-            return _page_auth("Connexion", _FORM_LOGIN, f"Erreur : {e}",
-                              '<a href="/register">Créer un compte</a>')
-    return _page_auth("Connexion", _FORM_LOGIN, "", '<a href="/register">Créer un compte</a>')
+            return _page_login(f"Erreur : {e}")
+    return _page_login()
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
