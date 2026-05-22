@@ -61,98 +61,192 @@ def init_vapid():
 
 
 # ── Pages auth ────────────────────────────────────────────────────────────────
-def _page_login(erreur=""):
-    err = f'<p class="err">{erreur}</p>' if erreur else ""
-    return f"""<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"/>
+_CSS_AUTH = """
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+     min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px}
+.brand{font-size:9px;letter-spacing:3px;color:#333;text-transform:uppercase;font-weight:600;text-align:center;margin-bottom:48px}
+h1{font-size:24px;font-weight:700;color:#fff;text-align:center;letter-spacing:-0.5px;margin-bottom:4px}
+.sub{font-size:12px;color:#444;text-align:center;margin-bottom:32px}
+.form{width:100%;max-width:280px}
+input{width:100%;padding:11px 14px;background:#111;border:0.5px solid #222;border-radius:10px;
+      color:#fff;font-size:13px;outline:none;transition:border-color 0.2s;margin-bottom:8px;display:block}
+input::placeholder{color:#3a3a3a}
+input:focus{border-color:#3a3a3a}
+button[type=submit]{width:100%;padding:12px;background:#fff;color:#000;border:none;
+     border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}
+.err{font-size:11px;color:#c0392b;text-align:center;margin-bottom:14px}
+.ok{font-size:11px;color:#27ae60;text-align:center;margin-bottom:14px;padding:10px;background:#0a1f0a;border-radius:8px;border:0.5px solid #1a3a1a}
+.lien{font-size:11px;color:#333;text-align:center;margin-top:22px}
+.lien a{color:#555;text-decoration:none}
+.lien a:hover{color:#888}
+"""
+
+def _auth_page(titre, sous_titre, contenu, liens=""):
+    return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>News Alert</title>
-<style>
-*{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:#0d0d0d;color:#fff;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      min-height:100vh;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;padding:0 32px}}
-.brand{{font-size:9px;letter-spacing:3px;color:#333;text-transform:uppercase;
-        font-weight:600;text-align:center;margin-bottom:48px}}
-h1{{font-size:24px;font-weight:700;color:#fff;text-align:center;
-    letter-spacing:-0.5px;margin-bottom:4px}}
-.sub{{font-size:12px;color:#444;text-align:center;margin-bottom:32px}}
-.form{{width:100%;max-width:280px}}
-input{{width:100%;padding:11px 14px;background:#111;border:0.5px solid #222;
-       border-radius:10px;color:#fff;font-size:13px;outline:none;
-       transition:border-color 0.2s;margin-bottom:8px;display:block}}
-input::placeholder{{color:#3a3a3a}}
-input:focus{{border-color:#3a3a3a}}
-button[type=submit]{{width:100%;padding:12px;background:#fff;color:#000;border:none;
-       border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}}
-.err{{font-size:11px;color:#c0392b;text-align:center;margin-bottom:14px}}
-.lien{{font-size:11px;color:#333;text-align:center;margin-top:22px}}
-.lien a{{color:#555;text-decoration:none}}
-.lien a:hover{{color:#888}}
-</style></head>
+<title>{titre} — News Alert</title>
+<style>{_CSS_AUTH}</style></head>
 <body>
 <div class="brand">News Alert</div>
-<h1>Connexion</h1>
-<p class="sub">Ton fil d'actu filtré par IA.</p>
-<div class="form">
-{err}
-<form method="POST">
-<input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
-<input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
-<button type="submit">Continuer</button>
-</form>
-</div>
-<p class="lien">Pas encore de compte ? <a href="/register">Inscrivez-vous</a></p>
+<h1>{titre}</h1>
+<p class="sub">{sous_titre}</p>
+<div class="form">{contenu}</div>
+<p class="lien">{liens}</p>
 </body></html>"""
 
-def _page_auth(sous_titre, form_html, erreur="", lien=""):
-    err = f'<p class="err">{erreur}</p>' if erreur else ""
-    return f"""<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>News Alert</title>
-<style>
-*{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:#0d0d0d;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}}
-.box{{width:100%;max-width:360px;text-align:center}}
-.brand{{font-size:9px;font-weight:600;color:#555;letter-spacing:3px;
-        text-transform:uppercase;margin-bottom:40px}}
-h1{{font-size:20px;font-weight:700;margin-bottom:6px}}
-.sub{{font-size:11px;color:#555;margin-bottom:28px}}
-input{{width:100%;padding:9px 13px;background:#1a1a1a;border:0.5px solid #2e2e2e;
-       border-radius:9px;color:#fff;font-size:12px;margin-bottom:9px;outline:none;
-       transition:border-color 0.15s;display:block}}
-input::placeholder{{color:#4a4a4a}}
-input:focus{{border-color:#444}}
-button[type=submit]{{width:100%;padding:10px;background:#fff;color:#000;border:none;
-        border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;margin-top:4px}}
-.err{{color:#e05252;font-size:11px;text-align:center;margin-bottom:12px}}
-.lien{{font-size:10px;color:#444;margin-top:18px}}
-.lien a{{color:#444;text-decoration:none}}
-.lien a:hover{{color:#777}}
-</style></head>
-<body><div class="box">
-<div class="brand">News Alert</div>
-<h1>{sous_titre}</h1>
-<p class="sub">Ton fil d'actu filtré par IA.</p>
-{err}{form_html}
-<p class="lien">{lien}</p>
-</div></body></html>"""
 
-_FORM_LOGIN = """<form method="POST">
+def _page_login(erreur=""):
+    err = f'<p class="err">{erreur}</p>' if erreur else ""
+    return _auth_page(
+        "Connexion", "Ton fil d'actu filtré par IA.",
+        f"""{err}<form method="POST">
 <input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
-<button type="submit">Continuer</button>
-</form>"""
+<button type="submit">Continuer</button></form>""",
+        'Pas encore de compte ? <a href="/register">Inscrivez-vous</a> · <a href="/forgot-password">Mot de passe oublié</a>'
+    )
 
-_FORM_REGISTER = """<form method="POST">
-<input type="email" name="email" placeholder="Adresse email" autocomplete="email"/>
-<input type="password" name="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="new-password"/>
-<input type="password" name="confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"/>
-<button type="submit">Créer mon compte</button>
-</form>"""
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        try:
+            http.post(sb_auth("/recover"),
+                      headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                      json={"email": email}, timeout=10)
+        except Exception:
+            pass
+        return _auth_page(
+            "Email envoyé", "Vérification en cours…",
+            '<p class="ok">Si un compte existe pour cet email, tu recevras un lien de réinitialisation.</p>',
+            '<a href="/login">Retour à la connexion</a>'
+        )
+    return _auth_page(
+        "Mot de passe oublié", "Entre ton adresse email.",
+        """<form method="POST">
+<input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
+<button type="submit">Envoyer le lien</button></form>""",
+        '<a href="/login">Retour à la connexion</a>'
+    )
+
+
+@app.route("/reset-password")
+def reset_password():
+    return _auth_page(
+        "Nouveau mot de passe", "Choisis un mot de passe sécurisé.",
+        """<p class="err" id="err-msg" style="display:none"></p>
+<p class="ok" id="ok-msg" style="display:none">Mot de passe mis à jour — <a href="/login" style="color:#27ae60">Se connecter</a></p>
+<form id="form-reset">
+<input type="password" id="new-pwd" placeholder="Nouveau mot de passe (6 min.)" autocomplete="new-password"/>
+<input type="password" id="confirm-pwd" placeholder="Confirmer le mot de passe" autocomplete="new-password"/>
+<button type="submit">Mettre à jour</button></form>
+<script>
+(async()=>{
+  const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+  const token = hash.access_token;
+  if(!token){document.getElementById("err-msg").textContent="Lien invalide ou expiré.";document.getElementById("err-msg").style.display="block";}
+  document.getElementById("form-reset").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const pwd=document.getElementById("new-pwd").value;
+    const cpwd=document.getElementById("confirm-pwd").value;
+    const err=document.getElementById("err-msg");
+    if(pwd.length<6){err.textContent="Mot de passe trop court.";err.style.display="block";return;}
+    if(pwd!==cpwd){err.textContent="Les mots de passe ne correspondent pas.";err.style.display="block";return;}
+    const r=await fetch("/api/update-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,password:pwd})});
+    if(r.ok){document.getElementById("form-reset").style.display="none";document.getElementById("ok-msg").style.display="block";}
+    else{err.textContent="Erreur — réessaie.";err.style.display="block";}
+  });
+})();
+</script>""",
+        '<a href="/login">Annuler</a>'
+    )
+
+
+@app.route("/api/update-password", methods=["POST"])
+def api_update_password():
+    data  = request.get_json()
+    token = data.get("token", "")
+    pwd   = data.get("password", "")
+    if not token or len(pwd) < 6:
+        return jsonify({"erreur": "invalide"}), 400
+    try:
+        r = http.put(sb_auth("/user"),
+                     headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {token}",
+                              "Content-Type": "application/json"},
+                     json={"password": pwd}, timeout=10)
+        return jsonify({"ok": True}) if r.ok else jsonify({"erreur": "échec"}), 400
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+
+@app.route("/privacy")
+def privacy():
+    return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Politique de confidentialité — News Alert</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#0d0d0d;color:#ccc;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+     max-width:680px;margin:0 auto;padding:48px 24px}}
+h1{{font-size:22px;font-weight:700;color:#fff;margin-bottom:6px}}
+.date{{font-size:12px;color:#555;margin-bottom:40px}}
+h2{{font-size:15px;font-weight:600;color:#ddd;margin:32px 0 10px}}
+p,li{{font-size:13px;line-height:1.75;color:#888;margin-bottom:8px}}
+ul{{padding-left:18px}}
+a{{color:#555}}
+.brand{{font-size:9px;letter-spacing:3px;color:#333;text-transform:uppercase;margin-bottom:32px;display:block}}
+</style></head><body>
+<a class="brand" href="/">News Alert</a>
+<h1>Politique de confidentialité</h1>
+<p class="date">Dernière mise à jour : {datetime.now().strftime("%d/%m/%Y")}</p>
+
+<h2>1. Données collectées</h2>
+<ul>
+<li><strong>Compte</strong> : adresse email et mot de passe (chiffré par Supabase Auth)</li>
+<li><strong>Préférences</strong> : domaines d'intérêt, thème, langue d'affichage, nom d'affichage</li>
+<li><strong>Articles sauvegardés</strong> : identifiants des articles que tu choisis de conserver</li>
+<li><strong>Abonnements push</strong> : endpoint de notification pour l'envoi d'alertes (optionnel)</li>
+</ul>
+
+<h2>2. Utilisation des données</h2>
+<ul>
+<li>Personnaliser ton fil d'actualités selon tes domaines d'intérêt</li>
+<li>T'envoyer des alertes et un résumé matinal selon tes préférences</li>
+<li>Conserver tes articles sauvegardés</li>
+</ul>
+<p>Nous ne vendons ni ne partageons tes données avec des tiers à des fins commerciales.</p>
+
+<h2>3. Services tiers</h2>
+<ul>
+<li><strong>Supabase</strong> — hébergement de la base de données et authentification (États-Unis / UE)</li>
+<li><strong>Groq</strong> — analyse IA des articles (titres et résumés envoyés pour filtrage). Aucune donnée personnelle n'est transmise.</li>
+<li><strong>Telegram</strong> — alertes critiques (optionnel, uniquement si activé)</li>
+<li><strong>Render</strong> — hébergement du serveur applicatif</li>
+</ul>
+
+<h2>4. Conservation des données</h2>
+<ul>
+<li>Articles non sauvegardés : supprimés après 3 jours</li>
+<li>Articles sauvegardés : conservés 6 mois</li>
+<li>Ton compte et tes préférences : conservés tant que ton compte est actif</li>
+</ul>
+
+<h2>5. Tes droits</h2>
+<p>Tu peux à tout moment :</p>
+<ul>
+<li>Supprimer ton compte depuis les paramètres de l'app</li>
+<li>Demander l'export ou la suppression de tes données à : <a href="mailto:{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}">{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}</a></li>
+</ul>
+
+<h2>6. Cookies et sessions</h2>
+<p>Un cookie de session est utilisé uniquement pour maintenir ta connexion (durée 30 jours). Aucun cookie publicitaire ou de tracking.</p>
+
+<h2>7. Contact</h2>
+<p>Pour toute question : <a href="mailto:{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}">{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}</a></p>
+</body></html>"""
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -183,6 +277,18 @@ def login():
             return _page_login(f"Erreur : {e}")
     return _page_login()
 
+def _register_form(erreur=""):
+    err = f'<p class="err">{erreur}</p>' if erreur else ""
+    return _auth_page(
+        "Créer un compte", "Ton fil d'actu filtré par IA.",
+        f"""{err}<form method="POST">
+<input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
+<input type="password" name="password" placeholder="Mot de passe (6 min.)" autocomplete="new-password"/>
+<input type="password" name="confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"/>
+<button type="submit">Créer mon compte</button></form>""",
+        'Déjà un compte ? <a href="/login">Se connecter</a> · <a href="/privacy">Confidentialité</a>'
+    )
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -190,13 +296,9 @@ def register():
         pwd     = request.form.get("password", "")
         confirm = request.form.get("confirm", "")
         if pwd != confirm:
-            return _page_auth("Créer un compte", _FORM_REGISTER,
-                              "Les mots de passe ne correspondent pas",
-                              '<a href="/login">Se connecter</a>')
+            return _register_form("Les mots de passe ne correspondent pas")
         if len(pwd) < 6:
-            return _page_auth("Créer un compte", _FORM_REGISTER,
-                              "Mot de passe trop court (6 min.)",
-                              '<a href="/login">Se connecter</a>')
+            return _register_form("Mot de passe trop court (6 min.)")
         try:
             r = http.post(sb_auth("/signup"),
                           headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
@@ -210,16 +312,16 @@ def register():
                     session["user_id"]       = d["user"]["id"]
                     session["user_email"]    = d["user"]["email"]
                     return redirect("/onboarding")
-                return _page_auth("Vérifie tes emails",
-                                  "<p style='color:#888;font-size:14px'>Lien de confirmation envoyé.</p>",
-                                  "", '<a href="/login">Se connecter</a>')
+                return _auth_page(
+                    "Vérifie tes emails", "Un lien de confirmation t'a été envoyé.",
+                    '<p class="ok">Clique sur le lien dans l\'email pour activer ton compte.</p>',
+                    '<a href="/login">Se connecter</a>'
+                )
             err = r.json().get("msg") or r.json().get("error_description") or "Erreur"
-            return _page_auth("Créer un compte", _FORM_REGISTER, err,
-                              '<a href="/login">Se connecter</a>')
+            return _register_form(err)
         except Exception as e:
-            return _page_auth("Créer un compte", _FORM_REGISTER, f"Erreur : {e}",
-                              '<a href="/login">Se connecter</a>')
-    return _page_auth("Créer un compte", _FORM_REGISTER, "", '<a href="/login">Se connecter</a>')
+            return _register_form(f"Erreur : {e}")
+    return _register_form()
 
 @app.route("/logout")
 def logout():
@@ -519,7 +621,8 @@ def refresh_token():
 @app.before_request
 def check_auth():
     exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding", "/cancel-register",
-               "/api/refresh-token"]
+               "/api/refresh-token", "/forgot-password", "/reset-password",
+               "/api/update-password", "/privacy"]
     if request.path in exempts or request.path.startswith("/a/"):
         return
     if not session.get("access_token"):
