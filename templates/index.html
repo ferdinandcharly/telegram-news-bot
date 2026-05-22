@@ -790,7 +790,15 @@
   <div class="params-bloc" style="margin-bottom:16px">
     <div class="params-titre">Compte</div>
     <div class="param-row">
-      <div><div class="param-label" id="user-email">—</div><div class="param-sub">Connecté</div></div>
+      <div><div class="param-label">Email</div></div>
+      <div class="param-label" id="user-email" style="font-size:13px;color:var(--sub);font-weight:400">—</div>
+    </div>
+    <div class="param-row">
+      <div><div class="param-label">Mot de passe</div></div>
+      <button id="btn-reset-pwd" onclick="resetMotDePasse()"
+              style="background:none;border:none;font-size:13px;color:var(--sub);cursor:pointer;padding:0">
+        Réinitialiser →
+      </button>
     </div>
   </div>
 
@@ -1427,6 +1435,19 @@
     btnEdit.style.display = "inline-block";
   }
 
+  async function resetMotDePasse() {
+    const btn = document.getElementById("btn-reset-pwd");
+    btn.textContent = "Envoi…";
+    btn.disabled = true;
+    try {
+      await fetch("/api/reset-my-password", { method: "POST" });
+      btn.textContent = "Email envoyé ✓";
+    } catch {
+      btn.textContent = "Erreur — réessaie";
+      btn.disabled = false;
+    }
+  }
+
   async function sauverLangue(val) {
     userLangue = val;
     await fetch("/api/preferences", { method: "POST",
@@ -1445,11 +1466,12 @@
     // nom d'affichage
     const dn = data.preferences.display_name;
     const dnTexte = document.getElementById("dn-texte");
+    // email réel toujours affiché dans le bloc Compte
+    document.getElementById("user-email").textContent = data.email || "—";
+    // nom d'affichage dans le header et les champs
     if (dn) {
-      document.getElementById("user-email").textContent = dn;
       if (dnTexte) dnTexte.textContent = dn;
     } else {
-      document.getElementById("user-email").textContent = data.email;
       if (dnTexte) dnTexte.textContent = data.email;
     }
 

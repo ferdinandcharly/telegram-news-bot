@@ -528,27 +528,6 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
   </div>
 </div>
 
-<div class="step">
-  <div class="step-num">Étape 4</div>
-  <div class="step-title">Résumé matinal</div>
-  <div class="step-sub">Reçois chaque matin une synthèse des événements de la nuit</div>
-  <div class="heure-row">
-    <span class="heure-label">Heure du résumé</span>
-    <select id="select-heure-recap-ob">
-      <option value="5">5h00</option>
-      <option value="6">6h00</option>
-      <option value="7">7h00</option>
-      <option value="8" selected>8h00</option>
-      <option value="9">9h00</option>
-      <option value="10">10h00</option>
-      <option value="11">11h00</option>
-      <option value="12">12h00</option>
-      <option value="18">18h00</option>
-      <option value="20">20h00</option>
-      <option value="21">21h00</option>
-    </select>
-  </div>
-</div>
 
 <div class="step">
   <div class="step-num">Étape 5</div>
@@ -639,12 +618,10 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
     const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
     const display_name = document.getElementById("display-name").value.trim();
-    const heure_recap  = parseInt(document.getElementById("select-heure-recap-ob").value);
-
     await fetch("/api/preferences", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ display_name, theme, domaines, heure_recap })
+      body: JSON.stringify({ display_name, theme, domaines })
     });
     window.location.href = "/";
   }
@@ -1075,6 +1052,20 @@ def api_preferences():
 
 
 # ── API info utilisateur ──────────────────────────────────────────────────────
+@app.route("/api/reset-my-password", methods=["POST"])
+def api_reset_my_password():
+    email = session.get("user_email", "")
+    if not email:
+        return jsonify({"erreur": "non authentifié"}), 401
+    try:
+        http.post(sb_auth("/recover"),
+                  headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                  json={"email": email}, timeout=10)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+
 @app.route("/api/me")
 def api_me():
     return jsonify({
