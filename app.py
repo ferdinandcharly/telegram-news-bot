@@ -103,8 +103,11 @@ def _page_login(erreur=""):
         f"""{err}<form method="POST">
 <input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
+<div style="text-align:right;margin-bottom:10px;margin-top:-2px">
+  <a href="/forgot-password" style="font-size:11px;color:#444;text-decoration:none">Mot de passe oublié ?</a>
+</div>
 <button type="submit">Continuer</button></form>""",
-        'Pas encore de compte ? <a href="/register">Inscrivez-vous</a> · <a href="/forgot-password">Mot de passe oublié</a>'
+        'Pas encore de compte ? <a href="/register">Inscrivez-vous</a>'
     )
 
 
@@ -286,7 +289,7 @@ def _register_form(erreur=""):
 <input type="password" name="password" placeholder="Mot de passe (6 min.)" autocomplete="new-password"/>
 <input type="password" name="confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"/>
 <button type="submit">Créer mon compte</button></form>""",
-        'Déjà un compte ? <a href="/login">Se connecter</a> · <a href="/privacy">Confidentialité</a>'
+        'Déjà un compte ? <a href="/login">Se connecter</a><br><a href="/privacy" style="color:#333">Politique de confidentialité</a>'
     )
 
 @app.route("/register", methods=["GET", "POST"])
