@@ -872,15 +872,24 @@
         <div class="param-sub">Corrélations envoyées chaque matin à 8h</div>
       </div>
     </div>
-    <div class="param-row">
+    <div class="param-row" style="flex-direction:column;align-items:flex-start;gap:10px">
       <div>
-        <div class="param-label">Langue</div>
-        <div class="param-sub">Traduire les titres anglais en français</div>
+        <div class="param-label">Langue d'affichage</div>
+        <div class="param-sub">Traduit les titres qui ne sont pas dans la langue choisie</div>
       </div>
-      <label class="toggle">
-        <input type="checkbox" id="toggle-langue" onchange="sauverLangue()" />
-        <span class="slider"></span>
-      </label>
+      <select id="select-langue" onchange="sauverLangue(this.value)"
+              style="width:100%;padding:9px 12px;background:var(--surface);border:1px solid var(--line);
+                     border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <option value="multi">Original (plusieurs langues)</option>
+        <option value="fr">Français</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+        <option value="de">Deutsch</option>
+      </select>
+      <div style="font-size:11px;color:var(--sub);line-height:1.4">
+        ⚠ Traduction générée par IA — peut contenir des inexactitudes.
+        Seul le français est entièrement supporté pour l'instant.
+      </div>
     </div>
   </div>
 
@@ -1420,11 +1429,11 @@
     btnEdit.style.display = "inline-block";
   }
 
-  async function sauverLangue() {
-    userLangue = document.getElementById("toggle-langue").checked ? "fr" : "multi";
+  async function sauverLangue(val) {
+    userLangue = val;
     await fetch("/api/preferences", { method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ langue: userLangue }) });
+      body: JSON.stringify({ langue: val }) });
     chargerAlertes();
   }
 
@@ -1448,8 +1457,8 @@
 
     // langue
     userLangue = data.preferences.langue || "multi";
-    const toggleLangue = document.getElementById("toggle-langue");
-    if (toggleLangue) toggleLangue.checked = userLangue === "fr";
+    const selectLangue = document.getElementById("select-langue");
+    if (selectLangue) selectLangue.value = userLangue;
 
     // domaines préférés
     userDomaines = data.preferences.domaines || [];
