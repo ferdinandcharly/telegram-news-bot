@@ -111,15 +111,15 @@ def _page_login(erreur=""):
     oauth = f'<a href="/auth/google" class="btn-oauth">{_GOOGLE_ICON} Continuer avec Google</a>'
     return _auth_page(
         "Connexion", "Ton fil d'actu filtré par IA.",
-        f"""{err}{oauth}
-<div class="divider">ou</div>
-<form method="POST">
+        f"""{err}<form method="POST">
 <input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
 <div style="text-align:right;margin-bottom:10px;margin-top:-2px">
   <a href="/forgot-password" style="font-size:11px;color:#444;text-decoration:none">Mot de passe oublié ?</a>
 </div>
-<button type="submit">Continuer</button></form>""",
+<button type="submit">Continuer</button></form>
+<div class="divider">ou</div>
+{oauth}""",
         'Pas encore de compte ? <a href="/register">Inscrivez-vous</a>'
     )
 
@@ -144,7 +144,7 @@ display:flex;align-items:center;justify-content:center;min-height:100vh;font-siz
 (async () => {{
   const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
   if (!hash.access_token) {{ location.href = '/login'; return; }}
-  await fetch('/api/oauth-session', {{
+  const r = await fetch('/api/oauth-session', {{
     method: 'POST',
     headers: {{'Content-Type': 'application/json'}},
     body: JSON.stringify({{access_token: hash.access_token, refresh_token: hash.refresh_token}})
@@ -354,13 +354,16 @@ def login():
 
 def _register_form(erreur=""):
     err = f'<p class="err">{erreur}</p>' if erreur else ""
+    oauth = f'<a href="/auth/google" class="btn-oauth">{_GOOGLE_ICON} Continuer avec Google</a>'
     return _auth_page(
         "Créer un compte", "Ton fil d'actu filtré par IA.",
         f"""{err}<form method="POST">
 <input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe (6 min.)" autocomplete="new-password"/>
 <input type="password" name="confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"/>
-<button type="submit">Créer mon compte</button></form>""",
+<button type="submit">Créer mon compte</button></form>
+<div class="divider">ou</div>
+{oauth}""",
         'Déjà un compte ? <a href="/login">Se connecter</a><br><a href="/privacy" style="color:#333">Politique de confidentialité</a>'
     )
 
