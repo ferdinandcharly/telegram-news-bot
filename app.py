@@ -75,9 +75,15 @@ input::placeholder{color:#3a3a3a}
 input:focus{border-color:#3a3a3a}
 button[type=submit]{width:100%;padding:12px;background:#fff;color:#000;border:none;
      border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px}
+.btn-oauth{width:100%;padding:11px;background:#1a1a1a;color:#ccc;border:0.5px solid #2a2a2a;
+     border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;margin-top:8px;
+     display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none}
+.btn-oauth:hover{background:#222}
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:#333;font-size:11px}
+.divider::before,.divider::after{content:"";flex:1;height:0.5px;background:#1e1e1e}
 .err{font-size:11px;color:#c0392b;text-align:center;margin-bottom:14px}
 .ok{font-size:11px;color:#27ae60;text-align:center;margin-bottom:14px;padding:10px;background:#0a1f0a;border-radius:8px;border:0.5px solid #1a3a1a}
-.lien{font-size:11px;color:#333;text-align:center;margin-top:22px}
+.lien{font-size:11px;color:#333;text-align:center;margin-top:22px;line-height:2}
 .lien a{color:#555;text-decoration:none}
 .lien a:hover{color:#888}
 """
@@ -88,19 +94,26 @@ def _auth_page(titre, sous_titre, contenu, liens=""):
 <title>{titre} — News Alert</title>
 <style>{_CSS_AUTH}</style></head>
 <body>
+<div tabindex="0" style="position:fixed;opacity:0;pointer-events:none;width:0;height:0"></div>
 <div class="brand">News Alert</div>
 <h1>{titre}</h1>
 <p class="sub">{sous_titre}</p>
 <div class="form">{contenu}</div>
 <p class="lien">{liens}</p>
+<script>document.querySelector('[tabindex="0"]').focus();</script>
 </body></html>"""
 
 
+_GOOGLE_ICON = '<svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.3-7.7 2.3-6.2 0-11.5-4.2-13.4-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>'
+
 def _page_login(erreur=""):
     err = f'<p class="err">{erreur}</p>' if erreur else ""
+    oauth = f'<a href="/auth/google" class="btn-oauth">{_GOOGLE_ICON} Continuer avec Google</a>'
     return _auth_page(
         "Connexion", "Ton fil d'actu filtré par IA.",
-        f"""{err}<form method="POST">
+        f"""{err}{oauth}
+<div class="divider">ou</div>
+<form method="POST">
 <input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe" autocomplete="current-password"/>
 <div style="text-align:right;margin-bottom:10px;margin-top:-2px">
@@ -109,6 +122,64 @@ def _page_login(erreur=""):
 <button type="submit">Continuer</button></form>""",
         'Pas encore de compte ? <a href="/register">Inscrivez-vous</a>'
     )
+
+
+@app.route("/auth/google")
+def auth_google():
+    redirect_to = f"{APP_URL}/auth/callback" if APP_URL else "/auth/callback"
+    url = f"{SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to={redirect_to}"
+    return redirect(url)
+
+
+@app.route("/auth/callback")
+def auth_callback():
+    """Page de callback OAuth — le token est dans le fragment URL (#), traité en JS."""
+    return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Connexion — News Alert</title>
+<style>*{{margin:0;padding:0}}body{{background:#0d0d0d;color:#fff;font-family:system-ui,sans-serif;
+display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:13px;color:#555}}</style>
+</head><body>Connexion en cours…
+<script>
+(async () => {{
+  const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+  if (!hash.access_token) {{ location.href = '/login'; return; }}
+  await fetch('/api/oauth-session', {{
+    method: 'POST',
+    headers: {{'Content-Type': 'application/json'}},
+    body: JSON.stringify({{access_token: hash.access_token, refresh_token: hash.refresh_token}})
+  }});
+  const d = await r.json();
+  location.href = d.new_user ? '/onboarding' : '/';
+}})();
+</script></body></html>"""
+
+
+@app.route("/api/oauth-session", methods=["POST"])
+def api_oauth_session():
+    data  = request.get_json()
+    token = data.get("access_token", "")
+    rt    = data.get("refresh_token", "")
+    if not token:
+        return jsonify({"erreur": "token manquant"}), 400
+    try:
+        r = http.get(sb_auth("/user"),
+                     headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {token}"}, timeout=8)
+        if not r.ok:
+            return jsonify({"erreur": "token invalide"}), 401
+        u = r.json()
+        session.permanent       = True
+        session["access_token"] = token
+        session["refresh_token"]= rt
+        session["user_id"]      = u["id"]
+        session["user_email"]   = u["email"]
+        # Vérifier si onboarding nécessaire
+        r2 = http.get(sb("user_preferences"), headers=SB_SERVICE,
+                      params={"user_id": f"eq.{u['id']}", "select": "user_id"}, timeout=5)
+        new_user = r2.ok and not r2.json()
+        return jsonify({"ok": True, "new_user": new_user})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
 
 
 @app.route("/forgot-password", methods=["GET", "POST"])
@@ -199,9 +270,10 @@ h2{{font-size:15px;font-weight:600;color:#ddd;margin:32px 0 10px}}
 p,li{{font-size:13px;line-height:1.75;color:#888;margin-bottom:8px}}
 ul{{padding-left:18px}}
 a{{color:#555}}
-.brand{{font-size:9px;letter-spacing:3px;color:#333;text-transform:uppercase;margin-bottom:32px;display:block}}
+.back{{font-size:20px;color:#444;text-decoration:none;display:block;margin-bottom:32px;line-height:1}}
+.back:hover{{color:#888}}
 </style></head><body>
-<a class="brand" href="/">News Alert</a>
+<a class="back" href="javascript:history.back()">←</a>
 <h1>Politique de confidentialité</h1>
 <p class="date">Dernière mise à jour : {datetime.now().strftime("%d/%m/%Y")}</p>
 
@@ -625,7 +697,8 @@ def refresh_token():
 def check_auth():
     exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding", "/cancel-register",
                "/api/refresh-token", "/forgot-password", "/reset-password",
-               "/api/update-password", "/privacy"]
+               "/api/update-password", "/privacy", "/auth/google", "/auth/callback",
+               "/api/oauth-session"]
     if request.path in exempts or request.path.startswith("/a/"):
         return
     if not session.get("access_token"):
