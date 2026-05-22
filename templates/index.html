@@ -519,67 +519,87 @@
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .corr-card {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 18px 16px;
+      overflow: hidden;
       cursor: default;
     }
 
-    .corr-meta {
+    .corr-card-head {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .corr-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .corr-domains {
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 12px;
       flex-wrap: wrap;
     }
 
-    .corr-badge {
+    .corr-domain-dot {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       font-size: 10px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: var(--surface);
       color: var(--sub);
-      border: 1px solid var(--line);
+      font-weight: 500;
     }
 
-    .corr-badge-date {
-      font-size: 11px;
+    .corr-domain-dot::before {
+      content: "";
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .corr-nb {
+      font-size: 10px;
       color: var(--sub);
-      margin-left: auto;
+      background: var(--surface2);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 2px 8px;
+      white-space: nowrap;
     }
 
     .corr-titre {
       font-size: 15px;
-      font-weight: 600;
-      line-height: 1.45;
-      margin-bottom: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      letter-spacing: -0.2px;
     }
 
-    .corr-synthese {
-      font-size: 13px;
-      color: var(--sub);
-      line-height: 1.65;
-    }
+    .corr-body { padding: 0 16px 14px; }
 
     .corr-section {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      padding-top: 12px;
-      border-top: 1px solid var(--line);
+      gap: 5px;
     }
 
+    .corr-section:last-child { border-bottom: none; }
+
     .corr-label {
-      font-size: 10px;
-      font-weight: 600;
+      font-size: 9px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.1em;
       color: var(--sub);
     }
 
@@ -589,7 +609,92 @@
       line-height: 1.6;
     }
 
-    .corr-section + .corr-section { margin-top: 10px; }
+    .corr-date {
+      font-size: 10px;
+      color: var(--sub);
+    }
+
+    .corr-synthese {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--sub);
+      line-height: 1.65;
+    }
+
+    /* ── Page Sauvegardés ── */
+    #feed-saved {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 0;
+    }
+
+    .saved-group-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--sub);
+      padding: 14px 14px 6px;
+    }
+
+    .saved-card {
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .saved-card:active { background: var(--surface2); }
+
+    .saved-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .saved-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .saved-domaine {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .saved-time { font-size: 10px; color: var(--sub); margin-left: auto; }
+
+    .saved-titre {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .saved-resume {
+      font-size: 12px;
+      color: var(--sub);
+      line-height: 1.55;
+      margin-bottom: 10px;
+    }
+
+    .saved-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .saved-card .carte-geo     .saved-dot, .saved-card.carte-geo     .saved-dot { background: var(--geo); }
+    .saved-card .carte-sci     .saved-dot, .saved-card.carte-sci     .saved-dot { background: var(--sci); }
+    .saved-card .carte-tech    .saved-dot, .saved-card.carte-tech    .saved-dot { background: var(--tech); }
+    .saved-card .carte-finance .saved-dot, .saved-card.carte-finance .saved-dot { background: var(--finance); }
+    .saved-card .carte-env     .saved-dot, .saved-card.carte-env     .saved-dot { background: var(--env); }
+    .saved-card .carte-sport   .saved-dot, .saved-card.carte-sport   .saved-dot { background: var(--sport); }
 
     /* ── Page Paramètres ── */
     #page-params { display: none; padding: 24px 20px; }
@@ -774,8 +879,8 @@
 <!-- ── PAGE SAUVEGARDÉS ── -->
 <div id="page-saved">
   <header>
-    <div class="header-row" style="margin-bottom:14px">
-      <h1>Sauvegardés</h1>
+    <div class="topbar">
+      <h1 style="font-size:17px;font-weight:600;letter-spacing:-0.2px">Enregistrés</h1>
     </div>
   </header>
   <div id="feed-saved"></div>
@@ -1151,55 +1256,119 @@
   }
 
   // ── Corrélations ────────────────────────────────────────────────────────
+  const CORR_DOMAIN_COLORS = {
+    "Géopolitique": "var(--geo)", "Science": "var(--sci)", "Tech": "var(--tech)",
+    "Finance": "var(--finance)", "Environnement": "var(--env)", "Sport": "var(--sport)"
+  };
+
   async function chargerCorrelations() {
     const feed = document.getElementById("feed-corr");
     feed.innerHTML = `<div class="vide">Chargement...</div>`;
     const corrs = await fetch("/api/correlations").then(r => r.json()).catch(() => []);
 
     if (!corrs.length) {
-      feed.innerHTML = `<div class="vide">Aucune corrélation pour le moment.<br>Le résumé est généré chaque matin à 8h.</div>`;
+      feed.innerHTML = `<div class="vide">Aucune corrélation pour le moment.<br>Générée chaque matin à 8h.</div>`;
       return;
     }
 
     feed.innerHTML = corrs.map(c => {
-      const dom = (c.domaines || []).join(" · ") || "Général";
+      const domaines = c.domaines || [];
       const nb  = (c.alertes_ids || []).length;
-      const d   = c.date ? new Date(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "";
-      // Nouvelles corrélations ont contexte/analyse/implication, anciennes ont synthese
+      const d   = c.date ? new Date(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short"}) : "";
+
+      const domainsHtml = domaines.map(d => {
+        const label = d.replace(/^\S+\s/, "");
+        const color = CORR_DOMAIN_COLORS[label] || "var(--sub)";
+        return `<span class="corr-domain-dot" style="color:${color}">${esc(label)}</span>`;
+      }).join("") || `<span class="corr-domain-dot">Général</span>`;
+
       const corps = c.contexte
         ? `<div class="corr-section">
-             <span class="corr-label">Lien</span>
+             <span class="corr-label">Pourquoi c'est lié</span>
              <span class="corr-text">${esc(c.contexte)}</span>
            </div>
            <div class="corr-section">
-             <span class="corr-label">Analyse</span>
+             <span class="corr-label">Ce que ça signifie</span>
              <span class="corr-text">${esc(c.analyse || "")}</span>
            </div>
            <div class="corr-section">
              <span class="corr-label">À surveiller</span>
              <span class="corr-text">${esc(c.implication || "")}</span>
            </div>`
-        : `<div class="corr-synthese">${esc(c.synthese || "")}</div>`;
+        : `<div class="corr-section"><span class="corr-text">${esc(c.synthese || "")}</span></div>`;
+
       return `<div class="corr-card">
-        <div class="corr-meta">
-          <span class="corr-badge">${esc(dom)}</span>
-          <span class="corr-badge" style="color:var(--sub)">${nb} alerte${nb > 1 ? "s" : ""}</span>
-          <span class="corr-badge-date">${d}</span>
+        <div class="corr-card-head">
+          <div class="corr-card-meta">
+            <div class="corr-domains">${domainsHtml}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="corr-nb">${nb} alerte${nb > 1 ? "s" : ""}</span>
+              <span class="corr-date">${d}</span>
+            </div>
+          </div>
+          <div class="corr-titre">${esc(c.titre || "")}</div>
         </div>
-        <div class="corr-titre">${esc(c.titre || "")}</div>
-        ${corps}
+        <div class="corr-body">${corps}</div>
       </div>`;
     }).join("");
   }
 
   // ── Sauvegardés ─────────────────────────────────────────────────────────
+  function labelDate(iso) {
+    if (!iso) return "Avant";
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = Math.floor((now - d) / 86400000);
+    if (diff === 0) return "Aujourd'hui";
+    if (diff === 1) return "Hier";
+    if (diff < 7)  return "Cette semaine";
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+  }
+
+  function savedCarteHTML(a) {
+    const dom   = getDomaine(a.domaine);
+    const cls   = "carte-" + dom.cls;
+    const saved = savedIds.has(a.id);
+    const colorMap = { geo:"var(--geo)", sci:"var(--sci)", tech:"var(--tech)",
+                       finance:"var(--finance)", env:"var(--env)", sport:"var(--sport)" };
+    const color = colorMap[dom.cls] || "var(--sub)";
+    return `<div class="saved-card ${cls}" onclick="ouvrirModal(${a.id})">
+      <div class="saved-card-meta">
+        <span class="saved-dot" style="background:${color}"></span>
+        <span class="saved-domaine" style="color:${color}">${esc(dom.label)}</span>
+        <span class="saved-time">${formatHeure(a.date)}</span>
+      </div>
+      <div class="saved-titre">${esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre)}</div>
+      ${a.accroche ? `<div class="saved-resume">${esc(a.accroche)}</div>` : ""}
+      <div class="saved-actions">
+        <button class="btn-save saved" onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
+          <ion-icon name="bookmark"></ion-icon>
+        </button>
+        <button class="btn-save" onclick="event.stopPropagation(); partagerAlerte(${a.id})">
+          <ion-icon name="share-outline"></ion-icon>
+        </button>
+      </div>
+    </div>`;
+  }
 
   async function chargerSauvegardes() {
-    const alertes = await fetch("/api/sauvegardes").then(r => r.json());
+    const data = await fetch("/api/sauvegardes").then(r => r.json());
     const feed = document.getElementById("feed-saved");
-    feed.innerHTML = alertes.length
-      ? alertes.map(carteHTML).join("")
-      : `<div class="vide">Aucun article sauvegardé.<br>Appuie sur ◇ pour en conserver.</div>`;
+    if (!data.length) {
+      feed.innerHTML = `<div class="vide">Aucun article sauvegardé.<br>Appuie sur <ion-icon name="bookmark-outline" style="vertical-align:middle"></ion-icon> pour en conserver.</div>`;
+      return;
+    }
+    let html = "";
+    let lastLabel = null;
+    data.forEach(a => {
+      const label = labelDate(a.date);
+      if (label !== lastLabel) {
+        html += `<div class="saved-group-label">${label}</div>`;
+        lastLabel = label;
+      }
+      html += savedCarteHTML(a);
+    });
+    feed.innerHTML = html;
   }
 
   async function notifierManuellement(id) {
