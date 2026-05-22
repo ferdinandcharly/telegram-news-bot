@@ -634,6 +634,26 @@ def onboarding():
         return redirect("/login")
     return _ONBOARDING_HTML
 
+@app.route("/api/delete-account", methods=["POST"])
+def api_delete_account():
+    """Supprime définitivement le compte de l'utilisateur connecté."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"erreur": "non authentifié"}), 401
+    try:
+        # Supprimer les données utilisateur de Supabase
+        for table in ["user_sauvegardes", "user_preferences", "user_subscriptions"]:
+            http.delete(sb(table), headers=SB_SERVICE,
+                        params={"user_id": f"eq.{user_id}"}, timeout=8)
+        # Supprimer le compte Auth Supabase
+        http.delete(f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                    headers={**SB_SERVICE, "Content-Type": "application/json"}, timeout=10)
+        session.clear()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+
 @app.route("/cancel-register")
 def cancel_register():
     """Supprime le compte créé si l'utilisateur annule l'onboarding."""
@@ -641,7 +661,6 @@ def cancel_register():
     user_id = session.get("user_id")
     if token and user_id:
         try:
-            # supprimer via l'API admin Supabase (service key)
             http.delete(
                 f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
                 headers={**SB_SERVICE, "Content-Type": "application/json"},
