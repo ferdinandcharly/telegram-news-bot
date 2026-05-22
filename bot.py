@@ -119,16 +119,17 @@ def est_important(titre, resume, domaine):
                     "- niveau 0 : tout le reste — suivi d'un événement déjà connu, opinion, "
                     "analyse, rapport, nomination, conférence, sondage, produit, mise à jour, "
                     "rumeur, déclaration sans acte concret. Rejette au moins 95% des articles.\n"
-                    "Si niveau vaut 2 ou 3, rédige un teaser en français.\n"
+                    "Si niveau vaut 2 ou 3, rédige un teaser en français. "
+                    "Si le titre n'est pas en français, traduis-le dans titre_fr, sinon laisse titre_fr vide.\n"
                     "Réponds JSON uniquement, avec niveau valant 0, 2 ou 3 :\n"
-                    "{\"niveau\": 0, \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}\n"
+                    "{\"niveau\": 0, \"titre_fr\": \"\", \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}\n"
                     "ou\n"
-                    "{\"niveau\": 2, \"accroche\": \"...\", \"contexte\": \"...\", \"suite\": \"...\"}\n"
+                    "{\"niveau\": 2, \"titre_fr\": \"...\", \"accroche\": \"...\", \"contexte\": \"...\", \"suite\": \"...\"}\n"
                     "ou\n"
-                    "{\"niveau\": 3, \"accroche\": \"...\", \"contexte\": \"...\", \"suite\": \"...\"}"
+                    "{\"niveau\": 3, \"titre_fr\": \"...\", \"accroche\": \"...\", \"contexte\": \"...\", \"suite\": \"...\"}"
                 )
             }],
-            max_tokens=350,
+            max_tokens=420,
             temperature=0.1,
         )
         contenu = rep.choices[0].message.content.strip()
@@ -137,6 +138,7 @@ def est_important(titre, resume, domaine):
         fin = contenu.rfind("}") + 1
         data = json.loads(contenu[debut:fin])
         teaser = {
+            "titre_fr": data.get("titre_fr", ""),
             "accroche": data.get("accroche", ""),
             "contexte": data.get("contexte", ""),
             "suite":    data.get("suite", ""),

@@ -595,6 +595,7 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
         "id":          int(datetime.now().timestamp() * 1000),
         "domaine":     domaine,
         "titre":       titre,
+        "titre_fr":    teaser.get("titre_fr", "") if isinstance(teaser, dict) else "",
         "accroche":    accroche,
         "contexte":    teaser.get("contexte", "") if isinstance(teaser, dict) else "",
         "suite":       teaser.get("suite", "")    if isinstance(teaser, dict) else "",
@@ -853,7 +854,8 @@ def api_init():
         "theme":        prefs_row.get("theme")        or "dark"             if prefs_row else "dark",
         "domaines":     prefs_row.get("domaines")     or list(bot.FLUX.keys()) if prefs_row else list(bot.FLUX.keys()),
         "niveau_notif": prefs_row.get("niveau_notif") or 3                 if prefs_row else 3,
-        "heure_recap":  prefs_row.get("heure_recap")  or 8                 if prefs_row else 8,
+        "heure_recap":  8,
+        "langue":       prefs_row.get("langue") or "multi"               if prefs_row else "multi",
     }
 
     # filtrer par domaines préférés
@@ -881,7 +883,7 @@ def api_preferences():
         return jsonify({"erreur": "non authentifié"}), 401
     data  = request.get_json()
     prefs = {"user_id": user_id}
-    for key in ("display_name", "theme", "domaines", "niveau_notif", "heure_recap"):
+    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue"):
         if key in data:
             prefs[key] = data[key]
     http.post(sb("user_preferences"),
@@ -1003,15 +1005,23 @@ def generer_correlations(user_id=None, domaines_user=None, display_name=None):
     global _telegram_envoye
 
     depuis = (datetime.now() - timedelta(hours=24)).isoformat()
-    alertes_24h = [a for a in alertes if a.get("date", "") >= depuis]
+    # Lire depuis Supabase pour ne pas dépendre de la mémoire (réinitialisée au redémarrage)
+    try:
+        r = http.get(sb("alertes"), headers=SB_SERVICE,
+                     params={"date": f"gte.{depuis}", "order": "date.desc", "limit": "200"}, timeout=10)
+        alertes_24h = r.json() if r.ok and isinstance(r.json(), list) else []
+    except Exception as e:
+        print(f"[Corrélation] Erreur lecture Supabase : {e}")
+        alertes_24h = [a for a in alertes if a.get("date", "") >= depuis]
 
     if domaines_user:
         mots = [d.split(" ", 1)[-1] for d in domaines_user]
         alertes_24h = [a for a in alertes_24h
                        if any(m in a.get("domaine", "") for m in mots)]
 
+    print(f"[Corrélation] {len(alertes_24h)} alertes des 24h pour {user_id or 'global'}")
     if len(alertes_24h) < 2:
-        print(f"[Corrélation] Pas assez d'alertes ({len(alertes_24h)}) pour {user_id or 'global'}")
+        print(f"[Corrélation] Pas assez d'alertes, abandon.")
         return
 
     alertes_compact = [
@@ -1114,26 +1124,26 @@ Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
 
 
 def check_resumes_matinaux(heure):
-    """Envoie le résumé aux utilisateurs qui ont choisi cette heure."""
-    if not SUPABASE_URL:
+    """Envoie le résumé à tous les utilisateurs à 8h chaque matin."""
+    if heure != 8 or not SUPABASE_URL:
         return
     today = dt_date.today().isoformat()
+    # Vérifier qu'on n'a pas déjà envoyé les résumés ce matin
+    if _resumes_envoyes.get("__global__") == today:
+        return
+    _resumes_envoyes["__global__"] = today
+    print(f"[Resume] Génération des corrélations matinales ({today})")
     try:
-        # Récupérer aussi last_recap_date pour éviter les doublons au redémarrage
         r = http.get(sb("user_preferences"), headers=SB_SERVICE,
-                     params={"heure_recap": f"eq.{heure}",
-                             "select": "user_id,domaines,last_recap_date,display_name"}, timeout=5)
-        for u in (r.json() if r.ok else []):
-            uid  = u.get("user_id")
-            last = u.get("last_recap_date", "")
-            nom  = u.get("display_name") or None
-            if uid and last != today and _resumes_envoyes.get(uid) != today:
+                     params={"select": "user_id,domaines,display_name"}, timeout=5)
+        users = r.json() if r.ok and isinstance(r.json(), list) else []
+        print(f"[Resume] {len(users)} utilisateur(s) trouvé(s)")
+        for u in users:
+            uid = u.get("user_id")
+            if uid and _resumes_envoyes.get(uid) != today:
                 _resumes_envoyes[uid] = today
-                http.patch(sb("user_preferences"), headers=SB_SERVICE,
-                           params={"user_id": f"eq.{uid}"},
-                           json={"last_recap_date": today}, timeout=5)
                 generer_correlations(user_id=uid, domaines_user=u.get("domaines") or [],
-                                     display_name=nom)
+                                     display_name=u.get("display_name"))
     except Exception as e:
         print(f"[Resume] Erreur : {e}")
 

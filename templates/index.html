@@ -103,9 +103,9 @@
     }
 
     .topbar-brand {
-      font-size: 7px;
+      font-size: 10px;
       letter-spacing: 2px;
-      color: #444;
+      color: #555;
       text-transform: uppercase;
       font-weight: 600;
     }
@@ -869,30 +869,18 @@
     <div class="param-row">
       <div>
         <div class="param-label">Résumé matinal</div>
-        <div class="param-sub">Heure des corrélations</div>
+        <div class="param-sub">Corrélations envoyées chaque matin à 8h</div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span id="hr-texte" style="font-size:14px;color:var(--sub)">8h00</span>
-        <button id="hr-btn-edit" onclick="toggleEditHeure()"
-                style="background:none;border:none;color:var(--sub);cursor:pointer;font-size:14px;padding:2px">✎</button>
-        <select id="select-heure-recap"
-                style="display:none;padding:6px 10px;background:var(--surface);border:1px solid var(--line);
-                       border-radius:8px;color:var(--text);font-size:13px;outline:none">
-          <option value="5">5h00</option>
-          <option value="6">6h00</option>
-          <option value="7">7h00</option>
-          <option value="8">8h00</option>
-          <option value="9">9h00</option>
-          <option value="10">10h00</option>
-          <option value="11">11h00</option>
-          <option value="12">12h00</option>
-          <option value="18">18h00</option>
-          <option value="20">20h00</option>
-          <option value="21">21h00</option>
-        </select>
-        <button id="hr-btn-save" onclick="sauverHeureRecap()"
-                style="display:none;background:none;border:none;color:var(--text);cursor:pointer;font-size:14px;padding:2px">✓</button>
+    </div>
+    <div class="param-row">
+      <div>
+        <div class="param-label">Langue</div>
+        <div class="param-sub">Traduire les titres anglais en français</div>
       </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-langue" onchange="sauverLangue()" />
+        <span class="slider"></span>
+      </label>
     </div>
   </div>
 
@@ -966,7 +954,8 @@
 
 <script>
   let filtreCourant = "Tout";
-  let userDomaines  = []; // domaines préférés de l'utilisateur
+  let userDomaines  = [];
+  let userLangue    = "multi";
 
   function filtrerParPrefs(alertes) {
     if (!userDomaines.length) return alertes;
@@ -1086,7 +1075,7 @@
           <span class="source-time">${formatHeure(a.date)}</span>
           ${critique}
         </div>
-        <div class="carte-titre">${esc(a.titre)}</div>
+        <div class="carte-titre">${esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre)}</div>
         ${a.accroche ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
         <div class="carte-footer">
           <span class="carte-category">${esc(a.domaine.replace(/^\S+\s/, ""))}</span>
@@ -1431,24 +1420,12 @@
     btnEdit.style.display = "inline-block";
   }
 
-  function toggleEditHeure() {
-    document.getElementById("hr-texte").style.display    = "none";
-    document.getElementById("hr-btn-edit").style.display  = "none";
-    document.getElementById("select-heure-recap").style.display = "inline-block";
-    document.getElementById("hr-btn-save").style.display  = "inline-block";
-  }
-
-  async function sauverHeureRecap() {
-    const select = document.getElementById("select-heure-recap");
-    const val = parseInt(select.value);
+  async function sauverLangue() {
+    userLangue = document.getElementById("toggle-langue").checked ? "fr" : "multi";
     await fetch("/api/preferences", { method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ heure_recap: val }) });
-    document.getElementById("hr-texte").textContent      = select.options[select.selectedIndex].text;
-    document.getElementById("hr-texte").style.display    = "inline";
-    document.getElementById("hr-btn-edit").style.display  = "inline-block";
-    select.style.display = "none";
-    document.getElementById("hr-btn-save").style.display  = "none";
+      body: JSON.stringify({ langue: userLangue }) });
+    chargerAlertes();
   }
 
   // ── Init ─────────────────────────────────────────────────────────────────
@@ -1469,12 +1446,10 @@
       if (dnTexte) dnTexte.textContent = data.email;
     }
 
-    // heure recap
-    const selectHeure = document.getElementById("select-heure-recap");
-    const hrTexte = document.getElementById("hr-texte");
-    const h = data.preferences.heure_recap ?? 8;
-    if (selectHeure) selectHeure.value = String(h);
-    if (hrTexte) hrTexte.textContent = `${h}h00`;
+    // langue
+    userLangue = data.preferences.langue || "multi";
+    const toggleLangue = document.getElementById("toggle-langue");
+    if (toggleLangue) toggleLangue.checked = userLangue === "fr";
 
     // domaines préférés
     userDomaines = data.preferences.domaines || [];
