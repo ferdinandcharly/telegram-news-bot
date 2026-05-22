@@ -732,12 +732,9 @@
       <span class="topbar-brand">News Alert</span>
       <div class="topbar-right">
         <div class="live"><div class="live-dot"></div>En direct</div>
-        <button id="btn-recherche" class="btn-icon" onclick="toggleRecherche()">
-          <ion-icon name="search-outline"></ion-icon>
-        </button>
       </div>
     </div>
-    <div id="zone-recherche" style="display:none;padding:0 16px 10px">
+    <div id="zone-recherche" style="display:none;padding:0 14px 8px">
       <input id="recherche" type="search" placeholder="Rechercher un titre, domaine..."
              oninput="chargerAlertes()"
              style="width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--line);
@@ -746,7 +743,7 @@
     <div class="filtres">
       <button class="filtre-tout actif" id="btn-tout" onclick="setFiltreTout()">Tout</button>
       <select class="filtre-select" id="filtre-select" onchange="setFiltreSelect(this)">
-        <option value="">Filtrer par domaine</option>
+        <option value="">Domaine</option>
         <option value="Géopolitique">Géopolitique</option>
         <option value="Science">Science</option>
         <option value="Tech">Tech & IA</option>
@@ -754,6 +751,9 @@
         <option value="Environnement">Environnement</option>
         <option value="Sport">Sport</option>
       </select>
+      <button id="btn-recherche" class="btn-icon" onclick="toggleRecherche()" style="flex-shrink:0">
+        <ion-icon name="search-outline"></ion-icon>
+      </button>
     </div>
   </header>
 
@@ -765,7 +765,7 @@
   <header>
     <div class="header-row" style="margin-bottom:14px">
       <h1>Corrélations</h1>
-      <div class="live"><div class="live-dot"></div>Analyse quotidienne</div>
+      <span style="font-size:10px;color:var(--sub);letter-spacing:0.02em">Analyse quotidienne</span>
     </div>
   </header>
   <div id="feed-corr"></div>
