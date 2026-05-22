@@ -908,7 +908,7 @@
   <div class="params-bloc">
     <div class="params-titre">Compte</div>
     <div class="param-row">
-      <div><div class="param-label">Nom d'affichage</div></div>
+      <div><div class="param-label">Nom d'utilisateur</div></div>
       <div style="display:flex;align-items:center;gap:8px">
         <span id="dn-texte" style="font-size:13px;color:var(--sub)">—</span>
         <button id="dn-btn-edit" onclick="toggleEditNom()"
@@ -1663,7 +1663,6 @@
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ display_name: val }) });
     texte.textContent = val;
-    document.getElementById("user-email").textContent = val;
     input.style.display  = "none";
     btnSave.style.display = "none";
     texte.style.display  = "inline";
