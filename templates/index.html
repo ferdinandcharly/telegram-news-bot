@@ -787,11 +787,26 @@
     <h2 style="margin:0">Paramètres</h2>
     <a href="/logout" style="font-size:13px;color:var(--sub);text-decoration:none">Déconnexion</a>
   </div>
-  <div class="params-bloc" style="margin-bottom:16px">
+
+  <!-- Compte -->
+  <div class="params-bloc">
     <div class="params-titre">Compte</div>
     <div class="param-row">
+      <div><div class="param-label">Nom d'affichage</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="dn-texte" style="font-size:13px;color:var(--sub)">—</span>
+        <button id="dn-btn-edit" onclick="toggleEditNom()"
+                style="background:none;border:none;color:var(--sub);cursor:pointer;font-size:14px;padding:2px">✎</button>
+        <input type="text" id="dn-input" maxlength="30"
+               style="display:none;width:100px;padding:5px 8px;background:var(--surface);
+                      border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:13px;outline:none"/>
+        <button id="dn-btn-save" onclick="sauverNomEdit()"
+                style="display:none;background:none;border:none;color:var(--text);cursor:pointer;font-size:14px;padding:2px">✓</button>
+      </div>
+    </div>
+    <div class="param-row">
       <div><div class="param-label">Email</div></div>
-      <div class="param-label" id="user-email" style="font-size:13px;color:var(--sub);font-weight:400">—</div>
+      <div id="user-email" style="font-size:13px;color:var(--sub)">—</div>
     </div>
     <div class="param-row">
       <div><div class="param-label">Mot de passe</div></div>
@@ -802,6 +817,7 @@
     </div>
   </div>
 
+  <!-- Domaines -->
   <div class="params-bloc">
     <div class="params-titre">Domaines surveillés</div>
     <div class="param-row">
@@ -813,7 +829,7 @@
       <label class="toggle"><input type="checkbox" id="toggle-sci" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
     </div>
     <div class="param-row">
-      <div><div class="param-label">Tech & IA</div><div class="param-sub">TechCrunch · The Verge · Wired</div></div>
+      <div><div class="param-label">Tech & IA</div><div class="param-sub">The Verge · Wired · MIT Tech</div></div>
       <label class="toggle"><input type="checkbox" id="toggle-tech" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
     </div>
     <div class="param-row">
@@ -825,24 +841,25 @@
       <label class="toggle"><input type="checkbox" id="toggle-env" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
     </div>
     <div class="param-row">
-      <div><div class="param-label">Sport</div><div class="param-sub">L'Équipe · BBC Sport · Reuters Sports</div></div>
+      <div><div class="param-label">Sport</div><div class="param-sub">L'Équipe · BBC Sport · Reuters</div></div>
       <label class="toggle"><input type="checkbox" id="toggle-sport" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
     </div>
   </div>
 
+  <!-- Notifications -->
   <div class="params-bloc">
     <div class="params-titre">Notifications</div>
     <div class="param-row">
       <div>
-        <div class="param-label">Notifications push</div>
+        <div class="param-label">Alertes push</div>
         <div class="param-sub" id="notif-status">Non activées</div>
       </div>
       <button class="btn-notif" id="btn-notif" onclick="toggleNotifications()">Activer</button>
     </div>
     <div class="param-row" id="row-notif-important" style="display:none">
       <div>
-        <div class="param-label">Push pour Important</div>
-        <div class="param-sub">Recevoir aussi les alertes niveau 🟡</div>
+        <div class="param-label">Inclure les importantes</div>
+        <div class="param-sub">Alertes niveau 🟡 en plus des critiques</div>
       </div>
       <label class="toggle">
         <input type="checkbox" id="toggle-notif-important" onchange="updateNiveauNotif()" />
@@ -851,33 +868,13 @@
     </div>
   </div>
 
+  <!-- Langue -->
   <div class="params-bloc">
-    <div class="params-titre">Apparence</div>
-    <div class="param-row">
-      <div><div class="param-label">Thème</div></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-theme" data-t="dark" onclick="setTheme('dark')">Dark</button>
-        <button class="btn-theme" data-t="dim" onclick="setTheme('dim')">Dim</button>
-        <button class="btn-theme" data-t="light" onclick="setTheme('light')">Light</button>
-      </div>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Nom d'affichage</div></div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span id="dn-texte" style="font-size:14px;color:var(--sub)">—</span>
-        <button id="dn-btn-edit" onclick="toggleEditNom()"
-                style="background:none;border:none;color:var(--sub);cursor:pointer;font-size:14px;padding:2px">✎</button>
-        <input type="text" id="dn-input" maxlength="30"
-               style="display:none;width:100px;padding:5px 8px;background:var(--surface);
-                      border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:13px;outline:none"/>
-        <button id="dn-btn-save" onclick="sauverNomEdit()"
-                style="display:none;background:none;border:none;color:var(--text);cursor:pointer;font-size:14px;padding:2px">✓</button>
-      </div>
-    </div>
+    <div class="params-titre">Langue</div>
     <div class="param-row" style="flex-direction:column;align-items:flex-start;gap:10px">
       <div>
         <div class="param-label">Langue d'affichage</div>
-        <div class="param-sub">Traduit les titres qui ne sont pas dans la langue choisie</div>
+        <div class="param-sub">Traduit les titres dans la langue choisie</div>
       </div>
       <select id="select-langue" onchange="sauverLangue(this.value)"
               style="width:100%;padding:9px 12px;background:var(--surface);border:1px solid var(--line);
@@ -889,35 +886,44 @@
         <option value="de">Deutsch</option>
       </select>
       <div style="font-size:11px;color:var(--sub);line-height:1.4">
-        ⚠ Traduction générée par IA — peut contenir des inexactitudes.
-        Seul le français est entièrement supporté pour l'instant.
+        ⚠ Traduction IA — peut contenir des inexactitudes. Français seul entièrement supporté.
       </div>
     </div>
   </div>
 
+  <!-- Préférences (Apparence + Activité) -->
   <div class="params-bloc">
-    <div class="params-titre">Activité</div>
+    <div class="params-titre">Préférences</div>
+    <div class="param-row">
+      <div><div class="param-label">Thème</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-theme" data-t="dark" onclick="setTheme('dark')">Dark</button>
+        <button class="btn-theme" data-t="dim" onclick="setTheme('dim')">Dim</button>
+        <button class="btn-theme" data-t="light" onclick="setTheme('light')">Light</button>
+      </div>
+    </div>
     <div class="param-row">
       <div><div class="param-label">Articles aujourd'hui</div></div>
-      <div class="param-label" id="stat-jour">—</div>
+      <div class="param-label" id="stat-jour" style="font-weight:400;color:var(--sub)">—</div>
     </div>
     <div class="param-row">
       <div><div class="param-label">Total des alertes</div></div>
-      <div class="param-label" id="stat-total">—</div>
+      <div class="param-label" id="stat-total" style="font-weight:400;color:var(--sub)">—</div>
     </div>
   </div>
 
+  <!-- Système -->
   <div class="params-bloc">
     <div class="params-titre">Système</div>
     <div class="param-row">
       <div><div class="param-label">Fréquence</div><div class="param-sub">Vérification toutes les 15 min</div></div>
     </div>
     <div class="param-row">
-      <div><div class="param-label">Modèle IA</div><div class="param-sub">Llama 3.1 via Groq</div></div>
+      <div><div class="param-label">Modèle IA</div><div class="param-sub">Llama 3.1 · Groq</div></div>
     </div>
     <div class="param-row">
-      <div><div class="param-label">Confidentialité</div><div class="param-sub">Politique de gestion des données</div></div>
-      <a href="/privacy" target="_blank" style="font-size:12px;color:var(--sub);text-decoration:none">Voir →</a>
+      <div><div class="param-label">Confidentialité</div></div>
+      <a href="/privacy" target="_blank" style="font-size:13px;color:var(--sub);text-decoration:none">Voir →</a>
     </div>
   </div>
 </div>
