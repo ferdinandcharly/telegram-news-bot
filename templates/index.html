@@ -149,6 +149,18 @@
       50%       { opacity: 0.2; }
     }
 
+    #barre-filtres {
+      overflow: hidden;
+      transition: max-height 0.25s ease, opacity 0.2s ease;
+      max-height: 80px;
+      opacity: 1;
+    }
+
+    #barre-filtres.masque {
+      max-height: 0;
+      opacity: 0;
+    }
+
     .filtres {
       display: flex;
       align-items: center;
@@ -623,10 +635,7 @@
 
     /* ── Page Sauvegardés ── */
     #feed-saved {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      padding: 0;
+      display: block;
     }
 
     .saved-group-label {
@@ -839,26 +848,28 @@
         <div class="live"><div class="live-dot"></div>En direct</div>
       </div>
     </div>
-    <div id="zone-recherche" style="display:none;padding:0 14px 8px">
-      <input id="recherche" type="search" placeholder="Rechercher un titre, domaine..."
-             oninput="chargerAlertes()"
-             style="width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--line);
-                    border-radius:10px;color:var(--text);font-size:13px;outline:none;-webkit-appearance:none"/>
-    </div>
-    <div class="filtres">
-      <button class="filtre-tout actif" id="btn-tout" onclick="setFiltreTout()">Tout</button>
-      <select class="filtre-select" id="filtre-select" onchange="setFiltreSelect(this)">
-        <option value="">Domaine</option>
-        <option value="Géopolitique">Géopolitique</option>
-        <option value="Science">Science</option>
-        <option value="Tech">Tech & IA</option>
-        <option value="Finance">Finance</option>
-        <option value="Environnement">Environnement</option>
-        <option value="Sport">Sport</option>
-      </select>
-      <button id="btn-recherche" class="btn-icon" onclick="toggleRecherche()" style="flex-shrink:0">
-        <ion-icon name="search-outline"></ion-icon>
-      </button>
+    <div id="barre-filtres">
+      <div id="zone-recherche" style="display:none;padding:0 14px 8px">
+        <input id="recherche" type="search" placeholder="Rechercher un titre, domaine..."
+               oninput="chargerAlertes()"
+               style="width:100%;padding:8px 12px;background:var(--surface);border:1px solid var(--line);
+                      border-radius:10px;color:var(--text);font-size:13px;outline:none;-webkit-appearance:none"/>
+      </div>
+      <div class="filtres">
+        <button class="filtre-tout actif" id="btn-tout" onclick="setFiltreTout()">Tout</button>
+        <select class="filtre-select" id="filtre-select" onchange="setFiltreSelect(this)">
+          <option value="">Domaine</option>
+          <option value="Géopolitique">Géopolitique</option>
+          <option value="Science">Science</option>
+          <option value="Tech">Tech & IA</option>
+          <option value="Finance">Finance</option>
+          <option value="Environnement">Environnement</option>
+          <option value="Sport">Sport</option>
+        </select>
+        <button id="btn-recherche" class="btn-icon" onclick="toggleRecherche()" style="flex-shrink:0">
+          <ion-icon name="search-outline"></ion-icon>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -1355,7 +1366,7 @@
     const data = await fetch("/api/sauvegardes").then(r => r.json());
     const feed = document.getElementById("feed-saved");
     if (!data.length) {
-      feed.innerHTML = `<div class="vide">Aucun article sauvegardé.<br>Appuie sur <ion-icon name="bookmark-outline" style="vertical-align:middle"></ion-icon> pour en conserver.</div>`;
+      feed.innerHTML = `<div class="vide">Aucun article enregistré.<br>Appuie sur <ion-icon name="bookmark-outline" style="vertical-align:middle"></ion-icon> pour en conserver.</div>`;
       return;
     }
     let html = "";
@@ -1366,10 +1377,33 @@
         html += `<div class="saved-group-label">${label}</div>`;
         lastLabel = label;
       }
-      html += savedCarteHTML(a);
+      html += carteHTML(a);
     });
     feed.innerHTML = html;
   }
+
+  // ── Scroll hide filtres ───────────────────────────────────────────────────
+  (() => {
+    let lastY = 0;
+    let ticking = false;
+    window.addEventListener("scroll", () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const barre = document.getElementById("barre-filtres");
+          if (!barre) { ticking = false; return; }
+          const curr = window.scrollY;
+          if (curr > lastY && curr > 60) {
+            barre.classList.add("masque");
+          } else {
+            barre.classList.remove("masque");
+          }
+          lastY = curr;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+  })();
 
   async function notifierManuellement(id) {
     await fetch(`/api/notifier/${id}`, { method: "POST" });
