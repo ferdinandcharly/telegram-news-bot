@@ -1435,10 +1435,6 @@
     }, { passive: true });
   })();
 
-  async function notifierManuellement(id) {
-    await fetch(`/api/notifier/${id}`, { method: "POST" });
-  }
-
   function partagerAlerte(id) {
     const url = `${location.origin}/a/${id}`;
     if (navigator.share) {
@@ -1783,10 +1779,6 @@
     }
     ouvrirModal(id);
   }
-
-  fetch("/api/me").then(r => r.json()).then(d => {
-    if (d.email) document.getElementById("user-email").textContent = d.email;
-  });
 
   async function refreshToken() {
     try { await fetch("/api/refresh-token", { method: "POST" }); } catch {}

@@ -582,7 +582,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
       }
       const reg = await navigator.serviceWorker.register("/sw.js");
       await navigator.serviceWorker.ready;
-      const { key } = await fetch("/api/vapid-key").then(r => r.json());
+      const { key } = await fetch("/api/vapid-public").then(r => r.json());
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlB64ToUint8Array(key)
