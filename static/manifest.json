@@ -1,23 +1,23 @@
 {
   "name": "News Alert",
-  "short_name": "News",
+  "short_name": "News Alert",
   "description": "Alertes d'actualités personnalisées par IA",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#023728",
+  "theme_color": "#023728",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/static/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/static/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/static/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/static/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ]
