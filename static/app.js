@@ -66,19 +66,10 @@
   }
 
   // ── Filtres ─────────────────────────────────────────────────────────────
-  function setFiltreTout() {
-    filtreCourant = "Tout";
-    document.getElementById("btn-tout").classList.add("actif");
-    document.getElementById("filtre-select").classList.remove("actif");
-    document.getElementById("filtre-select").value = "";
-    chargerAlertes();
-  }
-
-  function setFiltreSelect(sel) {
-    if (!sel.value) { setFiltreTout(); return; }
-    filtreCourant = sel.value;
-    document.getElementById("btn-tout").classList.remove("actif");
-    sel.classList.add("actif");
+  function setFiltre(val, btn) {
+    filtreCourant = val;
+    document.querySelectorAll(".filtre-pill").forEach(b => b.classList.remove("actif"));
+    btn.classList.add("actif");
     chargerAlertes();
   }
 
@@ -105,39 +96,56 @@
   }
 
   function carteHTML(a, featured = false) {
-    const dom     = getDomaine(a.domaine);
-    const cls     = "carte-" + dom.cls;
+    const dom         = getDomaine(a.domaine);
+    const cls         = "carte-" + dom.cls;
     const saved       = savedIds.has(a.id);
     const niv         = a.niveau || 2;
     const sources     = a.sources || [];
     const critique    = niv >= 3 ? `<span class="badge-alerte">CRITIQUE</span>` : "";
     const clsCritique = niv >= 3 ? " carte-critique" : "";
-    const sourceCount = sources.length > 1
-      ? `<span class="source-count">${sources.length} sources</span>` : "";
+    const sourceCount = sources.length > 1 ? `<span class="source-count">${sources.length} sources</span>` : "";
+    const titre       = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
+
+    const meta = `<div class="carte-meta">
+      <span class="source-dot"></span>
+      <span class="meta-cat">${esc(dom.label)}</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-time">${formatHeure(a.date)}</span>
+      ${critique}
+    </div>`;
+
+    const actions = `<div class="carte-actions">
+      <button class="btn-save ${saved ? "saved" : ""}" onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
+        <ion-icon name="${saved ? "bookmark" : "bookmark-outline"}"></ion-icon>
+      </button>
+      <button class="btn-save" onclick="event.stopPropagation(); partagerAlerte(${a.id})">
+        <ion-icon name="share-outline"></ion-icon>
+      </button>
+    </div>`;
+
+    if (featured) {
+      return `
+        <div class="carte ${cls} carte-hero${clsCritique}" onclick="ouvrirModal(${a.id})">
+          <div class="carte-vignette-hero">
+            <span class="vignette-badge">${esc(dom.label)}</span>
+          </div>
+          <div class="carte-body">
+            ${meta}
+            <div class="carte-titre">${titre}</div>
+            ${a.accroche ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
+            <div class="carte-footer">${sourceCount}${actions}</div>
+          </div>
+        </div>`;
+    }
 
     return `
-      <div class="carte ${cls}${featured ? " carte-featured" : ""}${clsCritique}" onclick="ouvrirModal(${a.id})">
-        <div class="carte-source-row">
-          <span class="source-dot"></span>
-          <span class="source-name">${esc(dom.label)}</span>
-          <span class="source-sep">·</span>
-          <span class="source-time">${formatHeure(a.date)}</span>
-          ${critique}
-        </div>
-        <div class="carte-titre">${esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre)}</div>
-        ${a.accroche && dom.cls !== "sport" ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
-        <div class="carte-footer">
-          ${sourceCount}
-          <div class="carte-actions">
-            <button class="btn-save ${saved ? "saved" : ""}"
-              onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
-              <ion-icon name="${saved ? "bookmark" : "bookmark-outline"}"></ion-icon>
-            </button>
-            <button class="btn-save"
-              onclick="event.stopPropagation(); partagerAlerte(${a.id})">
-              <ion-icon name="share-outline"></ion-icon>
-            </button>
-          </div>
+      <div class="carte ${cls} carte-row${clsCritique}" onclick="ouvrirModal(${a.id})">
+        <div class="carte-vignette"></div>
+        <div class="carte-body">
+          ${meta}
+          <div class="carte-titre">${titre}</div>
+          ${a.accroche && dom.cls !== "sport" ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
+          <div class="carte-footer">${sourceCount}${actions}</div>
         </div>
       </div>`;
   }
@@ -605,8 +613,9 @@
   async function init() {
     const data = await fetch("/api/init").then(r => r.json());
 
-    // thème
-    setTheme(data.preferences.theme || "dark", false);
+    // thème ("dim" est l'ancien nom de "slate")
+    const theme = (data.preferences.theme || "dark").replace("dim", "slate");
+    setTheme(theme, false);
 
     // nom d'affichage
     const dn = data.preferences.display_name;
