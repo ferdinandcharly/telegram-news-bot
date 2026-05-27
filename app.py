@@ -766,8 +766,8 @@ def envoyer_push(titre, body, url, niveau=3):
                 print(f"Push error : {e}")
 
 
-# ── Callback bot ──────────────────────────────────────────────────────────────
-def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
+# ── Callbacks bot ─────────────────────────────────────────────────────────────
+def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2, source=None):
     accroche = teaser.get("accroche", "") if isinstance(teaser, dict) else teaser
     alerte = {
         "id":          int(datetime.now().timestamp() * 1000),
@@ -781,6 +781,7 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
         "lien":        lien,
         "date":        datetime.now().isoformat(),
         "niveau":      niveau,
+        "sources":     [source] if source else [],
     }
     alertes.insert(0, alerte)
     if len(alertes) > 500:
@@ -791,8 +792,33 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2):
     prefix = "🔴" if niveau >= 3 else "🟡"
     envoyer_push(titre=f"{prefix} {domaine[:25]} — {titre[:40]}",
                  body=(accroche or titre)[:120], url=notif_url, niveau=niveau)
+    return alerte["id"]
 
-bot.on_alerte = ajouter_alerte
+
+def ajouter_source_alerte(alerte_id, source_dict):
+    """Ajoute une source supplémentaire à une alerte existante (clustering multi-sources)."""
+    try:
+        r = http.get(sb("alertes"), headers=SB_SERVICE,
+                     params={"id": f"eq.{alerte_id}", "select": "sources"}, timeout=5)
+        if not r.ok or not r.json():
+            return
+        sources = r.json()[0].get("sources") or []
+        if any(s.get("url") == source_dict.get("url") for s in sources):
+            return
+        sources.append(source_dict)
+        http.patch(sb("alertes"), headers=SB_SERVICE,
+                   params={"id": f"eq.{alerte_id}"},
+                   json={"sources": sources}, timeout=5)
+        for a in alertes:
+            if a["id"] == alerte_id:
+                a["sources"] = sources
+                break
+    except Exception as e:
+        print(f"[Source] Erreur ajout source : {e}")
+
+
+bot.on_alerte  = ajouter_alerte
+bot.on_doublon = ajouter_source_alerte
 
 
 # ── API alertes ───────────────────────────────────────────────────────────────
@@ -847,48 +873,60 @@ def api_synthese(alerte_id):
 # ── API sauvegardes (par utilisateur) ─────────────────────────────────────────
 @app.route("/api/sauvegardes")
 def api_sauvegardes_get():
-    hdrs = user_headers()
-    if not hdrs:
+    user_id = session.get("user_id")
+    if not user_id:
         return jsonify([])
     try:
-        r = http.get(sb("user_sauvegardes"), headers=hdrs,
-                     params={"select": "alerte_id"}, timeout=10)
-        ids = {row["alerte_id"] for row in (r.json() if r.ok else [])}
-        return jsonify([a for a in alertes if a["id"] in ids])
+        r = http.get(sb("user_sauvegardes"), headers=SB_SERVICE,
+                     params={"user_id": f"eq.{user_id}", "select": "alerte_id"}, timeout=10)
+        ids = [row["alerte_id"] for row in (r.json() if r.ok else [])]
+        if not ids:
+            return jsonify([])
+        mem_map = {a["id"]: a for a in alertes if a["id"] in ids}
+        manquants = [i for i in ids if i not in mem_map]
+        if manquants:
+            ids_str = ",".join(str(i) for i in manquants)
+            r2 = http.get(sb("alertes"), headers=SB_SERVICE,
+                          params={"id": f"in.({ids_str})"}, timeout=10)
+            if r2.ok:
+                for a in r2.json():
+                    mem_map[a["id"]] = a
+        return jsonify([mem_map[i] for i in ids if i in mem_map])
     except Exception as e:
         return jsonify({"erreur": str(e)}), 500
 
 @app.route("/api/sauvegardes/ids")
 def api_sauvegardes_ids():
-    hdrs = user_headers()
-    if not hdrs:
+    user_id = session.get("user_id")
+    if not user_id:
         return jsonify([])
     try:
-        r = http.get(sb("user_sauvegardes"), headers=hdrs,
-                     params={"select": "alerte_id"}, timeout=10)
+        r = http.get(sb("user_sauvegardes"), headers=SB_SERVICE,
+                     params={"user_id": f"eq.{user_id}", "select": "alerte_id"}, timeout=10)
         return jsonify([row["alerte_id"] for row in (r.json() if r.ok else [])])
     except:
         return jsonify([])
 
 @app.route("/api/sauvegardes/<alerte_id>", methods=["POST", "DELETE"])
 def api_sauvegardes_toggle(alerte_id):
-    hdrs = user_headers()
-    if not hdrs:
+    user_id = session.get("user_id")
+    if not user_id:
         return jsonify({"erreur": "non authentifié"}), 401
     try:
         aid = int(alerte_id)
     except ValueError:
         return jsonify({"erreur": "id invalide"}), 400
-    user_id = session.get("user_id")
     try:
         if request.method == "POST":
-            http.post(sb("user_sauvegardes"),
-                      headers={**hdrs, "Prefer": "resolution=merge-duplicates,return=minimal"},
-                      json={"user_id": user_id, "alerte_id": aid}, timeout=10)
+            r = http.post(sb("user_sauvegardes"),
+                          headers={**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                          json={"user_id": user_id, "alerte_id": aid}, timeout=10)
         else:
-            http.delete(sb("user_sauvegardes"), headers=hdrs,
-                        params={"user_id": f"eq.{user_id}", "alerte_id": f"eq.{aid}"},
-                        timeout=10)
+            r = http.delete(sb("user_sauvegardes"), headers=SB_SERVICE,
+                            params={"user_id": f"eq.{user_id}", "alerte_id": f"eq.{aid}"},
+                            timeout=10)
+        if not r.ok:
+            return jsonify({"erreur": f"Supabase {r.status_code}: {r.text[:200]}"}), 500
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"erreur": str(e)}), 500
@@ -1010,14 +1048,14 @@ def api_init():
     saved_ids = []
     prefs_row = None
 
-    if hdrs and user_id:
+    if user_id:
         def _get_saved():
-            r = http.get(sb("user_sauvegardes"), headers=hdrs,
-                         params={"select": "alerte_id"}, timeout=8)
+            r = http.get(sb("user_sauvegardes"), headers=SB_SERVICE,
+                         params={"user_id": f"eq.{user_id}", "select": "alerte_id"}, timeout=8)
             return [row["alerte_id"] for row in r.json()] if r.ok else []
 
         def _get_prefs():
-            r = http.get(sb("user_preferences"), headers=hdrs,
+            r = http.get(sb("user_preferences"), headers=SB_SERVICE,
                          params={"user_id": f"eq.{user_id}"}, timeout=8)
             return r.json()[0] if (r.ok and r.json()) else None
 
@@ -1167,8 +1205,7 @@ def index():
 
 
 # ── Bot en arrière-plan ───────────────────────────────────────────────────────
-_resumes_envoyes   = {}  # {user_id: date_string}
-_telegram_envoye   = None
+_resumes_envoyes = {}  # {user_id: date_string}
 
 def envoyer_push_user(user_id, titre, body, url):
     """Envoie une push notification à un utilisateur spécifique."""
@@ -1194,7 +1231,6 @@ def envoyer_push_user(user_id, titre, body, url):
 
 def generer_correlations(user_id=None, domaines_user=None, display_name=None):
     """Analyse les alertes des dernières 24h filtrées par domaines, génère les corrélations."""
-    global _telegram_envoye
 
     depuis = (datetime.now() - timedelta(hours=24)).isoformat()
     # Lire depuis Supabase pour ne pas dépendre de la mémoire (réinitialisée au redémarrage)
@@ -1297,21 +1333,6 @@ Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
                           f"🌅 {salut}{len(correlations)} corrélation(s) du jour",
                           titres[:120], url)
 
-    # Telegram une seule fois par jour
-    today = dt_date.today()
-    if _telegram_envoye != today:
-        _telegram_envoye = today
-        date_str = datetime.now().strftime("%d/%m/%Y")
-        msg = f"🌅 *Résumé matinal — {date_str}*\n_{len(alertes_24h)} alertes analysées_\n\n"
-        for c in correlations[:5]:
-            msg += (
-                f"*{c['titre']}*\n"
-                f"_{c.get('contexte', '')}_ \n"
-                f"{c.get('analyse', '')}\n"
-                f"👉 {c.get('implication', '')}\n\n"
-            )
-        bot.envoyer(msg)
-
     print(f"[Corrélation] {len(correlations)} corrélation(s) pour {user_id or 'global'}")
 
 
@@ -1381,11 +1402,6 @@ def nettoyer_vieilles_alertes():
 def boucle():
     premiere_fois = not os.path.exists(bot.SEEN_FILE)
     bot.verifier(premiere_fois=premiere_fois)
-    bot.envoyer(
-        "🤖 *Bot d'actualités redémarré*\n"
-        "Domaines : Géopolitique 🌍 | Science 🔬 | Tech 💻 | Finance 💰 | Environnement 🌱\n"
-        "Fréquence : toutes les 15 min"
-    )
     cycles = 0
     while True:
         time.sleep(bot.INTERVALLE)

@@ -288,6 +288,15 @@
       overflow: hidden;
     }
 
+    .sources-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; margin-bottom: 2px; }
+    .source-badge {
+      font-size: 10px; color: var(--sub);
+      border: 0.5px solid var(--line); border-radius: 4px;
+      padding: 2px 7px; text-decoration: none;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .source-badge:hover { color: var(--text); border-color: var(--sub); }
+
     .carte-resume {
       font-size: 11px;
       color: var(--sub);
@@ -1232,6 +1241,13 @@
     const saved   = savedIds.has(a.id);
     const niv     = a.niveau || 2;
     const critique = niv >= 3 ? `<span class="source-critique">●</span>` : "";
+    const sources  = a.sources || [];
+    const sourcesHTML = sources.length > 1
+      ? `<div class="sources-row">${sources.map(s =>
+          `<a class="source-badge" href="${esc(s.url)}" target="_blank" rel="noopener"
+              onclick="event.stopPropagation()">${esc(s.nom)}</a>`
+        ).join("")}</div>`
+      : "";
 
     return `
       <div class="carte ${cls}${featured ? " carte-featured" : ""}" onclick="ouvrirModal(${a.id})">
@@ -1244,6 +1260,7 @@
         </div>
         <div class="carte-titre">${esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre)}</div>
         ${a.accroche ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
+        ${sourcesHTML}
         <div class="carte-footer">
           <span class="carte-category">${esc(a.domaine.replace(/^\S+\s/, ""))}</span>
           <div class="carte-actions">
@@ -1452,7 +1469,10 @@
   async function toggleSave(id, btn) {
     const estSaved = savedIds.has(id);
     const method   = estSaved ? "DELETE" : "POST";
-    await fetch(`/api/sauvegardes/${id}`, { method });
+    try {
+      const r = await fetch(`/api/sauvegardes/${id}`, { method });
+      if (!r.ok) return;
+    } catch { return; }
     if (estSaved) { savedIds.delete(id); btn.innerHTML = '<ion-icon name="bookmark-outline"></ion-icon>'; btn.classList.remove("saved"); }
     else          { savedIds.add(id);    btn.innerHTML = '<ion-icon name="bookmark"></ion-icon>';         btn.classList.add("saved"); }
   }
@@ -1493,7 +1513,10 @@
     const id      = alerteModal.id;
     const estSaved = savedIds.has(id);
     const method   = estSaved ? "DELETE" : "POST";
-    await fetch(`/api/sauvegardes/${id}`, { method });
+    try {
+      const r = await fetch(`/api/sauvegardes/${id}`, { method });
+      if (!r.ok) return;
+    } catch { return; }
     if (estSaved) { savedIds.delete(id); }
     else          { savedIds.add(id); }
     const saveBtn = document.getElementById("modal-save-btn");

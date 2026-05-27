@@ -110,3 +110,31 @@ APP_PASSWORD           # non utilisé actuellement
 - Pas de librairie supabase-py — uniquement `requests`
 - Le bot tourne dans un thread daemon lancé par `app.py`, pas indépendamment
 - `on_alerte` dans bot.py est un callback optionnel patché par app.py au démarrage
+
+
+# Directives de Design UI/UX (Style Minimaliste & Pro)
+
+Tu dois impérativement respecter ces règles de design pour TOUTES les modifications d'interface (HTML, CSS, Tailwind) que tu effectues sur l'application. Nous visons un rendu professionnel, sobre et moderne (style Vercel, Linear ou Stripe), et non une démo technologique "cliché IA".
+
+## ⚠️ CONTRAINTES STRICTES (INTERDICTION DE MODIFIER)
+
+- **Système de Thèmes Tri-couleur :** L'application possède un sélecteur de thème avec trois états : Noir, Gris, et Blanc. Tu ne dois **jamais** modifier, supprimer ou casser la logique de changement de thème existante. 
+- **Adaptabilité :** Lorsque tu améliores le visuel d'un composant, assure-tot qu'il utilise bien les variables ou les classes CSS dynamiques liées à ces trois thèmes pour que le rendu reste parfait qu'on soit en mode Noir, Gris ou Blanc.
+- **Logique des fichiers :** Ne modifie pas les fichiers de configuration globale des thèmes (comme `tailwind.config.js` ou tes fichiers de contextes/state pour le thème) sans mon autorisation explicite.
+
+## 1. Palette de Couleurs & Contraste
+- **Pas de dégradés flashy :** Interdiction d'utiliser des dégradés violet/bleu/rose typiques des outils IA.
+- **Base Neutre :** Utilise une charte de gris très propre pour le fond et les cartes. 
+  - *Mode Clair :* Fond blanc (`bg-white`) ou gris très clair (`bg-slate-50`), textes en gris foncé (`text-slate-900`).
+  - *Mode Sombre :* Fond noir pur (`bg-black`) ou zinc très sombre (`bg-zinc-950`), bordures fines (`border-zinc-800`).
+- **Couleur d'accent unique :** Utilise une seule couleur pour les actions principales (ex: un bleu roi propre `bg-blue-600`, ou du noir pur `bg-black text-white`).
+
+## 2. Espacement et Mise en page (Layout)
+- **Le "White Space" est une fonctionnalité :** Augmente les marges et les paddings. Laisse respirer les éléments (`p-6` ou `p-8` sur les cartes, `space-y-6` entre les sections).
+- **Grille et Alignement :** Tout doit être parfaitement aligné sur une grille propre. Pas de centrage intempestif. Les textes et formulaires sont alignés à gauche.
+- **Bordures vs Ombres :** Privilégie des bordures très fines (`border border-slate-200` ou `border-zinc-800`) plutôt que des ombres portées massives et floues.
+
+## 3. Composants et Typographie
+- **Typographie :** Utilise des polices d'écriture sans-serif modernes (Inter, Geist, ou la police système par défaut). Pas de texte en gras partout, joue plutôt sur la taille (`text-sm` vs `text-lg`) et l'opacité (`text-slate-500` pour les sous-titres).
+- **Boutons & Inputs :** Des angles légèrement arrondis (`rounded-md` ou `rounded-lg`), jamais de pilules parfaites (`rounded-full`) sauf pour des badges spécifiques. Les champs de texte doivent avoir une bordure fine et un fond neutre.
+- **Icônes :** Utilise uniquement des icônes minimalistes (comme Lucide React ou Heroicons). Une icône ne doit jamais être plus grosse que le texte qui l'accompagne.

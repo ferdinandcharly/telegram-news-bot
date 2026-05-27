@@ -2,7 +2,6 @@ import os
 import json
 import time
 import feedparser
-import requests
 from groq import Groq
 from dotenv import load_dotenv
 from datetime import datetime
@@ -10,8 +9,6 @@ from datetime import datetime
 load_dotenv()
 
 GROQ_KEY = os.getenv("GROQ_API_KEY")
-TG_TOKEN = os.getenv("TELEGRAM_TOKEN")
-TG_CHAT  = os.getenv("TELEGRAM_CHAT_ID")
 
 SEEN_FILE = "vus.json"
 INTERVALLE = 900  # 15 minutes
@@ -56,8 +53,31 @@ FLUX = {
 
 client = Groq(api_key=GROQ_KEY)
 
-# Callback optionnel pour sauvegarder les alertes (utilisé par app.py)
-on_alerte = None
+# Callbacks optionnels (patchés par app.py)
+on_alerte  = None  # (domaine, titre, teaser, lien, resume, niveau) → alerte_id
+on_doublon = None  # (alerte_id, source_dict) → None
+
+_SOURCE_NAMES = {
+    "bbci.co.uk": "BBC", "bbc.co.uk": "BBC",
+    "rfi.fr": "RFI", "france24.com": "France 24",
+    "reuters.com": "Reuters", "lemonde.fr": "Le Monde",
+    "nasa.gov": "NASA", "sciencedaily.com": "Science Daily",
+    "futura-sciences.com": "Futura", "theverge.com": "The Verge",
+    "arstechnica.com": "Ars Technica", "technologyreview.com": "MIT Tech Review",
+    "wired.com": "Wired", "bfmtv.com": "BFM", "lesechos.fr": "Les Échos",
+    "reporterre.net": "Reporterre", "lequipe.fr": "L'Équipe",
+}
+
+def _nom_source(url):
+    try:
+        from urllib.parse import urlparse
+        host = urlparse(url).netloc.replace("www.", "")
+        for domain, name in _SOURCE_NAMES.items():
+            if domain in host:
+                return name
+        return host.split(".")[0].capitalize()
+    except:
+        return "Source"
 
 
 def charger_vus():
@@ -73,28 +93,27 @@ def sauver_vus(vus):
 
 
 def _mots_cles(titre):
-    """Extrait les mots significatifs d'un titre pour la déduplication."""
     bruit = {"le","la","les","un","une","des","de","du","en","au","aux","et","ou",
              "est","sont","a","ont","the","a","an","in","of","to","for","is","are"}
     return {m for m in titre.lower().split() if len(m) > 3 and m not in bruit}
 
-# Titres récents pour déduplication (les 200 derniers)
+# Titres récents pour clustering (les 200 derniers articles sauvegardés)
+# Chaque entrée : {"titre": str, "alerte_id": int}
 _titres_recents = []
 
-def est_doublon(titre):
-    """Retourne True si un article très similaire a déjà été vu récemment."""
+def trouver_doublon(titre):
+    """Retourne alerte_id si un article similaire a déjà été sauvegardé, sinon None."""
     mots = _mots_cles(titre)
     if not mots:
-        return False
-    for t_ancien in _titres_recents[-200:]:
-        mots_ancien = _mots_cles(t_ancien)
+        return None
+    for item in _titres_recents[-200:]:
+        mots_ancien = _mots_cles(item["titre"])
         if not mots_ancien:
             continue
         communs = mots & mots_ancien
-        # Doublon si >55% des mots clés sont partagés
         if len(communs) / max(len(mots), len(mots_ancien)) > 0.55:
-            return True
-    return False
+            return item["alerte_id"]
+    return None
 
 
 def est_important(titre, resume, domaine):
@@ -149,17 +168,6 @@ def est_important(titre, resume, domaine):
         return 0, {}
 
 
-def envoyer(msg):
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
-            data={"chat_id": TG_CHAT, "text": msg, "parse_mode": "Markdown"},
-            timeout=10,
-        )
-    except Exception as e:
-        print(f"  Erreur Telegram : {e}")
-
-
 def verifier(premiere_fois=False):
     vus = charger_vus()
     nouveaux_ids = set()
@@ -182,34 +190,21 @@ def verifier(premiere_fois=False):
                     resume = article.get("summary", article.get("description", ""))
                     lien   = article.get("link", "")
 
-                    if est_doublon(titre):
-                        print(f"  [Doublon] {titre[:60]}")
+                    alerte_id_doublon = trouver_doublon(titre)
+                    if alerte_id_doublon:
+                        if on_doublon:
+                            on_doublon(alerte_id_doublon, {"titre": titre, "url": lien, "nom": _nom_source(lien)})
                         continue
-
-                    _titres_recents.append(titre)
 
                     niveau, teaser = est_important(titre, resume, domaine)
 
                     if niveau >= 2:
-                        accroche = teaser.get("accroche", "")
-                        contexte = teaser.get("contexte", "")
-                        suite    = teaser.get("suite", "")
-
-                        # Telegram + push uniquement pour les critiques
-                        if niveau >= 3:
-                            prefixe = "🔴 CRITIQUE"
-                            message = (
-                                f"{prefixe} — {domaine}\n\n"
-                                f"*{titre}*\n\n"
-                                f"📌 {accroche}\n"
-                                f"🔍 {contexte}\n"
-                                f"👀 {suite}\n\n"
-                                f"{lien}"
-                            )
-                            envoyer(message)
-
-                        if on_alerte:
-                            on_alerte(domaine, titre, teaser, lien, resume, niveau)
+                        source = {"titre": titre, "url": lien, "nom": _nom_source(lien)}
+                        new_id = on_alerte(domaine, titre, teaser, lien, resume, niveau, source) if on_alerte else None
+                        if new_id:
+                            _titres_recents.append({"titre": titre, "alerte_id": new_id})
+                            if len(_titres_recents) > 200:
+                                _titres_recents.pop(0)
                         alertes += 1
                         time.sleep(2)
 
@@ -227,16 +222,10 @@ def verifier(premiere_fois=False):
 
 
 def main():
-    print("=== Bot d'actualités Telegram ===")
+    print("=== Bot d'actualités démarré ===")
     premiere_fois = not os.path.exists(SEEN_FILE)
 
     verifier(premiere_fois=premiere_fois)
-
-    envoyer(
-        "🤖 *Bot d'actualités démarré*\n"
-        "Domaines : Géopolitique 🌍 | Science 🔬\n"
-        "Fréquence : toutes les 15 min"
-    )
 
     while True:
         time.sleep(INTERVALLE)
