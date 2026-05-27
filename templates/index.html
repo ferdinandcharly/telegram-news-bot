@@ -214,8 +214,8 @@
     #feed, #feed-saved {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding: 10px 12px;
+      gap: 0;
+      padding: 0 16px;
     }
 
     .section-label {
@@ -237,25 +237,50 @@
 
     /* ── Carte ── */
     .carte {
-      background: var(--surface);
-      border-radius: 10px;
-      padding: 14px 14px 12px;
+      background: transparent;
+      border-radius: 0;
+      padding: 18px 0;
       cursor: pointer;
-      transition: background 0.1s;
-      border: 0.5px solid var(--line);
+      border: none;
+      border-bottom: 0.5px solid var(--line);
+      transition: opacity 0.1s;
     }
+    .carte:last-child { border-bottom: none; }
+    .carte:active { opacity: 0.65; }
 
+    /* Featured : hero card avec fond */
     .carte-featured {
-      border-color: var(--line);
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 18px 16px 16px;
+      border: 0.5px solid var(--line);
+      margin-bottom: 6px;
+    }
+    .carte-featured .carte-titre {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      -webkit-line-clamp: 3;
+    }
+    .carte-featured .carte-resume {
+      font-size: 13px;
+      -webkit-line-clamp: 3;
     }
 
-    .carte:active { opacity: 0.8; }
+    /* Critique : bordure gauche rouge */
+    .carte-critique:not(.carte-featured) {
+      padding-left: 14px;
+      border-left: 2.5px solid #ef4444;
+    }
+    .carte-critique.carte-featured {
+      border-color: rgba(239,68,68,0.4);
+    }
 
     .carte-source-row {
       display: flex;
       align-items: center;
       gap: 5px;
-      margin-bottom: 7px;
+      margin-bottom: 8px;
     }
 
     .source-dot {
@@ -264,10 +289,18 @@
       flex-shrink: 0;
     }
 
-    .source-name { font-size: 10px; color: #555; font-weight: 500; }
-    .source-sep  { font-size: 10px; color: #333; }
-    .source-time { font-size: 10px; color: #555; }
-    .source-critique { font-size: 8px; color: #ef4444; margin-left: 2px; }
+    .source-name { font-size: 10px; color: var(--sub); font-weight: 500; }
+    .source-sep  { font-size: 10px; color: var(--line); }
+    .source-time { font-size: 10px; color: var(--sub); }
+
+    .badge-alerte {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+      padding: 1px 5px; border-radius: 3px;
+      background: rgba(239,68,68,0.12); color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .source-count { font-size: 10px; color: var(--sub); opacity: 0.6; }
 
     .carte-geo     .source-dot { background: var(--geo); }
     .carte-sci     .source-dot { background: var(--sci); }
@@ -277,11 +310,12 @@
     .carte-sport   .source-dot { background: var(--sport); }
 
     .carte-titre {
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 600;
-      line-height: 1.45;
+      line-height: 1.4;
       color: var(--text);
-      margin-bottom: 6px;
+      margin-bottom: 5px;
+      letter-spacing: -0.1px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -314,7 +348,7 @@
       justify-content: space-between;
     }
 
-    .carte-category { font-size: 10px; color: var(--sub); opacity: 0.5; }
+    .carte-category { display: none; }
 
     .carte-actions { display: flex; gap: 4px; }
 
@@ -1238,19 +1272,16 @@
   function carteHTML(a, featured = false) {
     const dom     = getDomaine(a.domaine);
     const cls     = "carte-" + dom.cls;
-    const saved   = savedIds.has(a.id);
-    const niv     = a.niveau || 2;
-    const critique = niv >= 3 ? `<span class="source-critique">●</span>` : "";
-    const sources  = a.sources || [];
-    const sourcesHTML = sources.length > 1
-      ? `<div class="sources-row">${sources.map(s =>
-          `<a class="source-badge" href="${esc(s.url)}" target="_blank" rel="noopener"
-              onclick="event.stopPropagation()">${esc(s.nom)}</a>`
-        ).join("")}</div>`
-      : "";
+    const saved       = savedIds.has(a.id);
+    const niv         = a.niveau || 2;
+    const sources     = a.sources || [];
+    const critique    = niv >= 3 ? `<span class="badge-alerte">CRITIQUE</span>` : "";
+    const clsCritique = niv >= 3 ? " carte-critique" : "";
+    const sourceCount = sources.length > 1
+      ? `<span class="source-count">${sources.length} sources</span>` : "";
 
     return `
-      <div class="carte ${cls}${featured ? " carte-featured" : ""}" onclick="ouvrirModal(${a.id})">
+      <div class="carte ${cls}${featured ? " carte-featured" : ""}${clsCritique}" onclick="ouvrirModal(${a.id})">
         <div class="carte-source-row">
           <span class="source-dot"></span>
           <span class="source-name">${esc(dom.label)}</span>
@@ -1260,9 +1291,8 @@
         </div>
         <div class="carte-titre">${esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre)}</div>
         ${a.accroche ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
-        ${sourcesHTML}
         <div class="carte-footer">
-          <span class="carte-category">${esc(a.domaine.replace(/^\S+\s/, ""))}</span>
+          ${sourceCount}
           <div class="carte-actions">
             <button class="btn-save ${saved ? "saved" : ""}"
               onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
