@@ -209,7 +209,7 @@
 
       const domainsHtml = domaines.map(d => {
         const label = d.replace(/^\S+\s/, "");
-        const color = CORR_DOMAIN_COLORS[label] || "var(--sub)";
+        const color = CORR_DOMAIN_COLORS[label] || "var(--text-secondary)";
         return `<span class="corr-domain-dot" style="color:${color}">${esc(label)}</span>`;
       }).join("") || `<span class="corr-domain-dot">Général</span>`;
 
@@ -256,31 +256,6 @@
     return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
   }
 
-  function savedCarteHTML(a) {
-    const dom   = getDomaine(a.domaine);
-    const cls   = "carte-" + dom.cls;
-    const saved = savedIds.has(a.id);
-    const colorMap = { geo:"var(--geo)", sci:"var(--sci)", tech:"var(--tech)",
-                       finance:"var(--finance)", env:"var(--env)", sport:"var(--sport)" };
-    const color = colorMap[dom.cls] || "var(--sub)";
-    return `<div class="saved-card ${cls}" onclick="ouvrirModal(${a.id})">
-      <div class="saved-card-meta">
-        <span class="saved-dot" style="background:${color}"></span>
-        <span class="saved-domaine" style="color:${color}">${esc(dom.label)}</span>
-        <span class="saved-time">${formatHeure(a.date)}</span>
-      </div>
-      <div class="saved-titre">${esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre)}</div>
-      ${a.accroche ? `<div class="saved-resume">${esc(a.accroche)}</div>` : ""}
-      <div class="saved-actions">
-        <button class="btn-save saved" onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
-          <ion-icon name="bookmark"></ion-icon>
-        </button>
-        <button class="btn-save" onclick="event.stopPropagation(); partagerAlerte(${a.id})">
-          <ion-icon name="share-outline"></ion-icon>
-        </button>
-      </div>
-    </div>`;
-  }
 
   async function chargerSauvegardes() {
     const data = await fetch("/api/sauvegardes").then(r => r.json());
