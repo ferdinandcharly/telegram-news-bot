@@ -478,6 +478,17 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
                 border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
                 cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
 .btn-notif-ob:disabled { opacity: 0.35; cursor: default; }
+
+.portees-section { margin-top: 20px; display: none; flex-direction: column; }
+.portee-row { display: flex; align-items: center; justify-content: space-between;
+              padding: 11px 0; border-bottom: 1px solid var(--line); gap: 12px; }
+.portee-row:last-child { border-bottom: none; }
+.portee-domain { font-size: 13px; color: var(--text); }
+.portee-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.portee-btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);
+              background: none; color: var(--sub); font-size: 12px; font-weight: 500;
+              cursor: pointer; transition: all 0.15s; }
+.portee-btn.on { border-color: var(--text); color: var(--text); background: var(--surface); }
 </style></head>
 <body>
 
@@ -498,7 +509,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
   <div class="step-num">Étape 2</div>
   <div class="step-title">Quels sujets t'intéressent ?</div>
   <div class="step-sub">Choisis au moins un domaine</div>
-  <div class="topics">
+  <div class="topics" id="domaines-chips">
     <button type="button" class="topic" data-d="🌍 Géopolitique">🌍 Géopolitique</button>
     <button type="button" class="topic" data-d="🔬 Science">🔬 Science</button>
     <button type="button" class="topic" data-d="💻 Tech & IA">💻 Tech &amp; IA</button>
@@ -506,6 +517,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
     <button type="button" class="topic" data-d="🌱 Environnement">🌱 Environnement</button>
     <button type="button" class="topic" data-d="⚽ Sport">⚽ Sport</button>
   </div>
+  <div class="portees-section" id="portees-section"></div>
 </div>
 
 <div class="step">
@@ -531,18 +543,6 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
 <div class="step">
   <div class="step-num">Étape 4</div>
-  <div class="step-title">Ce que tu veux éviter</div>
-  <div class="step-sub">Ces types de news seront filtrés de ton fil — tu pourras ajuster ça dans les paramètres</div>
-  <div class="topics" id="exclu-chips">
-    <button type="button" class="topic" data-x="politique-interieure">🏛️ Politique nationale</button>
-    <button type="button" class="topic" data-x="marche-finance">📈 Marchés & finance courante</button>
-    <button type="button" class="topic" data-x="sport">🏅 Sport</button>
-    <button type="button" class="topic" data-x="nationale">🗺️ Actualités locales/nationales</button>
-  </div>
-</div>
-
-<div class="step">
-  <div class="step-num">Étape 5</div>
   <div class="step-title">Notifications push</div>
   <div class="step-sub">Reçois une alerte immédiate sur ton téléphone pour les événements critiques</div>
   <div class="notif-card" id="notif-card">
@@ -561,11 +561,39 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 </div>
 
 <script>
-  document.querySelectorAll(".topic").forEach(b => {
-    b.addEventListener("click", () => b.classList.toggle("on"));
-  });
-  document.querySelectorAll("#exclu-chips .topic").forEach(b => {
-    b.addEventListener("click", () => b.classList.toggle("on"));
+  const porteeSection = document.getElementById("portees-section");
+
+  function updatePorteeRows() {
+    const selected = [...document.querySelectorAll("#domaines-chips .topic.on")].map(b => b.dataset.d);
+    // supprimer les lignes des domaines décochés
+    porteeSection.querySelectorAll(".portee-row").forEach(row => {
+      if (!selected.includes(row.dataset.domain)) row.remove();
+    });
+    // ajouter les lignes des domaines nouvellement cochés
+    selected.forEach(domain => {
+      if (!porteeSection.querySelector(`[data-domain="${domain}"]`)) {
+        const row = document.createElement("div");
+        row.className = "portee-row";
+        row.dataset.domain = domain;
+        row.innerHTML = `<span class="portee-domain">${domain}</span>
+          <div class="portee-btns">
+            <button type="button" class="portee-btn on" data-p="mondiale">Mondial</button>
+            <button type="button" class="portee-btn" data-p="tout">+ National</button>
+          </div>`;
+        row.querySelectorAll(".portee-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            row.querySelectorAll(".portee-btn").forEach(x => x.classList.remove("on"));
+            btn.classList.add("on");
+          });
+        });
+        porteeSection.appendChild(row);
+      }
+    });
+    porteeSection.style.display = selected.length > 0 ? "flex" : "none";
+  }
+
+  document.querySelectorAll("#domaines-chips .topic").forEach(b => {
+    b.addEventListener("click", () => { b.classList.toggle("on"); updatePorteeRows(); });
   });
 
   document.querySelectorAll(".theme-card").forEach(b => {
@@ -628,8 +656,11 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
   }
 
   async function submit() {
-    const domaines     = [...document.querySelectorAll(".topics .topic.on")].filter(b => b.dataset.d).map(b => b.dataset.d);
-    const filtre_exclu = [...document.querySelectorAll("#exclu-chips .topic.on")].map(b => b.dataset.x);
+    const domaines = [...document.querySelectorAll("#domaines-chips .topic.on")].map(b => b.dataset.d);
+    const portees  = {};
+    document.querySelectorAll(".portee-row").forEach(row => {
+      portees[row.dataset.domain] = row.querySelector(".portee-btn.on")?.dataset.p || "mondiale";
+    });
     document.getElementById("btn-go").disabled = true;
 
     const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
@@ -637,7 +668,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
     await fetch("/api/preferences", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ display_name, theme, domaines, filtre_exclu })
+      body: JSON.stringify({ display_name, theme, domaines, portees })
     });
     window.location.href = "/";
   }
@@ -1090,7 +1121,7 @@ def api_init():
         "niveau_notif":  prefs_row.get("niveau_notif") or 3                   if prefs_row else 3,
         "heure_recap":   8,
         "langue":        prefs_row.get("langue") or "multi"                   if prefs_row else "multi",
-        "filtre_exclu":  prefs_row.get("filtre_exclu") or []                  if prefs_row else [],
+        "portees":       prefs_row.get("portees") or {}                        if prefs_row else {},
     }
 
     # filtrer par domaines préférés
@@ -1100,15 +1131,15 @@ def api_init():
         if any(d in a.get("domaine", "") for d in domaines_actifs)
     ] if domaines_actifs else alertes
 
-    # filtrer par thèmes/portée exclus (personnalisation fine)
-    exclu = prefs["filtre_exclu"]
-    if exclu:
+    # filtrer par portée par domaine (personnalisation fine)
+    portees = prefs["portees"]
+    if portees:
         def _garder(a):
-            theme  = a.get("theme_fin", "")
-            portee = a.get("portee", "")
-            if theme and theme in exclu:
-                return False
-            if "nationale" in exclu and portee in ("locale", "nationale"):
+            portee_art = a.get("portee", "")
+            if not portee_art:
+                return True  # article ancien sans tag → toujours visible
+            portee_pref = portees.get(a.get("domaine", ""), "tout")
+            if portee_pref == "mondiale" and portee_art not in ("mondiale", "regionale"):
                 return False
             return True
         alertes_filtrees = [a for a in alertes_filtrees if _garder(a)]
@@ -1131,7 +1162,7 @@ def api_preferences():
         return jsonify({"erreur": "non authentifié"}), 401
     data  = request.get_json()
     prefs = {"user_id": user_id}
-    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "filtre_exclu"):
+    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "portees"):
         if key in data:
             prefs[key] = data[key]
     http.post(sb("user_preferences"),
