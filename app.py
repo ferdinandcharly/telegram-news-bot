@@ -530,6 +530,18 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
 
 <div class="step">
+  <div class="step-num">Étape 4</div>
+  <div class="step-title">Ce que tu veux éviter</div>
+  <div class="step-sub">Ces types de news seront filtrés de ton fil — tu pourras ajuster ça dans les paramètres</div>
+  <div class="topics" id="exclu-chips">
+    <button type="button" class="topic" data-x="politique-interieure">🏛️ Politique nationale</button>
+    <button type="button" class="topic" data-x="marche-finance">📈 Marchés & finance courante</button>
+    <button type="button" class="topic" data-x="sport">🏅 Sport</button>
+    <button type="button" class="topic" data-x="nationale">🗺️ Actualités locales/nationales</button>
+  </div>
+</div>
+
+<div class="step">
   <div class="step-num">Étape 5</div>
   <div class="step-title">Notifications push</div>
   <div class="step-sub">Reçois une alerte immédiate sur ton téléphone pour les événements critiques</div>
@@ -550,6 +562,9 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
 <script>
   document.querySelectorAll(".topic").forEach(b => {
+    b.addEventListener("click", () => b.classList.toggle("on"));
+  });
+  document.querySelectorAll("#exclu-chips .topic").forEach(b => {
     b.addEventListener("click", () => b.classList.toggle("on"));
   });
 
@@ -613,7 +628,8 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
   }
 
   async function submit() {
-    const domaines = [...document.querySelectorAll(".topic.on")].map(b => b.dataset.d);
+    const domaines     = [...document.querySelectorAll(".topics .topic.on")].filter(b => b.dataset.d).map(b => b.dataset.d);
+    const filtre_exclu = [...document.querySelectorAll("#exclu-chips .topic.on")].map(b => b.dataset.x);
     document.getElementById("btn-go").disabled = true;
 
     const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
@@ -621,7 +637,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
     await fetch("/api/preferences", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ display_name, theme, domaines })
+      body: JSON.stringify({ display_name, theme, domaines, filtre_exclu })
     });
     window.location.href = "/";
   }
@@ -781,6 +797,8 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2, sourc
         "lien":        lien,
         "date":        datetime.now().isoformat(),
         "niveau":      niveau,
+        "portee":      teaser.get("portee", "mondiale") if isinstance(teaser, dict) else "mondiale",
+        "theme_fin":   teaser.get("theme_fin", "")      if isinstance(teaser, dict) else "",
         "sources":     [source] if source else [],
     }
     alertes.insert(0, alerte)
@@ -1066,12 +1084,13 @@ def api_init():
             prefs_row = f_prefs.result()
 
     prefs = {
-        "display_name": prefs_row.get("display_name") or ""                if prefs_row else "",
-        "theme":        prefs_row.get("theme")        or "dark"             if prefs_row else "dark",
-        "domaines":     prefs_row.get("domaines")     or list(bot.FLUX.keys()) if prefs_row else list(bot.FLUX.keys()),
-        "niveau_notif": prefs_row.get("niveau_notif") or 3                 if prefs_row else 3,
-        "heure_recap":  8,
-        "langue":       prefs_row.get("langue") or "multi"               if prefs_row else "multi",
+        "display_name":  prefs_row.get("display_name") or ""                  if prefs_row else "",
+        "theme":         prefs_row.get("theme")        or "dark"               if prefs_row else "dark",
+        "domaines":      prefs_row.get("domaines")     or list(bot.FLUX.keys()) if prefs_row else list(bot.FLUX.keys()),
+        "niveau_notif":  prefs_row.get("niveau_notif") or 3                   if prefs_row else 3,
+        "heure_recap":   8,
+        "langue":        prefs_row.get("langue") or "multi"                   if prefs_row else "multi",
+        "filtre_exclu":  prefs_row.get("filtre_exclu") or []                  if prefs_row else [],
     }
 
     # filtrer par domaines préférés
@@ -1080,6 +1099,19 @@ def api_init():
         a for a in alertes
         if any(d in a.get("domaine", "") for d in domaines_actifs)
     ] if domaines_actifs else alertes
+
+    # filtrer par thèmes/portée exclus (personnalisation fine)
+    exclu = prefs["filtre_exclu"]
+    if exclu:
+        def _garder(a):
+            theme  = a.get("theme_fin", "")
+            portee = a.get("portee", "")
+            if theme and theme in exclu:
+                return False
+            if "nationale" in exclu and portee in ("locale", "nationale"):
+                return False
+            return True
+        alertes_filtrees = [a for a in alertes_filtrees if _garder(a)]
 
     return jsonify({
         "alertes":      alertes_filtrees,
@@ -1099,7 +1131,7 @@ def api_preferences():
         return jsonify({"erreur": "non authentifié"}), 401
     data  = request.get_json()
     prefs = {"user_id": user_id}
-    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue"):
+    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "filtre_exclu"):
         if key in data:
             prefs[key] = data[key]
     http.post(sb("user_preferences"),

@@ -128,31 +128,35 @@ def est_important(titre, resume, domaine):
                     f"Résumé : {resume[:400]}\n\n"
                     "Évalue l'importance de cet événement sur 3 niveaux :\n"
                     "- niveau 3 (CRITIQUE) : guerre déclarée, catastrophe naturelle massive, "
-                    "découverte scientifique historique mondiale, krach financier majeur, "
+                    "découverte scientifique historique mondiale, krach financier majeur systémique, "
                     "catastrophe environnementale irréversible, percée technologique majeure "
-                    "changeant définitivement un secteur. Événement qui fera la une mondiale.\n"
-                    "- niveau 2 (IMPORTANT) : événement majeur et inhabituel qui change "
-                    "significativement une situation — pas une mise à jour d'un événement existant. "
-                    "Exemples : premier acte diplomatique d'ampleur, décision économique structurelle, "
-                    "découverte scientifique solide publiée, incident grave documenté.\n"
-                    "- niveau 0 : tout le reste — suivi d'un événement déjà connu, opinion, "
-                    "analyse, rapport, nomination, conférence, sondage, produit, mise à jour, "
-                    "rumeur, déclaration sans acte concret. Rejette au moins 95% des articles.\n"
+                    "changeant définitivement un secteur. Événement qui fera la une mondiale pendant des jours.\n"
+                    "- niveau 2 (IMPORTANT) : rupture réelle et inhabituelle à portée internationale — "
+                    "premier acte diplomatique d'ampleur, conflit armé qui éclate ou s'étend, "
+                    "décision économique structurelle affectant plusieurs pays, "
+                    "découverte scientifique solide et publiée, incident grave documenté à impact mondial.\n"
+                    "- niveau 0 : TOUT le reste. En particulier, rejette sans exception : "
+                    "politique intérieure d'un pays (débats parlementaires, nominations, sondages, élections locales), "
+                    "résultats d'entreprises, fluctuations de marchés boursiers ordinaires, "
+                    "déclarations politiques sans acte concret, mises à jour d'un événement déjà connu, "
+                    "conférences, rapports, opinions, analyses, produits tech grand public. "
+                    "Rejette au moins 95% des articles.\n\n"
                     "Si niveau vaut 2 ou 3, rédige un teaser en français. "
-                    "Si le titre n'est pas en français, traduis-le dans titre_fr, sinon laisse titre_fr vide.\n"
-                    "Réponds JSON uniquement, avec niveau valant 0, 2 ou 3 :\n"
-                    "{\"niveau\": 0, \"titre_fr\": \"\", \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}\n"
-                    "ou\n"
-                    "{\"niveau\": 2, \"titre_fr\": \"...\", \"accroche\": \"...\", \"contexte\": \"...\", \"suite\": \"...\"}\n"
-                    "ou\n"
-                    "{\"niveau\": 3, \"titre_fr\": \"...\", \"accroche\": \"...\", \"contexte\": \"...\", \"suite\": \"...\"}"
+                    "Si le titre n'est pas en français, traduis-le dans titre_fr, sinon laisse titre_fr vide.\n\n"
+                    "Classe aussi l'article avec :\n"
+                    "- portee : 'locale' | 'nationale' | 'regionale' | 'mondiale'\n"
+                    "- theme_fin : une seule valeur parmi : 'politique-interieure', 'conflit', 'diplomatie', "
+                    "'economie-macro', 'marche-finance', 'science', 'tech-ia', 'environnement', "
+                    "'catastrophe', 'sport', 'societe'\n\n"
+                    "Réponds JSON uniquement :\n"
+                    "{\"niveau\": 0, \"portee\": \"nationale\", \"theme_fin\": \"politique-interieure\", "
+                    "\"titre_fr\": \"\", \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}"
                 )
             }],
-            max_tokens=420,
+            max_tokens=480,
             temperature=0.1,
         )
         contenu = rep.choices[0].message.content.strip()
-        # extraire le JSON même s'il y a du texte autour
         debut = contenu.find("{")
         fin = contenu.rfind("}") + 1
         data = json.loads(contenu[debut:fin])
@@ -161,6 +165,8 @@ def est_important(titre, resume, domaine):
             "accroche": data.get("accroche", ""),
             "contexte": data.get("contexte", ""),
             "suite":    data.get("suite", ""),
+            "portee":   data.get("portee", "mondiale"),
+            "theme_fin": data.get("theme_fin", ""),
         }
         return data.get("niveau", 0), teaser
     except Exception as e:
