@@ -351,6 +351,9 @@ header {
 
 .meta-sep  { font-size: 10px; color: var(--border-card); }
 .meta-time { font-size: 11px; color: var(--text-secondary); }
+.meta-portee { font-size: 11px; }
+.portee-mondiale  { color: var(--text-secondary); }
+.portee-nationale { color: #c08a3a; }
 
 .badge-alerte {
   font-size: 9px; font-weight: 700; letter-spacing: 0.5px;

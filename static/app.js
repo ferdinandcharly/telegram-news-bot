@@ -95,6 +95,13 @@
     return DOMAINES_MAP.find(m => d.includes(m.key)) || { cls: "geo", label: d };
   }
 
+  const PORTEE_LABELS = {
+    mondiale:   { icon: "🌍", txt: "Mondial",  cls: "portee-mondiale"  },
+    regionale:  { icon: "🗺️", txt: "Régional", cls: "portee-nationale" },
+    nationale:  { icon: "🗺️", txt: "National", cls: "portee-nationale" },
+    locale:     { icon: "📍", txt: "Local",    cls: "portee-nationale" },
+  };
+
   function carteHTML(a, featured = false) {
     const dom         = getDomaine(a.domaine);
     const cls         = "carte-" + dom.cls;
@@ -105,12 +112,17 @@
     const clsCritique = niv >= 3 ? " carte-critique" : "";
     const sourceCount = sources.length > 1 ? `<span class="source-count">${sources.length} sources</span>` : "";
     const titre       = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
+    const porteeInfo  = a.portee ? PORTEE_LABELS[a.portee] : null;
+    const porteeTag   = porteeInfo
+      ? `<span class="meta-sep">·</span><span class="meta-portee ${porteeInfo.cls}">${porteeInfo.icon} ${porteeInfo.txt}</span>`
+      : "";
 
     const meta = `<div class="carte-meta">
       <span class="source-dot"></span>
       <span class="meta-cat">${esc(dom.label)}</span>
       <span class="meta-sep">·</span>
       <span class="meta-time">${formatHeure(a.date)}</span>
+      ${porteeTag}
       ${critique}
     </div>`;
 
