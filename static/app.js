@@ -83,12 +83,12 @@
   }
 
   const DOMAINES_MAP = [
-    { key: "Géo",          cls: "geo",     label: "Géopolitique" },
-    { key: "Science",      cls: "sci",     label: "Science"      },
-    { key: "Tech",         cls: "tech",    label: "Tech & IA"    },
-    { key: "Finance",      cls: "finance", label: "Finance"      },
-    { key: "Environnement",cls: "env",     label: "Environnement"},
-    { key: "Sport",        cls: "sport",   label: "Sport"        },
+    { key: "Géo",          cls: "geo",     label: "Géopolitique", icon: "🌍" },
+    { key: "Science",      cls: "sci",     label: "Science",      icon: "🔬" },
+    { key: "Tech",         cls: "tech",    label: "Tech & IA",    icon: "💻" },
+    { key: "Finance",      cls: "finance", label: "Finance",      icon: "📈" },
+    { key: "Environnement",cls: "env",     label: "Environnement",icon: "🌿" },
+    { key: "Sport",        cls: "sport",   label: "Sport",        icon: "⚽" },
   ];
 
   function getDomaine(d) {
@@ -127,6 +127,7 @@
       return `
         <div class="carte ${cls} carte-hero${clsCritique}" onclick="ouvrirModal(${a.id})">
           <div class="carte-vignette-hero">
+            <span class="vignette-icon-hero">${dom.icon || ""}</span>
             <span class="vignette-badge">${esc(dom.label)}</span>
           </div>
           <div class="carte-body">
@@ -140,7 +141,7 @@
 
     return `
       <div class="carte ${cls} carte-row${clsCritique}" onclick="ouvrirModal(${a.id})">
-        <div class="carte-vignette"></div>
+        <div class="carte-vignette"><span class="vignette-icon">${dom.icon || ""}</span></div>
         <div class="carte-body">
           ${meta}
           <div class="carte-titre">${titre}</div>
