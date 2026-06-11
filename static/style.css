@@ -83,7 +83,7 @@ body {
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100vh;
-  padding-bottom: 84px;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
   overflow-x: hidden;
 }
 
@@ -95,6 +95,7 @@ header {
   background: var(--header-bg);
   backdrop-filter: blur(12px);
   border-bottom: 0.5px solid var(--border-card);
+  padding-top: env(safe-area-inset-top);
 }
 
 .topbar {
@@ -661,7 +662,7 @@ header {
 }
 
 /* ── Paramètres ── */
-#page-params { display: none; padding: 24px 20px; }
+#page-params { display: none; padding: calc(24px + env(safe-area-inset-top)) 20px 24px; }
 #page-params h2 { font-size: 17px; font-weight: 600; margin-bottom: 24px; color: var(--text-primary); }
 
 .params-bloc {
@@ -721,7 +722,7 @@ nav {
   background: var(--nav-bg);
   border-top: 0.5px solid var(--border-card);
   backdrop-filter: blur(12px);
-  display: flex; padding: 12px 0 18px;
+  display: flex; padding: 12px 0 calc(18px + env(safe-area-inset-bottom));
 }
 
 .nav-btn {
