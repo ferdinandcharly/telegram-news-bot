@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>News Alert</title>
   <link rel="manifest" href="/static/manifest.json" />
-  <link rel="stylesheet" href="/static/style.css?v=20260612a" />
+  <link rel="stylesheet" href="/static/style.css?v=20260612b" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
@@ -179,6 +179,35 @@
     </div>
   </div>
 
+  <!-- Pays -->
+  <div class="params-bloc">
+    <div class="params-titre">Pays</div>
+    <div class="param-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+      <div>
+        <div class="param-label">Actus nationales</div>
+        <div class="param-sub">Les news nationales/locales d'autres pays sont masquées</div>
+      </div>
+      <select id="select-pays" onchange="sauverPays(this.value)"
+              style="width:100%;padding:9px 12px;background:var(--bg-app);border:0.5px solid var(--border-card);
+                     border-radius:8px;color:var(--text-primary);font-size:13px;outline:none">
+        <option value="France">France</option>
+        <option value="Belgique">Belgique</option>
+        <option value="Suisse">Suisse</option>
+        <option value="Canada">Canada</option>
+        <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+        <option value="Sénégal">Sénégal</option>
+        <option value="Maroc">Maroc</option>
+        <option value="Tunisie">Tunisie</option>
+        <option value="Algérie">Algérie</option>
+        <option value="RD Congo">RD Congo</option>
+        <option value="tous">Tous les pays</option>
+      </select>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.4">
+        ⚠ Seule la France est entièrement supportée pour l'instant (sources d'actu). Pour les autres pays, peu de national disponible.
+      </div>
+    </div>
+  </div>
+
   <!-- Préférences -->
   <div class="params-bloc">
     <div class="params-titre">Préférences</div>
@@ -289,6 +318,6 @@
   </button>
 </nav>
 
-<script src="/static/app.js?v=20260612a"></script>
+<script src="/static/app.js?v=20260612b"></script>
 </body>
 </html>

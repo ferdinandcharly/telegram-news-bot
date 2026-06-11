@@ -1,12 +1,30 @@
   let filtreCourant = "Tout";
   let userDomaines  = [];
   let userLangue    = "multi";
+  let userPortees   = {};
+  let userPays      = "France";
 
   function filtrerParPrefs(alertes) {
     if (!userDomaines.length) return alertes;
     return alertes.filter(a =>
       userDomaines.some(d => (a.domaine || "").includes(d.replace(/^\S+\s/, "")))
     );
+  }
+
+  // Filtre portée (mondial/national par domaine) + pays (national d'un seul pays)
+  function filtrerParPorteePays(alertes) {
+    const pays = (userPays || "").toLowerCase();
+    return alertes.filter(a => {
+      const portee = a.portee || "";
+      if (!portee) return true;  // alerte ancienne sans tag
+      const pref = userPortees[a.domaine] || "tout";
+      if (pref === "mondiale" && portee !== "mondiale" && portee !== "regionale") return false;
+      if ((portee === "nationale" || portee === "locale") && pays && pays !== "tous") {
+        const pa = (a.pays || "").toLowerCase();
+        if (pa && pa !== pays) return false;
+      }
+      return true;
+    });
   }
 
   function esc(str) {
@@ -191,6 +209,7 @@
     let alertes = filtreCourant === "Tout"
       ? filtrerParPrefs(alertesCache)
       : alertesCache.filter(a => (a.domaine || "").includes(filtreCourant));
+    alertes = filtrerParPorteePays(alertes);
 
     const q = (document.getElementById("recherche")?.value || "").trim().toLowerCase();
     if (q) {
@@ -626,6 +645,14 @@
     afficherFeed();
   }
 
+  async function sauverPays(val) {
+    userPays = val;
+    await fetch("/api/preferences", { method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ pays: val }) });
+    afficherFeed();
+  }
+
   // ── Init ─────────────────────────────────────────────────────────────────
   async function init() {
     document.getElementById("feed").innerHTML = skeletonHTML();
@@ -651,6 +678,12 @@
     userLangue = data.preferences.langue || "multi";
     const selectLangue = document.getElementById("select-langue");
     if (selectLangue) selectLangue.value = userLangue;
+
+    // portées par domaine + pays (filtrage national)
+    userPortees = data.preferences.portees || {};
+    userPays    = data.preferences.pays || "France";
+    const selectPays = document.getElementById("select-pays");
+    if (selectPays) selectPays.value = userPays;
 
     // domaines préférés
     userDomaines = data.preferences.domaines || [];

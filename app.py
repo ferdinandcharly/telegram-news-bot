@@ -524,6 +524,26 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
 <div class="step">
   <div class="step-num">Étape 3</div>
+  <div class="step-title">Ton pays</div>
+  <div class="step-sub">Pour les actus nationales. Seule la France est entièrement supportée pour l'instant.</div>
+  <select id="onb-pays" style="width:100%;margin-top:14px;padding:12px 14px;background:var(--surface);
+          border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:14px;outline:none">
+    <option value="France">France</option>
+    <option value="Belgique">Belgique</option>
+    <option value="Suisse">Suisse</option>
+    <option value="Canada">Canada</option>
+    <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+    <option value="Sénégal">Sénégal</option>
+    <option value="Maroc">Maroc</option>
+    <option value="Tunisie">Tunisie</option>
+    <option value="Algérie">Algérie</option>
+    <option value="RD Congo">RD Congo</option>
+    <option value="tous">Tous les pays</option>
+  </select>
+</div>
+
+<div class="step">
+  <div class="step-num">Étape 4</div>
   <div class="step-title">Ton thème</div>
   <div class="step-sub">Tu pourras le changer dans les paramètres</div>
   <div class="themes">
@@ -544,7 +564,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
 
 <div class="step">
-  <div class="step-num">Étape 4</div>
+  <div class="step-num">Étape 5</div>
   <div class="step-title">Notifications push</div>
   <div class="step-sub">Reçois une alerte immédiate sur ton téléphone pour les événements critiques</div>
   <div class="notif-card" id="notif-card">
@@ -667,10 +687,11 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
     const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
     const display_name = document.getElementById("display-name").value.trim();
+    const pays         = document.getElementById("onb-pays").value;
     await fetch("/api/preferences", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ display_name, theme, domaines, portees })
+      body: JSON.stringify({ display_name, theme, domaines, portees, pays })
     });
     window.location.href = "/";
   }
@@ -775,10 +796,11 @@ def sauver_alerte(alerte):
         try:
             hdr = {**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"}
             r = http.post(sb("alertes"), headers=hdr, json=alerte, timeout=10)
-            # Colonne "image" pas encore créée → réessaie sans, pour ne pas perdre l'alerte
-            if not r.ok and "image" in alerte:
+            # Colonnes optionnelles pas encore créées → réessaie sans, pour ne pas perdre l'alerte
+            cols_opt = ("image", "pays")
+            if not r.ok and any(c in alerte for c in cols_opt):
                 r = http.post(sb("alertes"), headers=hdr,
-                              json={k: v for k, v in alerte.items() if k != "image"}, timeout=10)
+                              json={k: v for k, v in alerte.items() if k not in cols_opt}, timeout=10)
             if r.ok:
                 return
             print(f"Supabase sauver_alerte HTTP {r.status_code} : {r.text[:200]}")
@@ -838,6 +860,7 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2, sourc
         "date":        datetime.now().isoformat(),
         "niveau":      niveau,
         "portee":      teaser.get("portee", "mondiale") if isinstance(teaser, dict) else "mondiale",
+        "pays":        teaser.get("pays", "")           if isinstance(teaser, dict) else "",
         "theme_fin":   teaser.get("theme_fin", "")      if isinstance(teaser, dict) else "",
         "sources":     [source] if source else [],
     }
@@ -1131,6 +1154,7 @@ def api_init():
         "heure_recap":   8,
         "langue":        prefs_row.get("langue") or "multi"                   if prefs_row else "multi",
         "portees":       prefs_row.get("portees") or {}                        if prefs_row else {},
+        "pays":          prefs_row.get("pays") or "France"                     if prefs_row else "France",
     }
 
     # filtrer par domaines préférés
@@ -1140,18 +1164,25 @@ def api_init():
         if any(d in a.get("domaine", "") for d in domaines_actifs)
     ] if domaines_actifs else alertes
 
-    # filtrer par portée par domaine (personnalisation fine)
-    portees = prefs["portees"]
-    if portees:
-        def _garder(a):
-            portee_art = a.get("portee", "")
-            if not portee_art:
-                return True  # article ancien sans tag → toujours visible
+    # filtrer par portée (par domaine) et par pays (national/local de l'user uniquement)
+    portees   = prefs["portees"]
+    pays_user = (prefs["pays"] or "").strip().lower()
+    def _garder(a):
+        portee_art = a.get("portee", "")
+        if not portee_art:
+            return True  # article ancien sans tag → toujours visible
+        # 1) préférence mondial vs national par domaine
+        if portees:
             portee_pref = portees.get(a.get("domaine", ""), "tout")
             if portee_pref == "mondiale" and portee_art not in ("mondiale", "regionale"):
                 return False
-            return True
-        alertes_filtrees = [a for a in alertes_filtrees if _garder(a)]
+        # 2) une news nationale/locale n'est gardée que si elle concerne le pays de l'user
+        if portee_art in ("nationale", "locale") and pays_user and pays_user != "tous":
+            pays_art = (a.get("pays") or "").strip().lower()
+            if pays_art and pays_art != pays_user:
+                return False
+        return True
+    alertes_filtrees = [a for a in alertes_filtrees if _garder(a)]
 
     return jsonify({
         "alertes":      alertes_filtrees,
@@ -1171,7 +1202,7 @@ def api_preferences():
         return jsonify({"erreur": "non authentifié"}), 401
     data  = request.get_json()
     prefs = {"user_id": user_id}
-    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "portees"):
+    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "portees", "pays"):
         if key in data:
             prefs[key] = data[key]
     http.post(sb("user_preferences"),

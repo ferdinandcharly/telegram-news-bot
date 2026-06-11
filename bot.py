@@ -187,10 +187,13 @@ def est_important(titre, resume, domaine):
                     "- portee : 'locale' | 'nationale' | 'regionale' | 'mondiale'\n"
                     "- theme_fin : une seule valeur parmi : 'politique-interieure', 'conflit', 'diplomatie', "
                     "'economie-macro', 'marche-finance', 'science', 'tech-ia', 'environnement', "
-                    "'catastrophe', 'sport', 'societe'\n\n"
+                    "'catastrophe', 'sport', 'societe'\n"
+                    "- pays : si la portée est nationale, régionale ou locale, indique le pays "
+                    "principal concerné en français (ex: France, États-Unis, Côte d'Ivoire, Sénégal). "
+                    "Laisse vide (\"\") si la portée est mondiale.\n\n"
                     "Réponds JSON uniquement :\n"
                     "{\"niveau\": 0, \"portee\": \"nationale\", \"theme_fin\": \"politique-interieure\", "
-                    "\"titre_fr\": \"\", \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}"
+                    "\"pays\": \"\", \"titre_fr\": \"\", \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}"
                 )
             }],
             max_tokens=480,
@@ -207,6 +210,7 @@ def est_important(titre, resume, domaine):
             "suite":    data.get("suite", ""),
             "portee":   data.get("portee", "mondiale"),
             "theme_fin": data.get("theme_fin", ""),
+            "pays":     data.get("pays", ""),
         }
         return data.get("niveau", 0), teaser
     except Exception as e:
