@@ -1372,8 +1372,8 @@ RÈGLES ABSOLUES :
 
 Pour chaque groupe, fournis :
 - titre : le lien en max 8 mots, concret (ex: « Frappes mer Noire → pétrole +12% »)
-- contexte : QUI est impliqué et QUEL est le fait précis qui relie les alertes (2 phrases, avec noms/chiffres)
-- analyse : l'ENJEU concret — qui gagne/perd quoi, quel mécanisme économique/stratégique est en jeu (2-3 phrases factuelles)
+- contexte : plante d'abord le décor — la situation ou crise de fond dans laquelle s'inscrivent les events (ex: « Dans le contexte du conflit Iran-Israël… »), PUIS les acteurs précis et le fait qui relie les alertes (2-3 phrases, avec noms/chiffres)
+- analyse : ce qui est concrètement EN JEU — ressources, argent, territoire, pouvoir, influence : qui veut quoi, qui gagne et qui perd (2-3 phrases factuelles)
 - implication : le SIGNAL précis à surveiller — un événement daté, un seuil, une décision attendue (1-2 phrases, pas « on verra »)
 - alertes_ids : liste des ids concernés
 - domaines : liste des domaines impliqués
