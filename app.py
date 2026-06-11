@@ -1395,9 +1395,8 @@ Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
         print(f"[Corrélation] Aucune corrélation (global)")
         return []
 
-    # Sauvegarder dans Supabase. La table n'a que : id, titre, synthese, alertes_ids, date, domaines.
-    # On fusionne contexte+analyse+implication dans synthese (envoyer les 3 colonnes ferait
-    # rejeter toute la ligne avec PGRST204 "column not found").
+    # Sauvegarder dans Supabase. Colonnes : id, titre, synthese, alertes_ids, date, domaines,
+    # contexte, analyse, implication. synthese garde la version fusionnée pour fallback d'affichage.
     for i, c in enumerate(correlations):
         c["id"]       = int(datetime.now().timestamp() * 1000) + i
         c["date"]     = datetime.now().isoformat()
@@ -1409,6 +1408,9 @@ Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
             "synthese":    c["synthese"],
             "alertes_ids": c.get("alertes_ids", []),
             "domaines":    c.get("domaines", []),
+            "contexte":    c.get("contexte", ""),
+            "analyse":     c.get("analyse", ""),
+            "implication": c.get("implication", ""),
         }
         try:
             http.post(sb("correlations"),
