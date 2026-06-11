@@ -1214,6 +1214,9 @@ def api_cron_recap():
     secret = os.getenv("CRON_SECRET", "")
     if not secret or request.args.get("token") != secret:
         return "forbidden", 403
+    # ?force=1 : relancer même si déjà fait aujourd'hui (utile pour tester)
+    if request.args.get("force"):
+        _resumes_envoyes.clear()
     # on passe 8 explicitement : indépendant du fuseau horaire du serveur
     check_resumes_matinaux(8)
     return "ok", 200
