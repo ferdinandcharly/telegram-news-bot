@@ -13,13 +13,17 @@ self.addEventListener("push", event => {
 
 self.addEventListener("notificationclick", event => {
   event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/";
   event.waitUntil(
-    clients.matchAll({ type: "window" }).then(list => {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+      // si une fenêtre est déjà ouverte : la rediriger vers l'URL de la notif puis la focus
       for (const client of list) {
-        if (client.url === event.notification.data.url && "focus" in client)
+        if ("focus" in client) {
+          if ("navigate" in client) { client.navigate(url).catch(() => {}); }
           return client.focus();
+        }
       }
-      if (clients.openWindow) return clients.openWindow(event.notification.data.url);
+      if (clients.openWindow) return clients.openWindow(url);
     })
   );
 });

@@ -46,8 +46,10 @@
       document.getElementById("page-" + p).style.display = "none";
     });
     document.getElementById("page-" + page).style.display = "block";
+    // appel programmatique (ex: depuis une notif) : retrouver le bouton nav correspondant
+    btn = btn || document.querySelector(`.nav-btn[onclick*="'${page}'"]`);
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("actif"));
-    btn.classList.add("actif");
+    if (btn) btn.classList.add("actif");
     if (page === "feed")  marquerLus();
     if (page === "saved") chargerSauvegardes();
     if (page === "corr")  chargerCorrelations();
@@ -651,7 +653,14 @@
   }
 
   async function checkNotifHash() {
-    const match = window.location.hash.match(/#synthese\/(\d+)/);
+    const hash = window.location.hash;
+    // notif de corrélation → page Corrélations
+    if (hash.startsWith("#correlations") || hash.startsWith("#corr")) {
+      history.replaceState(null, "", "/");
+      afficherPage("corr");
+      return;
+    }
+    const match = hash.match(/#synthese\/(\d+)/);
     if (!match) return;
     const id = parseInt(match[1]);
     history.replaceState(null, "", "/");
@@ -663,6 +672,8 @@
     }
     ouvrirModal(id);
   }
+  // si l'app est déjà ouverte et qu'une notif change le hash
+  window.addEventListener("hashchange", checkNotifHash);
 
   async function refreshToken() {
     try { await fetch("/api/refresh-token", { method: "POST" }); } catch {}
