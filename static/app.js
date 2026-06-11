@@ -64,7 +64,7 @@
     zone.style.display = open ? "block" : "none";
     btn.classList.toggle("actif", open);
     if (open) { input.focus(); }
-    else { input.value = ""; chargerAlertes(); }
+    else { input.value = ""; afficherFeed(); }
   }
 
   // ── Filtres ─────────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@
     filtreCourant = val;
     document.querySelectorAll(".filtre-pill").forEach(b => b.classList.remove("actif"));
     btn.classList.add("actif");
-    chargerAlertes();
+    afficherFeed();
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -129,10 +129,10 @@
     </div>`;
 
     const actions = `<div class="carte-actions">
-      <button class="btn-save ${saved ? "saved" : ""}" onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
+      <button class="btn-save ${saved ? "saved" : ""}" aria-label="${saved ? "Retirer des enregistrés" : "Enregistrer"}" onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
         <ion-icon name="${saved ? "bookmark" : "bookmark-outline"}"></ion-icon>
       </button>
-      <button class="btn-save" onclick="event.stopPropagation(); partagerAlerte(${a.id})">
+      <button class="btn-save" aria-label="Partager" onclick="event.stopPropagation(); partagerAlerte(${a.id})">
         <ion-icon name="share-outline"></ion-icon>
       </button>
     </div>`;
@@ -165,13 +165,25 @@
       </div>`;
   }
 
+  // ── Skeleton de chargement ────────────────────────────────────────────────
+  function skeletonHTML(n = 6) {
+    const card = `<div class="skel-card">
+      <div class="skel-vignette"></div>
+      <div class="skel-body">
+        <div class="skel-line court"></div>
+        <div class="skel-line long"></div>
+        <div class="skel-line moyen"></div>
+      </div>
+    </div>`;
+    return Array(n).fill(card).join("");
+  }
+
   // ── Alertes ─────────────────────────────────────────────────────────────
-  async function chargerAlertes() {
-    const url = filtreCourant === "Tout"
-      ? "/api/alertes"
-      : `/api/alertes?domaine=${encodeURIComponent(filtreCourant)}`;
-    const raw  = await fetch(url).then(r => r.json());
-    let alertes = filtreCourant === "Tout" ? filtrerParPrefs(raw) : raw;
+  // Rendu du feed depuis le cache local (filtre + recherche), sans réseau.
+  function afficherFeed() {
+    let alertes = filtreCourant === "Tout"
+      ? filtrerParPrefs(alertesCache)
+      : alertesCache.filter(a => (a.domaine || "").includes(filtreCourant));
 
     const q = (document.getElementById("recherche")?.value || "").trim().toLowerCase();
     if (q) {
@@ -195,6 +207,14 @@
     }
   }
 
+  // Rafraîchit le cache depuis le réseau puis ré-affiche.
+  async function chargerAlertes() {
+    try {
+      alertesCache = await fetch("/api/alertes").then(r => r.json());
+    } catch { /* garde le cache courant en cas d'échec réseau */ }
+    afficherFeed();
+  }
+
   async function chargerStats() {
     const s = await fetch("/api/stats").then(r => r.json());
     document.getElementById("stat-total").textContent = s.total;
@@ -209,7 +229,7 @@
 
   async function chargerCorrelations() {
     const feed = document.getElementById("feed-corr");
-    feed.innerHTML = `<div class="vide">Chargement...</div>`;
+    feed.innerHTML = skeletonHTML(3);
     const corrs = await fetch("/api/correlations").then(r => r.json()).catch(() => []);
 
     if (!corrs.length) {
@@ -386,7 +406,7 @@
     const nowSaved = savedIds.has(id);
     saveBtn.textContent = nowSaved ? "Retirer des sauvegardés" : "Sauvegarder";
     saveBtn.className   = "btn-secondary" + (nowSaved ? " saved" : "");
-    chargerAlertes();
+    afficherFeed();
   }
 
   function fermerModal(e) {
@@ -596,11 +616,12 @@
     await fetch("/api/preferences", { method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ langue: val }) });
-    chargerAlertes();
+    afficherFeed();
   }
 
   // ── Init ─────────────────────────────────────────────────────────────────
   async function init() {
+    document.getElementById("feed").innerHTML = skeletonHTML();
     const data = await fetch("/api/init").then(r => r.json());
 
     // thème ("dim" est l'ancien nom de "slate")
@@ -647,7 +668,7 @@
     // alertes & sauvegardes
     savedIds     = new Set(data.saved_ids);
     alertesCache = data.alertes;
-    chargerAlertes();
+    afficherFeed();
     chargerStats();
     majBadgeNonLus();
   }
@@ -689,9 +710,10 @@
   init().then(checkNotifHash);
   initNotifications();
   setInterval(async () => {
-    const data = await fetch("/api/alertes").then(r => r.json());
-    alertesCache = data;
-    chargerAlertes();
+    try {
+      alertesCache = await fetch("/api/alertes").then(r => r.json());
+    } catch { return; }
+    afficherFeed();
     chargerStats();
     majBadgeNonLus();
   }, 30000);

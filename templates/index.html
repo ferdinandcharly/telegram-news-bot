@@ -2,10 +2,10 @@
 <html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>News Alert</title>
   <link rel="manifest" href="/static/manifest.json" />
-  <link rel="stylesheet" href="/static/style.css?v=20260611b" />
+  <link rel="stylesheet" href="/static/style.css?v=20260611c" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
@@ -24,7 +24,7 @@
       <span class="topbar-brand">News Alert</span>
       <div class="topbar-right">
         <div class="live"><div class="live-dot"></div>En direct</div>
-        <button id="btn-recherche" class="btn-icon" onclick="toggleRecherche()">
+        <button id="btn-recherche" class="btn-icon" aria-label="Rechercher" onclick="toggleRecherche()">
           <ion-icon name="search-outline"></ion-icon>
         </button>
       </div>
@@ -32,7 +32,7 @@
     <div id="barre-filtres">
       <div id="zone-recherche">
         <input id="recherche" type="search" class="search-input"
-               placeholder="Rechercher un titre, domaine..." oninput="chargerAlertes()"/>
+               placeholder="Rechercher un titre, domaine..." oninput="afficherFeed()"/>
       </div>
       <div class="filtres">
         <button class="filtre-pill actif" onclick="setFiltre('Tout', this)">Tout</button>
@@ -251,7 +251,7 @@
   <div class="modal" id="modal-box">
     <div class="modal-topbar">
       <div class="modal-handle"></div>
-      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('visible')">✕</button>
+      <button class="modal-close" aria-label="Fermer" onclick="document.getElementById('modal').classList.remove('visible')">✕</button>
     </div>
     <div class="modal-content">
       <div class="modal-domaine" id="modal-domaine"></div>
@@ -274,21 +274,21 @@
 
 <!-- ── Nav ── -->
 <nav>
-  <button class="nav-btn actif" id="nav-btn-feed" onclick="afficherPage('feed', this)">
+  <button class="nav-btn actif" id="nav-btn-feed" aria-label="Accueil" onclick="afficherPage('feed', this)">
     <span class="nav-icon"><ion-icon name="home-outline"></ion-icon></span>
     <span class="nav-badge" id="badge-nonlus"></span>
   </button>
-  <button class="nav-btn" onclick="afficherPage('corr', this)">
+  <button class="nav-btn" aria-label="Corrélations" onclick="afficherPage('corr', this)">
     <span class="nav-icon"><ion-icon name="git-network-outline"></ion-icon></span>
   </button>
-  <button class="nav-btn" onclick="afficherPage('saved', this)">
+  <button class="nav-btn" aria-label="Enregistrés" onclick="afficherPage('saved', this)">
     <span class="nav-icon"><ion-icon name="bookmark-outline"></ion-icon></span>
   </button>
-  <button class="nav-btn" onclick="afficherPage('params', this)">
+  <button class="nav-btn" aria-label="Compte et paramètres" onclick="afficherPage('params', this)">
     <span class="nav-icon"><ion-icon name="person-circle-outline"></ion-icon></span>
   </button>
 </nav>
 
-<script src="/static/app.js?v=20260611b"></script>
+<script src="/static/app.js?v=20260611c"></script>
 </body>
 </html>
