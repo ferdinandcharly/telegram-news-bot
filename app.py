@@ -1395,15 +1395,25 @@ Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
         print(f"[Corrélation] Aucune corrélation (global)")
         return []
 
-    # Sauvegarder dans Supabase (synthese = contexte + analyse + implication pour compat affichage)
+    # Sauvegarder dans Supabase. La table n'a que : id, titre, synthese, alertes_ids, date, domaines.
+    # On fusionne contexte+analyse+implication dans synthese (envoyer les 3 colonnes ferait
+    # rejeter toute la ligne avec PGRST204 "column not found").
     for i, c in enumerate(correlations):
-        c["id"]      = int(datetime.now().timestamp() * 1000) + i
-        c["date"]    = datetime.now().isoformat()
+        c["id"]       = int(datetime.now().timestamp() * 1000) + i
+        c["date"]     = datetime.now().isoformat()
         c["synthese"] = f"{c.get('contexte', '')} {c.get('analyse', '')} {c.get('implication', '')}".strip()
+        row = {
+            "id":          c["id"],
+            "date":        c["date"],
+            "titre":       c.get("titre", ""),
+            "synthese":    c["synthese"],
+            "alertes_ids": c.get("alertes_ids", []),
+            "domaines":    c.get("domaines", []),
+        }
         try:
             http.post(sb("correlations"),
                       headers={**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"},
-                      json=c, timeout=10)
+                      json=row, timeout=10)
         except Exception as e:
             print(f"[Corrélation] Erreur sauvegarde : {e}")
 
