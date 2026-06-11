@@ -1353,35 +1353,54 @@ def generer_correlations():
         + json.dumps(alertes_compact, ensure_ascii=False)
         + """
 
-Identifie les groupes d'événements RÉELLEMENT liés par un mécanisme concret
+Identifie les groupes d'événements DISTINCTS RÉELLEMENT liés par un mécanisme concret
 (cause→effet, même acteur, ressource ou marché commun, escalade). N'invente pas
-de lien thématique vague : si deux infos parlent juste « du même sujet » sans
-mécanisme, ne les groupe PAS.
+de lien thématique vague.
 
-Pour chaque groupe (2 alertes ou +), rédige en français, en étant FACTUEL et SPÉCIFIQUE.
+NE GROUPE PAS :
+- Deux alertes qui décrivent le MÊME événement sous deux angles (ce n'est pas une
+  corrélation, c'est un doublon). Ex: « l'Ukraine développe un missile » + « l'Ukraine
+  présente une alternative au Patriot » = même sujet → IGNORE.
+- Deux infos qui parlent juste « du même thème » sans mécanisme reliant l'une à l'autre.
+Une vraie corrélation relie des événements SÉPARÉS (ex: une frappe quelque part QUI FAIT
+monter un prix ailleurs ; une décision d'un acteur QUI déclenche la réponse d'un autre).
+
+Pour chaque groupe (2 alertes ou +), rédige en français, FACTUEL et SPÉCIFIQUE.
 
 RÈGLES ABSOLUES :
-- Nomme les acteurs précis : pays, entreprises, dirigeants, institutions concernés.
+- Nomme les acteurs précis : pays, entreprises, dirigeants, institutions.
 - Cite les chiffres/dates des alertes (montants, %, échéances) quand ils existent.
-- Décris le MÉCANISME exact qui relie les events, pas une généralité.
-- INTERDIT : « cela pourrait avoir des implications », « il faudra surveiller
-  l'évolution », « les enjeux sont importants », « cela soulève des questions »,
-  « impact significatif », et toute phrase qui resterait vraie pour n'importe
-  quelle actu. Si tu écris une de ces formules, recommence.
-- Pas de méta-langage (« cet événement », « cette corrélation »). Va au fait.
+- Les 3 champs doivent dire des choses DIFFÉRENTES. Ne répète JAMAIS dans
+  « analyse » ou « implication » un fait déjà écrit dans « contexte ». Si tu te
+  répètes, c'est que le groupe est trop faible : supprime-le.
+- INTERDIT (recommence si tu l'écris) : « sera surveillé(e) de près », « il faudra
+  surveiller l'évolution », « la prochaine étape sera surveillée », « cela pourrait
+  avoir des implications », « les enjeux sont importants », « stabilité régionale »,
+  « impact significatif », et toute phrase vraie pour n'importe quelle actu.
+- Pas de méta-langage (« cet événement », « cette corrélation »).
 
-Pour chaque groupe, fournis :
-- titre : le lien en max 8 mots, concret (ex: « Frappes mer Noire → pétrole +12% »)
-- contexte : plante d'abord le décor — la situation ou crise de fond dans laquelle s'inscrivent les events (ex: « Dans le contexte du conflit Iran-Israël… »), PUIS les acteurs précis et le fait qui relie les alertes (2-3 phrases, avec noms/chiffres)
-- analyse : ce qui est concrètement EN JEU — ressources, argent, territoire, pouvoir, influence : qui veut quoi, qui gagne et qui perd (2-3 phrases factuelles)
-- implication : le SIGNAL précis à surveiller — un événement daté, un seuil, une décision attendue (1-2 phrases, pas « on verra »)
-- alertes_ids : liste des ids concernés
-- domaines : liste des domaines impliqués
+Rôle PRÉCIS et NON REDONDANT de chaque champ :
+- titre : le lien en max 8 mots, concret (ex: « Frappes mer Noire → pétrole +12% »).
+- contexte : les FAITS. Plante le décor (la crise de fond, ex: « Dans le contexte du
+  conflit Iran-Israël… ») puis les acteurs et ce qui s'est passé. 2-3 phrases.
+- analyse : le POURQUOI ça compte, SANS redire les faits. Ce qui est en jeu —
+  ressources, argent, territoire, pouvoir : qui gagne, qui perd, par quel mécanisme.
+- implication : une PRÉDICTION concrète. Nomme l'événement futur précis possible
+  (« si X, alors Y »), une échéance, une décision attendue, un seuil chiffré.
+  PAS « on surveillera » : dis CE QUI peut concrètement arriver.
+- alertes_ids : liste des ids concernés.
+- domaines : liste des domaines impliqués.
+
+Exemple du niveau attendu (3 champs DISTINCTS) :
+{"titre":"Sécheresse Panama → fret maritime +30%",
+ "contexte":"Le canal de Panama limite les passages à 24/jour depuis octobre faute d'eau. Maersk et MSC reroutent via le cap Horn, +12 jours de trajet.",
+ "analyse":"Le surcoût se répercute sur les prix des biens importés en Europe pour Noël ; les armateurs captent une marge record pendant que les exportateurs sud-américains perdent l'accès rapide à l'Asie.",
+ "implication":"Si les pluies ne reviennent pas avant janvier, l'autorité du canal a prévenu qu'elle descendrait à 18 passages/jour — nouvelle hausse du fret à anticiper."}
 
 Réponds uniquement avec ce JSON, sans texte autour :
 [{"titre":"...","contexte":"...","analyse":"...","implication":"...","alertes_ids":[id1,id2],"domaines":["🌍 Géopolitique"]}]
 
-Si aucun groupe n'a de lien mécanique solide, réponds [].
+Si aucun groupe n'a de lien mécanique solide entre événements distincts, réponds [].
 Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
     )
 
