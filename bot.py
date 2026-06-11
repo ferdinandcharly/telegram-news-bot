@@ -18,7 +18,6 @@ FLUX = {
         "http://feeds.bbci.co.uk/news/world/rss.xml",
         "https://www.rfi.fr/fr/rss",
         "https://www.france24.com/fr/rss",
-        "https://feeds.reuters.com/reuters/worldNews",
         "https://www.lemonde.fr/international/rss_full.xml",
     ],
     "🔬 Science": [
@@ -33,21 +32,20 @@ FLUX = {
         "https://www.wired.com/feed/rss",
     ],
     "💰 Finance": [
-        "https://feeds.reuters.com/reuters/businessNews",
         "https://www.bfmtv.com/rss/economie/",
-        "https://feeds.reuters.com/reuters/companyNews",
-        "https://services.lesechos.fr/rss/les-echos-economie.xml",
+        "https://feeds.bbci.co.uk/news/business/rss.xml",
+        "https://www.lemonde.fr/economie/rss_full.xml",
+        "https://www.franceinfo.fr/economie.rss",
     ],
     "🌱 Environnement": [
         "https://reporterre.net/spip.php?page=backend",
-        "https://feeds.reuters.com/reuters/environment",
+        "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
         "https://www.futura-sciences.com/planete/rss/actualites.xml",
         "https://www.lemonde.fr/planete/rss_full.xml",
     ],
     "⚽ Sport": [
         "https://www.lequipe.fr/rss/actu_rss.xml",
         "https://feeds.bbci.co.uk/sport/rss.xml",
-        "https://feeds.reuters.com/reuters/sportsNews",
     ],
 }
 
@@ -66,6 +64,7 @@ _SOURCE_NAMES = {
     "arstechnica.com": "Ars Technica", "technologyreview.com": "MIT Tech Review",
     "wired.com": "Wired", "bfmtv.com": "BFM", "lesechos.fr": "Les Échos",
     "reporterre.net": "Reporterre", "lequipe.fr": "L'Équipe",
+    "franceinfo.fr": "France Info",
 }
 
 def _nom_source(url):

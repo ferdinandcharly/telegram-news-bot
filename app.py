@@ -5,7 +5,10 @@ import base64
 import threading
 import tempfile
 from datetime import datetime, timedelta, date as dt_date
+from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor
+
+PARIS = ZoneInfo("Europe/Paris")
 from flask import Flask, jsonify, send_from_directory, request, session, redirect
 import requests as http
 import bot
@@ -250,7 +253,7 @@ def api_update_password():
                      headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {token}",
                               "Content-Type": "application/json"},
                      json={"password": pwd}, timeout=10)
-        return jsonify({"ok": True}) if r.ok else jsonify({"erreur": "échec"}), 400
+        return (jsonify({"ok": True}), 200) if r.ok else (jsonify({"erreur": "échec"}), 400)
     except Exception as e:
         return jsonify({"erreur": str(e)}), 500
 
@@ -297,7 +300,6 @@ a{{color:#555}}
 <ul>
 <li><strong>Supabase</strong> — hébergement de la base de données et authentification (États-Unis / UE)</li>
 <li><strong>Groq</strong> — analyse IA des articles (titres et résumés envoyés pour filtrage). Aucune donnée personnelle n'est transmise.</li>
-<li><strong>Telegram</strong> — alertes critiques (optionnel, uniquement si activé)</li>
 <li><strong>Render</strong> — hébergement du serveur applicatif</li>
 </ul>
 
@@ -744,7 +746,7 @@ def check_auth():
     exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding", "/cancel-register",
                "/api/refresh-token", "/forgot-password", "/reset-password",
                "/api/update-password", "/privacy", "/auth/google", "/auth/callback",
-               "/api/oauth-session"]
+               "/api/oauth-session", "/api/cron/recap"]
     if request.path in exempts or request.path.startswith("/a/"):
         return
     if not session.get("access_token"):
@@ -1204,6 +1206,19 @@ def health():
     return "OK", 200
 
 
+@app.route("/api/cron/recap")
+def api_cron_recap():
+    """Déclencheur externe du résumé matinal (réveille l'instance Render endormie).
+    À appeler chaque matin par un cron gratuit (ex: cron-job.org) avec ?token=CRON_SECRET.
+    Le verrou _resumes_envoyes empêche tout double envoi le même jour."""
+    secret = os.getenv("CRON_SECRET", "")
+    if not secret or request.args.get("token") != secret:
+        return "forbidden", 403
+    # on passe 8 explicitement : indépendant du fuseau horaire du serveur
+    check_resumes_matinaux(8)
+    return "ok", 200
+
+
 @app.route("/a/<int:alerte_id>")
 def partager_alerte(alerte_id):
     """Page publique de partage d'une alerte (sans login)."""
@@ -1220,12 +1235,13 @@ def partager_alerte(alerte_id):
     if not alerte:
         return "Alerte introuvable.", 404
 
-    titre   = alerte.get("titre", "")
-    domaine = alerte.get("domaine", "")
-    accroche = alerte.get("accroche", "")
-    contexte = alerte.get("contexte", "")
-    suite    = alerte.get("suite", "")
-    lien     = alerte.get("lien", "")
+    from markupsafe import escape
+    titre   = escape(alerte.get("titre", ""))
+    domaine = escape(alerte.get("domaine", ""))
+    accroche = escape(alerte.get("accroche", ""))
+    contexte = escape(alerte.get("contexte", ""))
+    suite    = escape(alerte.get("suite", ""))
+    lien     = escape(alerte.get("lien", ""))
     niveau   = alerte.get("niveau", 2)
     dot      = "🔴" if niveau >= 3 else "🟡"
     app_url  = APP_URL or request.host_url.rstrip("/")
@@ -1292,8 +1308,12 @@ def envoyer_push_user(user_id, titre, body, url):
     except Exception as e:
         print(f"[Push user] {e}")
 
-def generer_correlations(user_id=None, domaines_user=None, display_name=None):
-    """Analyse les alertes des dernières 24h filtrées par domaines, génère les corrélations."""
+def generer_correlations():
+    """Analyse TOUTES les alertes des dernières 24h et génère les corrélations (passe globale unique).
+
+    Un seul appel Groq 70b par matin pour l'ensemble des utilisateurs : les corrélations
+    sont stockées globalement puis filtrées par domaine au moment du push (cf. check_resumes_matinaux).
+    Retourne la liste des corrélations générées (vide si rien)."""
 
     depuis = (datetime.now() - timedelta(hours=24)).isoformat()
     # Lire depuis Supabase pour ne pas dépendre de la mémoire (réinitialisée au redémarrage)
@@ -1305,15 +1325,10 @@ def generer_correlations(user_id=None, domaines_user=None, display_name=None):
         print(f"[Corrélation] Erreur lecture Supabase : {e}")
         alertes_24h = [a for a in alertes if a.get("date", "") >= depuis]
 
-    if domaines_user:
-        mots = [d.split(" ", 1)[-1] for d in domaines_user]
-        alertes_24h = [a for a in alertes_24h
-                       if any(m in a.get("domaine", "") for m in mots)]
-
-    print(f"[Corrélation] {len(alertes_24h)} alertes des 24h pour {user_id or 'global'}")
+    print(f"[Corrélation] {len(alertes_24h)} alertes des 24h (global)")
     if len(alertes_24h) < 2:
         print(f"[Corrélation] Pas assez d'alertes, abandon.")
-        return
+        return []
 
     alertes_compact = [
         {
@@ -1368,11 +1383,11 @@ Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
         correlations = json.loads(contenu[debut:fin])
     except Exception as e:
         print(f"[Corrélation] Erreur Groq : {e}")
-        return
+        return []
 
     if not correlations:
-        print(f"[Corrélation] Aucune corrélation pour {user_id or 'global'}")
-        return
+        print(f"[Corrélation] Aucune corrélation (global)")
+        return []
 
     # Sauvegarder dans Supabase (synthese = contexte + analyse + implication pour compat affichage)
     for i, c in enumerate(correlations):
@@ -1386,42 +1401,60 @@ Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
         except Exception as e:
             print(f"[Corrélation] Erreur sauvegarde : {e}")
 
-    # Push à l'utilisateur spécifique
-    if user_id and correlations:
-        url    = f"{APP_URL}/#correlations" if APP_URL else "/"
-        prenom = display_name.split()[0] if display_name else None
-        salut  = f"Bonjour {prenom} — " if prenom else ""
-        titres = " · ".join(c["titre"] for c in correlations[:2])
-        envoyer_push_user(user_id,
-                          f"🌅 {salut}{len(correlations)} corrélation(s) du jour",
-                          titres[:120], url)
-
-    print(f"[Corrélation] {len(correlations)} corrélation(s) pour {user_id or 'global'}")
+    print(f"[Corrélation] {len(correlations)} corrélation(s) générée(s) (global)")
+    return correlations
 
 
 def check_resumes_matinaux(heure):
-    """Envoie le résumé à tous les utilisateurs à 8h chaque matin."""
+    """À 8h chaque matin : génère les corrélations UNE seule fois (global),
+    puis envoie à chaque utilisateur un push filtré par ses domaines."""
     if heure != 8 or not SUPABASE_URL:
         return
-    today = dt_date.today().isoformat()
-    # Vérifier qu'on n'a pas déjà envoyé les résumés ce matin
+    today = datetime.now(PARIS).date().isoformat()
+    # Vérifier qu'on n'a pas déjà tourné ce matin
     if _resumes_envoyes.get("__global__") == today:
         return
-    _resumes_envoyes["__global__"] = today
+
     print(f"[Resume] Génération des corrélations matinales ({today})")
+    correlations = generer_correlations()  # 1 seul appel Groq 70b pour tout le monde
+    _resumes_envoyes["__global__"] = today
+    if not correlations:
+        return
+
     try:
         r = http.get(sb("user_preferences"), headers=SB_SERVICE,
                      params={"select": "user_id,domaines,display_name"}, timeout=5)
         users = r.json() if r.ok and isinstance(r.json(), list) else []
-        print(f"[Resume] {len(users)} utilisateur(s) trouvé(s)")
-        for u in users:
-            uid = u.get("user_id")
-            if uid and _resumes_envoyes.get(uid) != today:
-                _resumes_envoyes[uid] = today
-                generer_correlations(user_id=uid, domaines_user=u.get("domaines") or [],
-                                     display_name=u.get("display_name"))
     except Exception as e:
-        print(f"[Resume] Erreur : {e}")
+        print(f"[Resume] Erreur lecture utilisateurs : {e}")
+        return
+
+    print(f"[Resume] {len(users)} utilisateur(s) — push filtré par domaine")
+    url = f"{APP_URL}/#correlations" if APP_URL else "/"
+    for u in users:
+        uid = u.get("user_id")
+        if not uid or _resumes_envoyes.get(uid) == today:
+            continue
+        _resumes_envoyes[uid] = today
+
+        # filtrer les corrélations globales par les domaines de l'utilisateur
+        mots = [d.split(" ", 1)[-1] for d in (u.get("domaines") or [])]
+        if mots:
+            corr_user = [c for c in correlations
+                         if not c.get("domaines")
+                         or any(any(mk in cd for mk in mots) for cd in c["domaines"])]
+        else:
+            corr_user = correlations
+        if not corr_user:
+            continue
+
+        display_name = u.get("display_name")
+        prenom = display_name.split()[0] if display_name else None
+        salut  = f"Bonjour {prenom} — " if prenom else ""
+        titres = " · ".join(c["titre"] for c in corr_user[:2])
+        envoyer_push_user(uid,
+                          f"🌅 {salut}{len(corr_user)} corrélation(s) du jour",
+                          titres[:120], url)
 
 
 def nettoyer_vieilles_alertes():
@@ -1471,8 +1504,8 @@ def boucle():
         bot.verifier()
         cycles += 1
 
-        # résumé matinal : vérifier chaque heure
-        now = datetime.now()
+        # résumé matinal : 8h heure de Paris (le serveur tourne en UTC)
+        now = datetime.now(PARIS)
         if now.minute < 15:  # fenêtre de 15 min par heure
             check_resumes_matinaux(now.hour)
 
