@@ -1333,13 +1333,16 @@ def generer_correlations():
         print(f"[Corrélation] Pas assez d'alertes, abandon.")
         return []
 
+    # Plafond pour rester sous la limite Groq (12k TPM en free tier sur le 70b).
+    # On garde les plus récentes et on allège chaque entrée (pas de contexte, accroche tronquée).
+    MAX_ALERTES = 45
+    alertes_24h = alertes_24h[:MAX_ALERTES]
     alertes_compact = [
         {
             "id":      a["id"],
-            "titre":   a["titre"],
+            "titre":   a["titre"][:140],
             "domaine": a["domaine"],
-            "accroche": a.get("accroche", ""),
-            "contexte": a.get("contexte", ""),
+            "accroche": (a.get("accroche") or "")[:160],
         }
         for a in alertes_24h
     ]
