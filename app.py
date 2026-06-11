@@ -1353,28 +1353,36 @@ def generer_correlations():
         + json.dumps(alertes_compact, ensure_ascii=False)
         + """
 
-Identifie les groupes d'événements qui se répondent ou s'influencent mutuellement.
-Pour chaque groupe de 2 alertes ou plus, génère une analyse structurée en français.
+Identifie les groupes d'événements RÉELLEMENT liés par un mécanisme concret
+(cause→effet, même acteur, ressource ou marché commun, escalade). N'invente pas
+de lien thématique vague : si deux infos parlent juste « du même sujet » sans
+mécanisme, ne les groupe PAS.
 
-Critères pour former un groupe :
-- Même crise ou conflit qui évolue
-- Réaction en chaîne (décision A → conséquence B → réponse C)
-- Même acteur impliqué dans plusieurs événements
-- Tension entre deux infos contradictoires sur le même sujet
+Pour chaque groupe (2 alertes ou +), rédige en français, en étant FACTUEL et SPÉCIFIQUE.
+
+RÈGLES ABSOLUES :
+- Nomme les acteurs précis : pays, entreprises, dirigeants, institutions concernés.
+- Cite les chiffres/dates des alertes (montants, %, échéances) quand ils existent.
+- Décris le MÉCANISME exact qui relie les events, pas une généralité.
+- INTERDIT : « cela pourrait avoir des implications », « il faudra surveiller
+  l'évolution », « les enjeux sont importants », « cela soulève des questions »,
+  « impact significatif », et toute phrase qui resterait vraie pour n'importe
+  quelle actu. Si tu écris une de ces formules, recommence.
+- Pas de méta-langage (« cet événement », « cette corrélation »). Va au fait.
 
 Pour chaque groupe, fournis :
-- titre : formulation courte et percutante (max 10 mots)
-- contexte : pourquoi ces événements sont liés (1-2 phrases)
-- analyse : ce que ça signifie concrètement, l'enjeu réel (2-3 phrases)
-- implication : ce qui pourrait se passer ensuite ou ce qu'on surveille (1-2 phrases)
+- titre : le lien en max 8 mots, concret (ex: « Frappes mer Noire → pétrole +12% »)
+- contexte : QUI est impliqué et QUEL est le fait précis qui relie les alertes (2 phrases, avec noms/chiffres)
+- analyse : l'ENJEU concret — qui gagne/perd quoi, quel mécanisme économique/stratégique est en jeu (2-3 phrases factuelles)
+- implication : le SIGNAL précis à surveiller — un événement daté, un seuil, une décision attendue (1-2 phrases, pas « on verra »)
 - alertes_ids : liste des ids concernés
 - domaines : liste des domaines impliqués
 
 Réponds uniquement avec ce JSON, sans texte autour :
 [{"titre":"...","contexte":"...","analyse":"...","implication":"...","alertes_ids":[id1,id2],"domaines":["🌍 Géopolitique"]}]
 
-Si aucun groupe pertinent, réponds [].
-Sois exigeant : préfère 2 corrélations solides à 5 superficielles."""
+Si aucun groupe n'a de lien mécanique solide, réponds [].
+Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
     )
 
     try:

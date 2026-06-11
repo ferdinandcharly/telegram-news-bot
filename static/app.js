@@ -228,15 +228,15 @@
 
       const corps = c.contexte
         ? `<div class="corr-section">
-             <span class="corr-label">Pourquoi c'est lié</span>
+             <span class="corr-label">Contexte & acteurs</span>
              <span class="corr-text">${esc(c.contexte)}</span>
            </div>
            <div class="corr-section">
-             <span class="corr-label">Ce que ça signifie</span>
+             <span class="corr-label">Enjeux</span>
              <span class="corr-text">${esc(c.analyse || "")}</span>
            </div>
            <div class="corr-section">
-             <span class="corr-label">À surveiller</span>
+             <span class="corr-label">À suivre</span>
              <span class="corr-text">${esc(c.implication || "")}</span>
            </div>`
         : `<div class="corr-section"><span class="corr-text">${esc(c.synthese || "")}</span></div>`;
