@@ -79,6 +79,47 @@ def _nom_source(url):
         return "Source"
 
 
+def _extraire_image(article, lien):
+    """Récupère une image pour l'article. Priorité au flux RSS (gratuit),
+    sinon fallback sur la balise og:image de la page (1 requête HTTP)."""
+    import re
+    # 1) Depuis le flux RSS — aucune requête réseau supplémentaire
+    try:
+        for cle in ("media_content", "media_thumbnail"):
+            medias = article.get(cle)
+            if medias and medias[0].get("url"):
+                return medias[0]["url"]
+        for lst in (article.get("links", []), article.get("enclosures", [])):
+            for enc in lst:
+                if enc.get("type", "").startswith("image") and enc.get("href"):
+                    return enc["href"]
+        html = article.get("summary", "")
+        if article.get("content"):
+            html += article["content"][0].get("value", "")
+        m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html)
+        if m:
+            return m.group(1)
+    except Exception:
+        pass
+    # 2) Fallback : og:image de la page de l'article
+    try:
+        import requests
+        r = requests.get(lien, timeout=6, headers={"User-Agent": "Mozilla/5.0"})
+        if r.ok:
+            html = r.text[:200000]  # l'og:image est dans le <head>
+            for pat in (
+                r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+                r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+                r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
+            ):
+                m = re.search(pat, html, re.IGNORECASE)
+                if m:
+                    return m.group(1)
+    except Exception:
+        pass
+    return ""
+
+
 def charger_vus():
     if os.path.exists(SEEN_FILE):
         with open(SEEN_FILE, encoding="utf-8") as f:
@@ -204,8 +245,9 @@ def verifier(premiere_fois=False):
                     niveau, teaser = est_important(titre, resume, domaine)
 
                     if niveau >= 2:
+                        image = _extraire_image(article, lien)
                         source = {"titre": titre, "url": lien, "nom": _nom_source(lien)}
-                        new_id = on_alerte(domaine, titre, teaser, lien, resume, niveau, source) if on_alerte else None
+                        new_id = on_alerte(domaine, titre, teaser, lien, resume, niveau, source, image) if on_alerte else None
                         if new_id:
                             _titres_recents.append({"titre": titre, "alerte_id": new_id})
                             if len(_titres_recents) > 200:

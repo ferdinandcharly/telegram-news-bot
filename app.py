@@ -773,9 +773,15 @@ def charger_alertes():
 def sauver_alerte(alerte):
     if SUPABASE_URL:
         try:
-            http.post(sb("alertes"),
-                      headers={**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"},
-                      json=alerte, timeout=10)
+            hdr = {**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"}
+            r = http.post(sb("alertes"), headers=hdr, json=alerte, timeout=10)
+            # Colonne "image" pas encore créée → réessaie sans, pour ne pas perdre l'alerte
+            if not r.ok and "image" in alerte:
+                r = http.post(sb("alertes"), headers=hdr,
+                              json={k: v for k, v in alerte.items() if k != "image"}, timeout=10)
+            if r.ok:
+                return
+            print(f"Supabase sauver_alerte HTTP {r.status_code} : {r.text[:200]}")
             return
         except Exception as e:
             print(f"Supabase sauver_alerte : {e}")
@@ -816,7 +822,7 @@ def envoyer_push(titre, body, url, niveau=3):
 
 
 # ── Callbacks bot ─────────────────────────────────────────────────────────────
-def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2, source=None):
+def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2, source=None, image=""):
     accroche = teaser.get("accroche", "") if isinstance(teaser, dict) else teaser
     alerte = {
         "id":          int(datetime.now().timestamp() * 1000),
@@ -828,6 +834,7 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2, sourc
         "suite":       teaser.get("suite", "")    if isinstance(teaser, dict) else "",
         "description": description[:1200],
         "lien":        lien,
+        "image":       image or "",
         "date":        datetime.now().isoformat(),
         "niveau":      niveau,
         "portee":      teaser.get("portee", "mondiale") if isinstance(teaser, dict) else "mondiale",

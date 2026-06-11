@@ -137,11 +137,18 @@
       </button>
     </div>`;
 
+    const visuelHero = a.image
+      ? `<img class="vignette-img-hero" src="${esc(a.image)}" loading="lazy" alt="" onerror="this.remove()"><div class="vignette-shade"></div>`
+      : `<span class="vignette-icon-hero">${dom.icon || ""}</span>`;
+    const visuelRow = a.image
+      ? `<img class="vignette-img" src="${esc(a.image)}" loading="lazy" alt="" onerror="this.remove()">`
+      : `<span class="vignette-icon">${dom.icon || ""}</span>`;
+
     if (featured) {
       return `
         <div class="carte ${cls} carte-hero${clsCritique}" onclick="ouvrirModal(${a.id})">
           <div class="carte-vignette-hero">
-            <span class="vignette-icon-hero">${dom.icon || ""}</span>
+            ${visuelHero}
             <span class="vignette-badge">${esc(dom.label)}</span>
           </div>
           <div class="carte-body">
@@ -155,7 +162,7 @@
 
     return `
       <div class="carte ${cls} carte-row${clsCritique}" onclick="ouvrirModal(${a.id})">
-        <div class="carte-vignette"><span class="vignette-icon">${dom.icon || ""}</span></div>
+        <div class="carte-vignette">${visuelRow}</div>
         <div class="carte-body">
           ${meta}
           <div class="carte-titre">${titre}</div>
