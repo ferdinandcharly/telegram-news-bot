@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>News Alert</title>
   <link rel="manifest" href="/static/manifest.json" />
-  <link rel="stylesheet" href="/static/style.css?v=20260612b" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css?v=20260613b" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
@@ -36,12 +39,12 @@
       </div>
       <div class="filtres">
         <button class="filtre-pill actif" onclick="setFiltre('Tout', this)">Tout</button>
-        <button class="filtre-pill" onclick="setFiltre('Géopolitique', this)">🌍 Géo-po</button>
-        <button class="filtre-pill" onclick="setFiltre('Science', this)">🔬 Science</button>
-        <button class="filtre-pill" onclick="setFiltre('Tech', this)">💻 Tech</button>
-        <button class="filtre-pill" onclick="setFiltre('Finance', this)">💰 Finance</button>
-        <button class="filtre-pill" onclick="setFiltre('Environnement', this)">🌿 Planète</button>
-        <button class="filtre-pill" onclick="setFiltre('Sport', this)">⚽ Sport</button>
+        <button class="filtre-pill" onclick="setFiltre('Géopolitique', this)"><ion-icon name="earth-outline"></ion-icon>Géopo</button>
+        <button class="filtre-pill" onclick="setFiltre('Science', this)"><ion-icon name="flask-outline"></ion-icon>Science</button>
+        <button class="filtre-pill" onclick="setFiltre('Tech', this)"><ion-icon name="hardware-chip-outline"></ion-icon>Tech</button>
+        <button class="filtre-pill" onclick="setFiltre('Finance', this)"><ion-icon name="trending-up-outline"></ion-icon>Finance</button>
+        <button class="filtre-pill" onclick="setFiltre('Environnement', this)"><ion-icon name="leaf-outline"></ion-icon>Planète</button>
+        <button class="filtre-pill" onclick="setFiltre('Sport', this)"><ion-icon name="football-outline"></ion-icon>Sport</button>
       </div>
     </div>
   </header>
@@ -318,6 +321,6 @@
   </button>
 </nav>
 
-<script src="/static/app.js?v=20260612b"></script>
+<script src="/static/app.js?v=20260613b"></script>
 </body>
 </html>

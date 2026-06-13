@@ -225,6 +225,19 @@
     if (!alertes.length) {
       feed.innerHTML = `<div class="vide">${q ? "Aucun résultat pour « " + esc(q) + " »." : "Aucune alerte pour le moment.<br>Vérification toutes les 15 min."}</div>`;
     } else {
+      // "À la une" : on met en avant la dernière alerte critique (niveau 3) récente.
+      // À défaut (aucune critique récente), la plus récente reste en hero.
+      const LIMITE_HERO = Date.now() - 48 * 3600 * 1000;
+      const idxCritique = alertes.findIndex(a =>
+        (a.niveau || 2) >= 3 && new Date(a.date).getTime() >= LIMITE_HERO
+      );
+      if (idxCritique > 0) {
+        alertes = [
+          alertes[idxCritique],
+          ...alertes.slice(0, idxCritique),
+          ...alertes.slice(idxCritique + 1),
+        ];
+      }
       let html = "";
       alertes.forEach((a, i) => {
         html += carteHTML(a, i === 0);
