@@ -1,4 +1,5 @@
 import os
+import gc
 import json
 import time
 import feedparser
@@ -227,7 +228,11 @@ def verifier(premiere_fois=False):
         for url in urls:
             try:
                 feed = feedparser.parse(url)
-                for article in feed.entries[:8]:
+                entrees = feed.entries[:8]
+                # On libère tout de suite le gros objet feed parsé (le flux complet
+                # lemonde rss_full pèse plusieurs Mo) : on ne garde que les 8 entrées utiles.
+                feed = None
+                for article in entrees:
                     aid = article.get("id") or article.get("link", "")
                     if not aid or aid in vus:
                         continue
@@ -263,7 +268,14 @@ def verifier(premiere_fois=False):
                 print(f"  Erreur flux {url[:50]} : {e}")
 
     vus.update(nouveaux_ids)
+    # Borne le set : il grossit sans fin tant que l'instance reste éveillée
+    # (UptimeRobot la ping 24/7). On ne garde que les ~4000 IDs les plus récents.
+    if len(vus) > 4000:
+        vus = set(list(vus)[-4000:])
     sauver_vus(vus)
+
+    # Libère la mémoire transitoire accumulée pendant le parsing RSS + appels Groq.
+    gc.collect()
 
     h = datetime.now().strftime("%H:%M")
     if premiere_fois:

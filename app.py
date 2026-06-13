@@ -1,4 +1,5 @@
 import os
+import gc
 import time
 import json
 import base64
@@ -781,7 +782,7 @@ def charger_alertes():
     if SUPABASE_URL:
         try:
             r = http.get(sb("alertes"), headers=SB_SERVICE,
-                         params={"order": "date.desc", "limit": "500"}, timeout=10)
+                         params={"order": "date.desc", "limit": "250"}, timeout=10)
             if r.ok:
                 return r.json()
         except Exception as e:
@@ -865,7 +866,7 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2, sourc
         "sources":     [source] if source else [],
     }
     alertes.insert(0, alerte)
-    if len(alertes) > 500:
+    if len(alertes) > 250:
         alertes.pop()
     sauver_alerte(alerte)
 
@@ -1485,6 +1486,9 @@ Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
             print(f"[Corrélation] Erreur sauvegarde : {e}")
 
     print(f"[Corrélation] {len(correlations)} corrélation(s) générée(s) (global)")
+    # Le prompt + la réponse 70b sont volumineux : on libère avant de rendre la main.
+    del prompt, rep, contenu, alertes_compact, alertes_24h
+    gc.collect()
     return correlations
 
 
@@ -1578,6 +1582,16 @@ def nettoyer_vieilles_alertes():
     except Exception as e:
         print(f"Erreur nettoyage : {e}")
 
+def _ram_mo():
+    """RSS courant en Mo (Linux/Render). Renvoie None ailleurs (ex: Windows)."""
+    try:
+        with open("/proc/self/statm") as f:
+            pages = int(f.read().split()[1])  # RSS en pages
+        return pages * os.sysconf("SC_PAGE_SIZE") / (1024 * 1024)
+    except Exception:
+        return None
+
+
 def boucle():
     premiere_fois = not os.path.exists(bot.SEEN_FILE)
     bot.verifier(premiere_fois=premiere_fois)
@@ -1586,6 +1600,10 @@ def boucle():
         time.sleep(bot.INTERVALLE)
         bot.verifier()
         cycles += 1
+
+        ram = _ram_mo()
+        if ram is not None:
+            print(f"[RAM] {ram:.0f} Mo / 512")
 
         # résumé matinal : 8h heure de Paris (le serveur tourne en UTC)
         now = datetime.now(PARIS)
