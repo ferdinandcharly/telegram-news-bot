@@ -1386,10 +1386,39 @@ def generer_correlations():
         for a in alertes_24h
     ]
 
+    # Corrélations publiées ces 3 derniers jours → permet de détecter les SUITES
+    # (un sujet déjà couvert qui évolue) et de réécrire une version à jour plutôt
+    # que d'empiler une nouvelle carte sur le même fil.
+    depuis_corr = (datetime.now() - timedelta(days=3)).isoformat()
+    try:
+        rc = http.get(sb("correlations"), headers=SB_SERVICE,
+                      params={"date": f"gte.{depuis_corr}", "order": "date.desc",
+                              "limit": "25", "select": "id,titre,synthese"}, timeout=10)
+        corr_passees = rc.json() if rc.ok and isinstance(rc.json(), list) else []
+    except Exception:
+        corr_passees = []
+    ids_passees = {c["id"] for c in corr_passees}
+    corr_passees_compact = [
+        {"id": c["id"], "titre": c.get("titre", ""), "resume": (c.get("synthese") or "")[:130]}
+        for c in corr_passees
+    ]
+    if corr_passees_compact:
+        bloc_suites = (
+            "\n\nCORRÉLATIONS DÉJÀ PUBLIÉES CES 3 DERNIERS JOURS (sujets en cours) :\n"
+            + json.dumps(corr_passees_compact, ensure_ascii=False)
+            + "\nSi un nouveau groupe PROLONGE l'un de ces sujets (le même fil qui évolue, "
+              "une nouvelle avancée — PAS juste le même thème), écris une version ACTUALISÉE "
+              "qui intègre la nouveauté, et ajoute le champ \"remplace\": <id de la corrélation prolongée>. "
+              "Ne remplace QUE si c'est vraiment la suite du même événement ; sinon n'inclus pas \"remplace\"."
+        )
+    else:
+        bloc_suites = ""
+
     prompt = (
         "Tu es un analyste géopolitique, scientifique et économique senior. "
         "Voici les alertes d'actualité des dernières 24h :\n"
         + json.dumps(alertes_compact, ensure_ascii=False)
+        + bloc_suites
         + """
 
 Identifie les groupes d'événements DISTINCTS RÉELLEMENT liés par un mécanisme concret
@@ -1436,7 +1465,7 @@ Exemple du niveau attendu (3 champs DISTINCTS) :
  "analyse":"Le surcoût se répercute sur les prix des biens importés en Europe pour Noël ; les armateurs captent une marge record pendant que les exportateurs sud-américains perdent l'accès rapide à l'Asie.",
  "implication":"Si les pluies ne reviennent pas avant janvier, l'autorité du canal a prévenu qu'elle descendrait à 18 passages/jour — nouvelle hausse du fret à anticiper."}
 
-Réponds uniquement avec ce JSON, sans texte autour :
+Réponds uniquement avec ce JSON, sans texte autour ("remplace" est optionnel, cf. ci-dessus) :
 [{"titre":"...","contexte":"...","analyse":"...","implication":"...","alertes_ids":[id1,id2],"domaines":["🌍 Géopolitique"]}]
 
 Si aucun groupe n'a de lien mécanique solide entre événements distincts, réponds [].
@@ -1467,6 +1496,16 @@ Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
         c["id"]       = int(datetime.now().timestamp() * 1000) + i
         c["date"]     = datetime.now().isoformat()
         c["synthese"] = f"{c.get('contexte', '')} {c.get('analyse', '')} {c.get('implication', '')}".strip()
+
+        # Suite d'un sujet déjà publié ? On ne valide que si l'id pointe vraiment
+        # vers une corrélation récente (évite une suppression sur un id halluciné).
+        try:
+            remplace_id = int(c.get("remplace"))
+        except (TypeError, ValueError):
+            remplace_id = None
+        if remplace_id not in ids_passees:
+            remplace_id = None
+
         row = {
             "id":          c["id"],
             "date":        c["date"],
@@ -1477,11 +1516,20 @@ Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
             "contexte":    c.get("contexte", ""),
             "analyse":     c.get("analyse", ""),
             "implication": c.get("implication", ""),
+            "maj":         bool(remplace_id),
         }
+        hdr = {**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"}
         try:
-            http.post(sb("correlations"),
-                      headers={**SB_SERVICE, "Prefer": "resolution=merge-duplicates,return=minimal"},
-                      json=row, timeout=10)
+            r = http.post(sb("correlations"), headers=hdr, json=row, timeout=10)
+            # Colonne "maj" pas encore créée côté Supabase → réessaie sans, pour ne rien perdre.
+            if not r.ok and "maj" in row:
+                r = http.post(sb("correlations"), headers=hdr,
+                              json={k: v for k, v in row.items() if k != "maj"}, timeout=10)
+                c["maj"] = bool(remplace_id)  # garde le flag pour le push, même sans colonne
+            # L'ancienne carte est remplacée : on la supprime après une insertion réussie.
+            if remplace_id and r.ok:
+                http.delete(sb("correlations"), headers=SB_SERVICE,
+                            params={"id": f"eq.{remplace_id}"}, timeout=8)
         except Exception as e:
             print(f"[Corrélation] Erreur sauvegarde : {e}")
 

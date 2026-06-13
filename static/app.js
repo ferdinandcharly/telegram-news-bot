@@ -332,6 +332,7 @@
           ${domainsHtml}
           <span class="corr-sep">·</span>
           <span class="corr-date">${d}</span>
+          ${c.maj ? '<span class="corr-maj">mis à jour</span>' : ''}
         </div>
         <div class="corr-titre">${esc(c.titre || "")}</div>
         <div class="corr-steps">${corps}</div>

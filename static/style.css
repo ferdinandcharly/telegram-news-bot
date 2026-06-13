@@ -665,6 +665,14 @@ header {
 .corr-sep  { opacity: 0.5; }
 .corr-date { font-size: 11px; color: var(--text-secondary); }
 
+.corr-maj {
+  font-size: 10px; font-weight: 600;
+  color: var(--accent, var(--text-secondary));
+  border: 0.5px solid var(--accent, var(--border-card));
+  border-radius: 20px; padding: 1px 8px;
+  opacity: 0.85;
+}
+
 .corr-titre {
   font-size: 17px; font-weight: 700;
   line-height: 1.32; letter-spacing: -0.2px; color: var(--text-primary);
