@@ -304,8 +304,27 @@
               </div>`).join("")
         : `<div class="corr-synthese">${esc(c.synthese || "")}</div>`;
 
+      // liste (repliée) des articles liés, cliquables → fiche de l'article
+      const ids = c.alertes_ids || [];
+      const liensHtml = ids.map(id => {
+        const a = alertesCache.find(x => x.id === id);
+        if (!a) return `<div class="corr-lien-off">Article expiré</div>`;
+        const dom = getDomaine(a.domaine);
+        const t   = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
+        return `<div class="corr-lien" onclick="ouvrirModal(${id})">
+            <span class="corr-lien-dot" style="background:var(--${dom.cls})"></span>
+            <span class="corr-lien-titre">${t}</span>
+            <ion-icon name="chevron-forward-outline"></ion-icon>
+          </div>`;
+      }).join("");
+
       const foot = nb
-        ? `<div class="corr-foot"><ion-icon name="git-network-outline"></ion-icon>${nb} alerte${nb > 1 ? "s" : ""} liée${nb > 1 ? "s" : ""}</div>`
+        ? `<button class="corr-foot" onclick="toggleCorrLiens(this)">
+             <ion-icon name="git-network-outline"></ion-icon>
+             <span>${nb} alerte${nb > 1 ? "s" : ""} liée${nb > 1 ? "s" : ""}</span>
+             <ion-icon name="chevron-down-outline" class="corr-foot-chevron"></ion-icon>
+           </button>
+           <div class="corr-liens">${liensHtml}</div>`
         : "";
 
       return `<div class="corr-card" style="--accent:${accent}">
@@ -319,6 +338,13 @@
         ${foot}
       </div>`;
     }).join("");
+  }
+
+  // Déplie / replie la liste des articles liés d'une corrélation
+  function toggleCorrLiens(btn) {
+    btn.classList.toggle("open");
+    const liste = btn.nextElementSibling;
+    if (liste && liste.classList.contains("corr-liens")) liste.classList.toggle("open");
   }
 
   // ── Sauvegardés ─────────────────────────────────────────────────────────
