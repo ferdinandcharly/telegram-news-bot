@@ -633,70 +633,81 @@ header {
 }
 .btn-secondary.saved { color: var(--text-primary); border-color: var(--text-primary); }
 
-/* ── Corrélations ── */
+/* ── Corrélations (style « fil connecté ») ── */
 #page-corr { display: none; }
 
 #feed-corr {
-  padding: 12px 14px; display: flex;
-  flex-direction: column; gap: 10px;
+  padding: 14px 16px; display: flex;
+  flex-direction: column; gap: 14px;
 }
 
 .corr-card {
   background: var(--bg-card);
   border: 0.5px solid var(--border-card);
-  border-radius: 14px; overflow: hidden;
+  border-radius: 16px; padding: 20px;
 }
 
-.corr-card-head { padding: 14px 16px 12px; border-bottom: 0.5px solid var(--border-card); }
-
-.corr-card-meta {
-  display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 10px;
+/* En-tête : domaines · date, sur une ligne discrète */
+.corr-card-head {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
+  font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;
 }
-
-.corr-domains { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
 .corr-domain-dot {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 10px; color: var(--text-secondary); font-weight: 500;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-secondary); font-weight: 500;
 }
 .corr-domain-dot::before {
-  content: ""; width: 5px; height: 5px;
+  content: ""; width: 6px; height: 6px;
   border-radius: 50%; background: currentColor; flex-shrink: 0;
 }
 
-.corr-nb {
-  font-size: 10px; color: var(--text-secondary);
-  background: var(--bg-app); border: 0.5px solid var(--border-card);
-  border-radius: 20px; padding: 2px 8px; white-space: nowrap;
-}
+.corr-sep  { opacity: 0.5; }
+.corr-date { font-size: 11px; color: var(--text-secondary); }
 
 .corr-titre {
-  font-size: 15px; font-weight: 700;
-  line-height: 1.4; letter-spacing: -0.2px; color: var(--text-primary);
+  font-size: 17px; font-weight: 700;
+  line-height: 1.32; letter-spacing: -0.2px; color: var(--text-primary);
+  margin-bottom: 18px;
 }
 
-.corr-body { padding: 0 16px 14px; }
+/* Le fil : chaque étape est un nœud relié au suivant par une ligne verticale */
+.corr-steps { display: flex; flex-direction: column; }
 
-.corr-section {
-  padding: 12px 0;
-  border-bottom: 0.5px solid var(--border-card);
-  display: flex; flex-direction: column; gap: 5px;
+.corr-step { position: relative; padding: 0 0 18px 26px; }
+.corr-step:last-child { padding-bottom: 0; }
+
+.corr-step::before {
+  content: ""; position: absolute;
+  left: 5px; top: 14px; bottom: -4px; width: 1.5px;
+  background: var(--border-card);
 }
-.corr-section:last-child { border-bottom: none; }
+.corr-step:last-child::before { display: none; }
+
+.corr-dot {
+  position: absolute; left: 0; top: 3px;
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--accent, var(--text-secondary));
+  background: var(--bg-card);
+}
 
 .corr-label {
-  font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary);
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-secondary); margin-bottom: 4px;
 }
 
-.corr-text { font-size: 14px; color: var(--text-primary); line-height: 1.6; }
-.corr-date { font-size: 10px; color: var(--text-secondary); }
+.corr-text { font-size: 13.5px; color: var(--text-primary); line-height: 1.6; }
 
-.corr-synthese {
-  padding: 12px 16px; font-size: 13px;
-  color: var(--text-secondary); line-height: 1.65;
+.corr-foot {
+  margin-top: 6px; padding-top: 14px;
+  border-top: 0.5px solid var(--border-card);
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-secondary);
 }
+.corr-foot ion-icon { font-size: 14px; }
+
+.corr-synthese { font-size: 13.5px; color: var(--text-primary); line-height: 1.65; }
 
 /* ── Sauvegardés ── */
 #page-saved { display: none; }

@@ -281,39 +281,42 @@
       const nb  = (c.alertes_ids || []).length;
       const d   = c.date ? new Date(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short"}) : "";
 
-      const domainsHtml = domaines.map(d => {
-        const label = d.replace(/^\S+\s/, "");
+      // accent = couleur du premier domaine impliqué
+      const accent = domaines.length
+        ? (CORR_DOMAIN_COLORS[domaines[0].replace(/^\S+\s/, "")] || "var(--text-secondary)")
+        : "var(--text-secondary)";
+
+      const domainsHtml = (domaines.map(dom => {
+        const label = dom.replace(/^\S+\s/, "");
         const color = CORR_DOMAIN_COLORS[label] || "var(--text-secondary)";
         return `<span class="corr-domain-dot" style="color:${color}">${esc(label)}</span>`;
-      }).join("") || `<span class="corr-domain-dot">Général</span>`;
+      }).join('<span class="corr-sep">·</span>')) || `<span class="corr-domain-dot">Général</span>`;
 
+      // le « fil » : un nœud par étape, reliés verticalement
       const corps = c.contexte
-        ? `<div class="corr-section">
-             <span class="corr-label">Contexte & acteurs</span>
-             <span class="corr-text">${esc(c.contexte)}</span>
-           </div>
-           <div class="corr-section">
-             <span class="corr-label">Enjeux</span>
-             <span class="corr-text">${esc(c.analyse || "")}</span>
-           </div>
-           <div class="corr-section">
-             <span class="corr-label">À suivre</span>
-             <span class="corr-text">${esc(c.implication || "")}</span>
-           </div>`
-        : `<div class="corr-section"><span class="corr-text">${esc(c.synthese || "")}</span></div>`;
+        ? [["Contexte", c.contexte], ["Enjeux", c.analyse], ["À suivre", c.implication]]
+            .filter(([, txt]) => txt)
+            .map(([label, txt]) => `
+              <div class="corr-step">
+                <span class="corr-dot"></span>
+                <div class="corr-label">${label}</div>
+                <div class="corr-text">${esc(txt)}</div>
+              </div>`).join("")
+        : `<div class="corr-synthese">${esc(c.synthese || "")}</div>`;
 
-      return `<div class="corr-card">
+      const foot = nb
+        ? `<div class="corr-foot"><ion-icon name="git-network-outline"></ion-icon>${nb} alerte${nb > 1 ? "s" : ""} liée${nb > 1 ? "s" : ""}</div>`
+        : "";
+
+      return `<div class="corr-card" style="--accent:${accent}">
         <div class="corr-card-head">
-          <div class="corr-card-meta">
-            <div class="corr-domains">${domainsHtml}</div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="corr-nb">${nb} alerte${nb > 1 ? "s" : ""}</span>
-              <span class="corr-date">${d}</span>
-            </div>
-          </div>
-          <div class="corr-titre">${esc(c.titre || "")}</div>
+          ${domainsHtml}
+          <span class="corr-sep">·</span>
+          <span class="corr-date">${d}</span>
         </div>
-        <div class="corr-body">${corps}</div>
+        <div class="corr-titre">${esc(c.titre || "")}</div>
+        <div class="corr-steps">${corps}</div>
+        ${foot}
       </div>`;
     }).join("");
   }
