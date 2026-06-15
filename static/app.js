@@ -451,6 +451,7 @@
     saveBtn.className   = "btn-secondary" + (saved ? " saved" : "");
 
     document.getElementById("modal").classList.add("visible");
+    document.body.classList.add("modal-ouvert");
 
     try {
       const data = await fetch(`/api/synthese/${id}`).then(r => r.json());
@@ -481,6 +482,7 @@
   function fermerModal(e) {
     if (e.target === document.getElementById("modal")) {
       document.getElementById("modal").classList.remove("visible");
+      document.body.classList.remove("modal-ouvert");
     }
   }
 

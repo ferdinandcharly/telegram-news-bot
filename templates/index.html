@@ -283,7 +283,7 @@
   <div class="modal" id="modal-box">
     <div class="modal-topbar">
       <div class="modal-handle"></div>
-      <button class="modal-close" aria-label="Fermer" onclick="document.getElementById('modal').classList.remove('visible')">✕</button>
+      <button class="modal-close" aria-label="Fermer" onclick="document.getElementById('modal').classList.remove('visible'); document.body.classList.remove('modal-ouvert')">✕</button>
     </div>
     <div class="modal-content">
       <div class="modal-domaine" id="modal-domaine"></div>
