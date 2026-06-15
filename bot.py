@@ -2,6 +2,7 @@ import os
 import gc
 import json
 import time
+import unicodedata
 import feedparser
 from groq import Groq
 from dotenv import load_dotenv
@@ -258,11 +259,80 @@ def traduire_titre(titre):
         return ""
 
 
+def _sans_accents(s):
+    return "".join(c for c in unicodedata.normalize("NFD", s)
+                   if unicodedata.category(c) != "Mn").lower()
+
+# Pré-filtre Groq-free : on ne rejette QUE le bruit universel, jamais l'ambigu.
+# Volontairement minimal — dans le moindre doute, l'article part au triage Groq.
+_BRUIT_TITRE = ("horoscope", "sudoku", "mots croises", "mots fleches",
+                "programme tv", "votre week-end", "recette")
+_BRUIT_URL = ("/horoscope", "/meteo", "/cuisine", "/recette", "/people",
+              "/loisirs", "/jeux/", "/mots-croises", "/television", "/tele/",
+              "/programme-tv", "/sortir/")
+
+def pre_filtre_rejette(titre, lien):
+    """Rejet local (0 appel Groq) du bruit universel uniquement.
+    Dans le doute → False : on laisse l'article passer au triage Groq."""
+    t = _sans_accents(titre)
+    if any(m in t for m in _BRUIT_TITRE):
+        return True
+    u = (lien or "").lower()
+    if any(p in u for p in _BRUIT_URL):
+        return True
+    return False
+
+
+def triage_groupe(lot):
+    """Triage grossier et PERMISSIF de plusieurs articles en un seul appel Groq.
+    `lot` : liste de dicts {domaine, titre, ...}.
+    Retourne une liste de bool alignée sur `lot` (True = à analyser en détail).
+    En cas d'erreur de parsing → tout à True : on n'écarte jamais par accident."""
+    if not lot:
+        return []
+    liste = "\n".join(f"[{i}] ({c['domaine']}) {c['titre']}" for i, c in enumerate(lot))
+    try:
+        rep = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{
+                "role": "user",
+                "content": (
+                    "Voici des titres d'actualité numérotés. Pour chacun, indique s'il PEUT "
+                    "être un événement d'importance internationale : rupture géopolitique, "
+                    "conflit armé, catastrophe, découverte scientifique majeure, décision "
+                    "économique structurelle, percée technologique. Sois PERMISSIF : dans le "
+                    "doute réponds 1. Réponds 0 uniquement pour le bruit évident (politique "
+                    "intérieure routinière, sport, résultats d'entreprises ordinaires, faits "
+                    "divers, people, opinions, conseils pratiques).\n\n"
+                    f"{liste}\n\n"
+                    "Réponds en JSON uniquement : un tableau d'objets "
+                    "{\"i\": <numéro>, \"v\": 0 ou 1}."
+                )
+            }],
+            max_tokens=400,
+            temperature=0.1,
+        )
+        contenu = rep.choices[0].message.content.strip()
+        debut = contenu.find("[")
+        fin = contenu.rfind("]") + 1
+        verdicts = json.loads(contenu[debut:fin])
+        garde = [True] * len(lot)
+        for v in verdicts:
+            i = v.get("i")
+            if isinstance(i, int) and 0 <= i < len(lot):
+                garde[i] = bool(v.get("v", 1))
+        return garde
+    except Exception as e:
+        print(f"  Erreur triage : {e}")
+        return [True] * len(lot)
+
+
 def verifier(premiere_fois=False):
     vus = charger_vus()
     nouveaux_ids = set()
-    alertes = 0
 
+    # ── Phase 1 : collecte + dédoublonnage + pré-filtre local (0 appel Groq) ──
+    candidats = []  # {domaine, titre, resume, lien, article}
     for domaine, urls in FLUX.items():
         for url in urls:
             try:
@@ -284,32 +354,60 @@ def verifier(premiere_fois=False):
                     resume = article.get("summary", article.get("description", ""))
                     lien   = article.get("link", "")
 
+                    # Doublon inter-sources (cross-cycle) → rattachement, aucun appel Groq
                     alerte_id_doublon = trouver_doublon(titre)
                     if alerte_id_doublon:
                         if on_doublon:
                             on_doublon(alerte_id_doublon, {"titre": titre, "url": lien, "nom": _nom_source(lien)})
                         continue
 
-                    niveau, teaser = est_important(titre, resume, domaine)
+                    # Pré-filtre Groq-free : écarte le bruit universel évident
+                    if pre_filtre_rejette(titre, lien):
+                        continue
 
-                    if niveau >= 2:
-                        # Traduction fiable du titre pour les sources non francophones.
-                        if not _est_source_francaise(lien):
-                            titre_fr = traduire_titre(titre)
-                            if titre_fr:
-                                teaser["titre_fr"] = titre_fr
-                        image = _extraire_image(article, lien)
-                        source = {"titre": titre, "url": lien, "nom": _nom_source(lien)}
-                        new_id = on_alerte(domaine, titre, teaser, lien, resume, niveau, source, image) if on_alerte else None
-                        if new_id:
-                            _titres_recents.append({"titre": titre, "alerte_id": new_id})
-                            if len(_titres_recents) > 200:
-                                _titres_recents.pop(0)
-                        alertes += 1
-                        time.sleep(2)
-
+                    candidats.append({"domaine": domaine, "titre": titre,
+                                      "resume": resume, "lien": lien, "article": article})
             except Exception as e:
                 print(f"  Erreur flux {url[:50]} : {e}")
+
+    # ── Phase 2 : triage groupé permissif (Groq, par paquets de 8) ────────────
+    survivants = []
+    for i in range(0, len(candidats), 8):
+        lot = candidats[i:i + 8]
+        for c, garde in zip(lot, triage_groupe(lot)):
+            if garde:
+                survivants.append(c)
+        time.sleep(1)
+
+    # ── Phase 3 : analyse complète + alerte des survivants uniquement ─────────
+    alertes = 0
+    for c in survivants:
+        titre, resume, lien, domaine = c["titre"], c["resume"], c["lien"], c["domaine"]
+
+        # Re-test doublon : un survivant peut dupliquer une alerte créée dans CE cycle
+        alerte_id_doublon = trouver_doublon(titre)
+        if alerte_id_doublon:
+            if on_doublon:
+                on_doublon(alerte_id_doublon, {"titre": titre, "url": lien, "nom": _nom_source(lien)})
+            continue
+
+        niveau, teaser = est_important(titre, resume, domaine)
+
+        if niveau >= 2:
+            # Traduction fiable du titre pour les sources non francophones.
+            if not _est_source_francaise(lien):
+                titre_fr = traduire_titre(titre)
+                if titre_fr:
+                    teaser["titre_fr"] = titre_fr
+            image = _extraire_image(c["article"], lien)
+            source = {"titre": titre, "url": lien, "nom": _nom_source(lien)}
+            new_id = on_alerte(domaine, titre, teaser, lien, resume, niveau, source, image) if on_alerte else None
+            if new_id:
+                _titres_recents.append({"titre": titre, "alerte_id": new_id})
+                if len(_titres_recents) > 200:
+                    _titres_recents.pop(0)
+            alertes += 1
+            time.sleep(2)
 
     vus.update(nouveaux_ids)
     # Borne le set : il grossit sans fin tant que l'instance reste éveillée
@@ -325,7 +423,8 @@ def verifier(premiere_fois=False):
     if premiere_fois:
         print(f"[{h}] Démarrage — {len(nouveaux_ids)} articles mémorisés. Surveillance active.")
     else:
-        print(f"[{h}] {len(nouveaux_ids)} nouveaux articles analysés | {alertes} alerte(s) envoyée(s)")
+        print(f"[{h}] {len(nouveaux_ids)} nouveaux | {len(candidats)} après pré-filtre "
+              f"| {len(survivants)} après triage | {alertes} alerte(s)")
 
 
 def main():
