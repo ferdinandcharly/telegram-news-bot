@@ -80,6 +80,21 @@ def _nom_source(url):
         return "Source"
 
 
+# Domaines des sources déjà francophones : inutile de retraduire leur titre.
+_DOMAINES_FR = {
+    "rfi.fr", "france24.com", "lemonde.fr", "bfmtv.com", "franceinfo.fr",
+    "futura-sciences.com", "reporterre.net", "lequipe.fr", "lesechos.fr",
+}
+
+def _est_source_francaise(lien):
+    try:
+        from urllib.parse import urlparse
+        host = urlparse(lien).netloc.replace("www.", "")
+        return any(d in host for d in _DOMAINES_FR)
+    except:
+        return False
+
+
 def _extraire_image(article, lien):
     """Récupère une image pour l'article. Priorité au flux RSS (gratuit),
     sinon fallback sur la balise og:image de la page (1 requête HTTP)."""
@@ -182,8 +197,7 @@ def est_important(titre, resume, domaine):
                     "déclarations politiques sans acte concret, mises à jour d'un événement déjà connu, "
                     "conférences, rapports, opinions, analyses, produits tech grand public. "
                     "Rejette au moins 95% des articles.\n\n"
-                    "Si niveau vaut 2 ou 3, rédige un teaser en français. "
-                    "Si le titre n'est pas en français, traduis-le dans titre_fr, sinon laisse titre_fr vide.\n\n"
+                    "Si niveau vaut 2 ou 3, rédige un teaser en français.\n\n"
                     "Classe aussi l'article avec :\n"
                     "- portee : 'locale' | 'nationale' | 'regionale' | 'mondiale'\n"
                     "- theme_fin : une seule valeur parmi : 'politique-interieure', 'conflit', 'diplomatie', "
@@ -194,7 +208,7 @@ def est_important(titre, resume, domaine):
                     "Laisse vide (\"\") si la portée est mondiale.\n\n"
                     "Réponds JSON uniquement :\n"
                     "{\"niveau\": 0, \"portee\": \"nationale\", \"theme_fin\": \"politique-interieure\", "
-                    "\"pays\": \"\", \"titre_fr\": \"\", \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}"
+                    "\"pays\": \"\", \"accroche\": \"\", \"contexte\": \"\", \"suite\": \"\"}"
                 )
             }],
             max_tokens=480,
@@ -205,7 +219,7 @@ def est_important(titre, resume, domaine):
         fin = contenu.rfind("}") + 1
         data = json.loads(contenu[debut:fin])
         teaser = {
-            "titre_fr": data.get("titre_fr", ""),
+            "titre_fr": "",  # rempli par traduire_titre() pour les sources non francophones
             "accroche": data.get("accroche", ""),
             "contexte": data.get("contexte", ""),
             "suite":    data.get("suite", ""),
@@ -217,6 +231,31 @@ def est_important(titre, resume, domaine):
     except Exception as e:
         print(f"  Erreur IA : {e}")
         return 0, {}
+
+
+def traduire_titre(titre):
+    """Traduit un titre d'article en français via un appel Groq dédié et minimal.
+    Bien plus fiable que de le demander dans le gros prompt de filtrage.
+    Appelé uniquement pour les articles gardés (niveau >= 2) de sources non francophones."""
+    try:
+        rep = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{
+                "role": "user",
+                "content": (
+                    "Traduis ce titre d'actualité en français, de façon fidèle et naturelle. "
+                    "Conserve les noms propres. Ne mets ni guillemets ni explication : "
+                    "réponds uniquement par le titre traduit.\n\n"
+                    f"Titre : {titre}"
+                )
+            }],
+            max_tokens=120,
+            temperature=0.2,
+        )
+        return rep.choices[0].message.content.strip().strip('"').strip()
+    except Exception as e:
+        print(f"  Erreur traduction : {e}")
+        return ""
 
 
 def verifier(premiere_fois=False):
@@ -254,6 +293,11 @@ def verifier(premiere_fois=False):
                     niveau, teaser = est_important(titre, resume, domaine)
 
                     if niveau >= 2:
+                        # Traduction fiable du titre pour les sources non francophones.
+                        if not _est_source_francaise(lien):
+                            titre_fr = traduire_titre(titre)
+                            if titre_fr:
+                                teaser["titre_fr"] = titre_fr
                         image = _extraire_image(article, lien)
                         source = {"titre": titre, "url": lien, "nom": _nom_source(lien)}
                         new_id = on_alerte(domaine, titre, teaser, lien, resume, niveau, source, image) if on_alerte else None
