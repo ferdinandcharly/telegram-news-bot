@@ -71,6 +71,8 @@
     if (page === "feed")  marquerLus();
     if (page === "saved") chargerSauvegardes();
     if (page === "corr")  chargerCorrelations();
+    // Remonte en haut de la page sélectionnée
+    window.scrollTo(0, 0);
   }
 
   // ── Recherche ────────────────────────────────────────────────────────────
