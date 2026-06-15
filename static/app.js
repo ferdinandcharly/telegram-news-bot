@@ -94,12 +94,20 @@
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
+  // Les dates serveur sont en UTC mais stockées sans fuseau ("...T18:00:00").
+  // Sans 'Z', le navigateur les lit en heure locale → décalage (ex: +2h en France).
+  // On force l'UTC quand aucun fuseau n'est présent.
+  function parseDate(iso) {
+    if (typeof iso === "string" && !/[zZ]|[+-]\d\d:?\d\d$/.test(iso)) iso += "Z";
+    return new Date(iso);
+  }
+
   function formatHeure(iso) {
-    const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+    const diff = Math.floor((Date.now() - parseDate(iso)) / 60000);
     if (diff < 1)    return "À l'instant";
     if (diff < 60)   return diff + " min";
     if (diff < 1440) return Math.floor(diff / 60) + "h";
-    return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    return parseDate(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   }
 
   const DOMAINES_MAP = [
@@ -229,7 +237,7 @@
       // À défaut (aucune critique récente), la plus récente reste en hero.
       const LIMITE_HERO = Date.now() - 48 * 3600 * 1000;
       const idxCritique = alertes.findIndex(a =>
-        (a.niveau || 2) >= 3 && new Date(a.date).getTime() >= LIMITE_HERO
+        (a.niveau || 2) >= 3 && parseDate(a.date).getTime() >= LIMITE_HERO
       );
       if (idxCritique > 0) {
         alertes = [
@@ -279,7 +287,7 @@
     feed.innerHTML = corrs.map(c => {
       const domaines = c.domaines || [];
       const nb  = (c.alertes_ids || []).length;
-      const d   = c.date ? new Date(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short"}) : "";
+      const d   = c.date ? parseDate(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short"}) : "";
 
       // accent = couleur du premier domaine impliqué
       const accent = domaines.length
@@ -351,7 +359,7 @@
   // ── Sauvegardés ─────────────────────────────────────────────────────────
   function labelDate(iso) {
     if (!iso) return "Avant";
-    const d = new Date(iso);
+    const d = parseDate(iso);
     const now = new Date();
     const diff = Math.floor((now - d) / 86400000);
     if (diff === 0) return "Aujourd'hui";
