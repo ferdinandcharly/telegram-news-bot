@@ -1,10 +1,22 @@
-.env
-vus.json
-alertes.json
-sauvegardes.json
-subscriptions.json
-vapid_private.pem
-test_telegram.py
+﻿# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Secrets et config locale (ne jamais publier)
+.env
+*.key
+secrets.json
+tokens.json
+
+# Divers
+*.log
+.DS_Store
+# Cles privees
 *.pem
