@@ -71,8 +71,10 @@
     if (page === "feed")  marquerLus();
     if (page === "saved") chargerSauvegardes();
     if (page === "corr")  chargerCorrelations();
-    // Remonte en haut de la page sélectionnée
-    window.scrollTo(0, 0);
+    // Remonte en haut de la page sélectionnée, avec défilement animé
+    // (sauf si l'utilisateur a demandé moins d'animations)
+    const doux = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    window.scrollTo({ top: 0, behavior: doux });
   }
 
   // ── Recherche ────────────────────────────────────────────────────────────
