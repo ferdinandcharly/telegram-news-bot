@@ -498,6 +498,13 @@ header {
 .source-count { font-size: 10px; color: var(--text-secondary); opacity: 0.6; }
 .carte-actions { display: flex; gap: 4px; }
 
+/* ── Méta dans le pied : portée + heure (surtitre épuré) ── */
+.footer-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.carte-footmeta { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary); }
+.carte-footmeta ion-icon { font-size: 13px; }
+.fm-portee { display: inline-flex; align-items: center; gap: 3px; }
+.fm-sep { color: var(--border-card); }
+
 .btn-save {
   display: inline-flex;
   align-items: center;

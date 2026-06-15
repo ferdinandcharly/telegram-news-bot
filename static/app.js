@@ -128,10 +128,10 @@
   }
 
   const PORTEE_LABELS = {
-    mondiale:   { icon: "🌍", txt: "Mondial",  cls: "portee-mondiale"  },
-    regionale:  { icon: "🗺️", txt: "Régional", cls: "portee-nationale" },
-    nationale:  { icon: "🗺️", txt: "National", cls: "portee-nationale" },
-    locale:     { icon: "📍", txt: "Local",    cls: "portee-nationale" },
+    mondiale:   { icon: "earth-outline",    txt: "Mondial",  cls: "portee-mondiale"  },
+    regionale:  { icon: "location-outline", txt: "Régional", cls: "portee-nationale" },
+    nationale:  { icon: "location-outline", txt: "National", cls: "portee-nationale" },
+    locale:     { icon: "location-outline", txt: "Local",    cls: "portee-nationale" },
   };
 
   function carteHTML(a, featured = false) {
@@ -145,18 +145,19 @@
     const sourceCount = sources.length > 1 ? `<span class="source-count">${sources.length} sources</span>` : "";
     const titre       = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
     const porteeInfo  = a.portee ? PORTEE_LABELS[a.portee] : null;
-    const porteeTag   = porteeInfo
-      ? `<span class="meta-sep">·</span><span class="meta-portee ${porteeInfo.cls}">${porteeInfo.icon} ${porteeInfo.txt}</span>`
-      : "";
 
+    // Surtitre épuré : uniquement la catégorie (+ badge critique)
     const meta = `<div class="carte-meta">
       <span class="source-dot"></span>
       <span class="meta-cat">${esc(dom.label)}</span>
-      <span class="meta-sep">·</span>
-      <span class="meta-time">${formatHeure(a.date)}</span>
-      ${porteeTag}
       ${critique}
     </div>`;
+
+    // Portée + heure descendent dans le pied de carte
+    const porteeBit = porteeInfo
+      ? `<span class="fm-portee ${porteeInfo.cls}"><ion-icon name="${porteeInfo.icon}"></ion-icon>${porteeInfo.txt}</span><span class="fm-sep">·</span>`
+      : "";
+    const footMeta = `<span class="carte-footmeta">${porteeBit}<span class="fm-time">${formatHeure(a.date)}</span></span>`;
 
     const actions = `<div class="carte-actions">
       <button class="btn-save ${saved ? "saved" : ""}" aria-label="${saved ? "Retirer des enregistrés" : "Enregistrer"}" onclick="event.stopPropagation(); toggleSave(${a.id}, this)">
@@ -165,6 +166,11 @@
       <button class="btn-save" aria-label="Partager" onclick="event.stopPropagation(); partagerAlerte(${a.id})">
         <ion-icon name="share-outline"></ion-icon>
       </button>
+    </div>`;
+
+    const footer = `<div class="carte-footer">
+      <div class="footer-left">${footMeta}${sourceCount}</div>
+      ${actions}
     </div>`;
 
     const visuelHero = a.image
@@ -185,7 +191,7 @@
             ${meta}
             <div class="carte-titre">${titre}</div>
             ${a.accroche ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
-            <div class="carte-footer">${sourceCount}${actions}</div>
+            ${footer}
           </div>
         </div>`;
     }
@@ -197,7 +203,7 @@
           ${meta}
           <div class="carte-titre">${titre}</div>
           ${a.accroche && dom.cls !== "sport" ? `<div class="carte-resume">${esc(a.accroche)}</div>` : ""}
-          <div class="carte-footer">${sourceCount}${actions}</div>
+          ${footer}
         </div>
       </div>`;
   }
