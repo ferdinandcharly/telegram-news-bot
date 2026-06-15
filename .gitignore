@@ -20,3 +20,12 @@ tokens.json
 .DS_Store
 # Cles privees
 *.pem
+
+# Etat runtime (regenere par l'app au demarrage)
+alertes.json
+vus.json
+sauvegardes.json
+
+# Outils locaux / previews scratch (ne concernent pas le deploiement)
+.claude/
+preview-*.html
