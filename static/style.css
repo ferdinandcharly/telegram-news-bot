@@ -544,9 +544,12 @@ header {
   position: absolute; left: 50%; top: 8px; width: 240px;
   background: var(--bg-card); border: .5px solid var(--border-card); border-radius: 16px; overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,.18);
-  transition: transform .34s cubic-bezier(.22,.61,.36,1), opacity .34s, box-shadow .34s;
-  will-change: transform; cursor: pointer;
+  transition: transform .42s cubic-bezier(.16,.84,.34,1), opacity .42s cubic-bezier(.16,.84,.34,1), box-shadow .42s;
+  will-change: transform, opacity; cursor: pointer;
 }
+/* Pendant le glissé : aucune transition → les cartes suivent le doigt en temps réel */
+.carousel.dragging .cc { transition: none; }
+@media (prefers-reduced-motion: reduce) { .cc { transition: none; } }
 /* La carte centrale se détache nettement des voisines (plus de bord d'image confus) */
 .cc.center { border-color: color-mix(in srgb, var(--accent) 55%, var(--border-card)); box-shadow: 0 8px 28px rgba(0,0,0,.34); }
 .cc.crit   { border-color: color-mix(in srgb, #ef4444 60%, var(--border-card)); }

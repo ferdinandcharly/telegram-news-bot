@@ -394,18 +394,23 @@
 
   // ── Mécanique du carrousel circulaire (placement en sinus) ──
   const C_STEP = Math.PI / 4, C_R = 124;
-  function layoutCarousel(car) {
-    const cards = [...car.querySelectorAll(".cc")], n = cards.length, cur = +car.dataset.cur;
+  const C_DRAG_PX = 150;   // distance de glissé (px) correspondant à une carte
+  // `cur` peut être fractionnaire pendant le glissé pour suivre le doigt en continu.
+  function layoutCarousel(car, curLive) {
+    const cards = [...car.querySelectorAll(".cc")], n = cards.length;
+    const cur = (curLive == null) ? +car.dataset.cur : curLive;
+    const enDrag = curLive != null;
     cards.forEach((card, i) => {
       let off = i - cur; if (off > n / 2) off -= n; if (off < -n / 2) off += n;
       const a = Math.abs(off), ang = off * C_STEP, depth = Math.cos(ang);
       const tx = Math.sin(ang) * C_R, sc = Math.max(0.5, 0.64 + 0.36 * depth);
-      const op = a <= 2 ? 1 : (a <= 3 ? 0.28 : 0);   // cartes proches opaques
+      const op = a <= 2 ? 1 : (a <= 3 ? Math.max(0, 0.28 * (3 - a)) : 0);
       card.style.transform = `translateX(calc(-50% + ${tx}px)) scale(${sc})`;
       card.style.opacity = op;
-      card.style.zIndex = Math.round(depth * 10);   // sous la nav (z-index 50)
-      card.style.pointerEvents = a > 2 ? "none" : "auto";
-      card.classList.toggle("center", off === 0);
+      card.style.zIndex = Math.round(depth * 40);   // max 40 < nav (z-index 50)
+      card.style.pointerEvents = a > 1.5 ? "none" : "auto";
+      // la carte centrale ne se fige qu'une fois posée (pas en plein glissé)
+      card.classList.toggle("center", !enDrag && off === 0);
     });
   }
   function majCarousel(car) {
@@ -419,13 +424,29 @@
   }
   function initCarousel(car) {
     layoutCarousel(car); majCarousel(car);
-    let x0 = null;
-    car.addEventListener("pointerdown", e => { x0 = e.clientX; car._moved = false; });
-    car.addEventListener("pointermove", e => { if (x0 !== null && Math.abs(e.clientX - x0) > 8) car._moved = true; });
-    car.addEventListener("pointerup", e => {
-      if (x0 === null) return; const dx = e.clientX - x0; x0 = null;
-      if (Math.abs(dx) > 30) tourneCarousel(car, dx < 0 ? 1 : -1);
+    let x0 = null, curStart = 0;
+    car.addEventListener("pointerdown", e => {
+      x0 = e.clientX; curStart = +car.dataset.cur; car._moved = false;
+      car.classList.add("dragging");           // coupe la transition → suivi 1:1
+      try { car.setPointerCapture(e.pointerId); } catch {}
     });
+    car.addEventListener("pointermove", e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0;
+      if (Math.abs(dx) > 6) car._moved = true;
+      layoutCarousel(car, curStart - dx / C_DRAG_PX);   // suit le doigt en continu
+    });
+    const finDrag = e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0; x0 = null;
+      car.classList.remove("dragging");          // réactive la transition (calage animé)
+      const n = car.querySelectorAll(".cc").length;
+      let cible = Math.round(curStart - dx / C_DRAG_PX);
+      car.dataset.cur = ((cible % n) + n) % n;
+      layoutCarousel(car); majCarousel(car);
+    };
+    car.addEventListener("pointerup", finDrag);
+    car.addEventListener("pointercancel", finDrag);
     car.querySelectorAll(".cc").forEach((card, i) => {
       card.addEventListener("click", () => {
         if (car._moved) return;                                   // c'était un glissé
