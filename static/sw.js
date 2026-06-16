@@ -3,8 +3,8 @@ self.addEventListener("push", event => {
   event.waitUntil(
     self.registration.showNotification(data.title || "News Alert", {
       body: data.body || "",
-      icon: "/static/icon.png",
-      badge: "/static/icon.png",
+      icon: "/static/icon-192.png",
+      badge: "/static/icon-192.png",
       data: { url: data.url || "/" },
       requireInteraction: false,
     })

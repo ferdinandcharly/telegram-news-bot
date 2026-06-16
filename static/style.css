@@ -531,11 +531,11 @@ header {
 .fm-sep { color: var(--border-card); }
 
 /* ════════ Feed : rails par domaine (suite horizontale plate) ════════ */
-.rail { margin-top: 16px; }
-.rail-head { display: flex; align-items: center; gap: 8px; padding: 0 16px 2px; }
-.rail-dot { width: 9px; height: 9px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
-.rail-name { font-size: 13.5px; font-weight: 700; letter-spacing: .2px; color: var(--text-primary); }
-.rail-star { font-size: 11px; color: var(--accent); }
+.rail { margin-top: 22px; }
+.rail-head { display: flex; align-items: center; gap: 9px; padding: 4px 16px 6px; }
+.rail-dot { width: 11px; height: 11px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
+.rail-name { font-size: 19px; font-weight: 800; letter-spacing: -.3px; color: var(--text-primary); }
+.rail-star { font-size: 13px; color: var(--accent); }
 .rail-all { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; flex-shrink: 0; }
 
 /* piste : défilement horizontal natif avec accroche (scroll-snap) */
