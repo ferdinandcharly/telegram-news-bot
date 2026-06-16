@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=20260616g" />
+  <link rel="stylesheet" href="/static/style.css?v=20260616j" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
@@ -19,6 +19,12 @@
   <link rel="apple-touch-icon" href="/static/icon-1024.png" />
 </head>
 <body>
+
+<!-- Garde portrait : masque l'app en paysage sur mobile -->
+<div id="rotate-guard">
+  <ion-icon name="phone-portrait-outline" style="font-size:44px"></ion-icon>
+  <div>Tourne ton téléphone<br>à la verticale</div>
+</div>
 
 <!-- ── PAGE FEED ── -->
 <div id="page-feed">
@@ -66,217 +72,193 @@
 
 <!-- ── PAGE PARAMÈTRES ── -->
 <div id="page-params">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-    <h2 style="margin:0">Paramètres</h2>
-    <a href="/logout" style="font-size:13px;color:var(--text-secondary);text-decoration:none">Déconnexion</a>
-  </div>
+  <div class="pg-titre">Paramètres</div>
 
-  <!-- Compte -->
-  <div class="params-bloc">
-    <div class="params-titre">Compte</div>
-    <div class="param-row">
-      <div><div class="param-label">Nom d'utilisateur</div></div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span id="dn-texte" style="font-size:13px;color:var(--text-secondary)">—</span>
-        <button id="dn-btn-edit" onclick="toggleEditNom()"
-                style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:14px;padding:2px">✎</button>
-        <input type="text" id="dn-input" maxlength="30"
-               style="display:none;width:100px;padding:5px 8px;background:var(--bg-app);
-                      border:0.5px solid var(--border-card);border-radius:8px;color:var(--text-primary);font-size:13px;outline:none"/>
-        <button id="dn-btn-save" onclick="sauverNomEdit()"
-                style="display:none;background:none;border:none;color:var(--text-primary);cursor:pointer;font-size:14px;padding:2px">✓</button>
+  <!-- Compte (carte profil dépliable : nom + mot de passe + suppression) -->
+  <div class="compte open" id="compte-bloc">
+    <div class="compte-head" onclick="document.getElementById('compte-bloc').classList.toggle('open')">
+      <div class="avatar" id="dn-avatar">·</div>
+      <div class="compte-info">
+        <div class="compte-nom" id="dn-header">—</div>
+        <div class="compte-mail" id="user-email">—</div>
       </div>
+      <ion-icon class="acc-chev" name="chevron-forward"></ion-icon>
     </div>
-    <div class="param-row">
-      <div><div class="param-label">Email</div></div>
-      <div id="user-email" style="font-size:13px;color:var(--text-secondary)">—</div>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Mot de passe</div></div>
-      <button id="btn-reset-pwd" onclick="resetMotDePasse()"
-              style="background:none;border:none;font-size:13px;color:var(--text-secondary);cursor:pointer;padding:0">
-        Réinitialiser →
-      </button>
-    </div>
-  </div>
-
-  <!-- Domaines -->
-  <div class="params-bloc">
-    <div class="params-titre">Domaines surveillés</div>
-    <div class="param-row">
-      <div><div class="param-label">Géopolitique</div><div class="param-sub">BBC · Le Monde · RFI</div></div>
-      <label class="toggle"><input type="checkbox" id="toggle-geo" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Science</div><div class="param-sub">NASA · Science Daily · Futura</div></div>
-      <label class="toggle"><input type="checkbox" id="toggle-sci" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Tech & IA</div><div class="param-sub">The Verge · Wired · MIT Tech</div></div>
-      <label class="toggle"><input type="checkbox" id="toggle-tech" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Finance</div><div class="param-sub">Reuters · Les Échos</div></div>
-      <label class="toggle"><input type="checkbox" id="toggle-finance" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Environnement</div><div class="param-sub">Le Monde Planète · Reporterre</div></div>
-      <label class="toggle"><input type="checkbox" id="toggle-env" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Sport</div><div class="param-sub">L'Équipe · BBC Sport · Reuters</div></div>
-      <label class="toggle"><input type="checkbox" id="toggle-sport" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+    <div class="compte-body" onclick="event.stopPropagation()">
+      <div class="prm-row">
+        <div class="prm-ic"><ion-icon name="person-outline"></ion-icon></div>
+        <div class="prm-main"><div class="prm-titre">Nom d'utilisateur</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="dn-texte" class="prm-val">—</span>
+          <button id="dn-btn-edit" onclick="toggleEditNom()"
+                  style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:15px;padding:2px">✎</button>
+          <input type="text" id="dn-input" maxlength="30"
+                 style="display:none;width:110px;padding:6px 9px;background:var(--bg-inset);
+                        border:0.5px solid var(--border-card);border-radius:8px;color:var(--text-primary);font-size:13px;outline:none"/>
+          <button id="dn-btn-save" onclick="sauverNomEdit()"
+                  style="display:none;background:none;border:none;color:var(--text-primary);cursor:pointer;font-size:15px;padding:2px">✓</button>
+        </div>
+      </div>
+      <div class="prm-row tap" onclick="resetMotDePasse()">
+        <div class="prm-ic"><ion-icon name="key-outline"></ion-icon></div>
+        <div class="prm-main"><div class="prm-titre">Mot de passe</div><div class="prm-sub">Recevoir un lien de réinitialisation</div></div>
+        <span id="btn-reset-pwd" class="prm-val">Modifier <ion-icon name="chevron-forward" style="font-size:14px;opacity:.6"></ion-icon></span>
+      </div>
+      <a class="prm-row tap" href="/privacy" target="_blank" style="text-decoration:none;color:inherit">
+        <div class="prm-ic"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
+        <div class="prm-main"><div class="prm-titre">Confidentialité</div></div>
+        <span class="prm-val"><ion-icon name="chevron-forward" style="font-size:14px;opacity:.6"></ion-icon></span>
+      </a>
+      <div class="prm-row tap prm-danger" id="row-delete-compte" onclick="demanderSuppression()">
+        <div class="prm-ic"><ion-icon name="trash-outline"></ion-icon></div>
+        <div class="prm-main"><div class="prm-titre">Supprimer mon compte</div></div>
+        <span class="prm-val" style="color:#e05252"><ion-icon name="chevron-forward" style="font-size:14px"></ion-icon></span>
+      </div>
+      <div id="row-confirm-delete" style="display:none;padding:14px 16px;flex-direction:column;gap:10px">
+        <div style="font-size:12px;color:#e05252;line-height:1.5">
+          Cette action est irréversible. Toutes tes alertes, préférences et données seront supprimées.
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="confirmerSuppression()"
+                  style="flex:1;padding:9px;background:#e05252;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+            Confirmer la suppression
+          </button>
+          <button onclick="annulerSuppression()"
+                  style="flex:1;padding:9px;background:none;color:var(--text-secondary);border:0.5px solid var(--border-card);border-radius:8px;font-size:13px;cursor:pointer">
+            Annuler
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Notifications -->
-  <div class="params-bloc">
-    <div class="params-titre">Notifications</div>
-    <div class="param-row">
-      <div>
-        <div class="param-label">Alertes push</div>
-        <div class="param-sub" id="notif-status">Non activées</div>
-      </div>
-      <button class="btn-notif" id="btn-notif" onclick="toggleNotifications()">Activer</button>
+  <div class="acc open" id="acc-notifs">
+    <div class="acc-head" onclick="document.getElementById('acc-notifs').classList.toggle('open')">
+      <div class="prm-ic"><ion-icon name="notifications-outline"></ion-icon></div>
+      <div class="acc-t">Notifications</div>
+      <ion-icon class="acc-chev" name="chevron-forward"></ion-icon>
     </div>
-    <div class="param-row" id="row-notif-important" style="display:none">
-      <div>
-        <div class="param-label">Inclure les importantes</div>
-        <div class="param-sub">Alertes niveau 🟡 en plus des critiques</div>
+    <div class="acc-body">
+      <div class="prm-row">
+        <div class="prm-main"><div class="prm-titre">Alertes push</div><div class="prm-sub" id="notif-status">Non activées</div></div>
+        <button class="btn-notif" id="btn-notif" onclick="toggleNotifications()">Activer</button>
       </div>
-      <label class="toggle">
-        <input type="checkbox" id="toggle-notif-important" onchange="updateNiveauNotif()" />
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="param-row" id="row-notif-correlations" style="display:none">
-      <div>
-        <div class="param-label">Corrélations du matin</div>
-        <div class="param-sub">Le récap quotidien des sujets liés</div>
+      <div class="prm-row" id="row-notif-important" style="display:none">
+        <div class="prm-main"><div class="prm-titre">Inclure les importantes</div><div class="prm-sub">Alertes 🟡 en plus des critiques</div></div>
+        <label class="toggle"><input type="checkbox" id="toggle-notif-important" onchange="updateNiveauNotif()" /><span class="slider"></span></label>
       </div>
-      <label class="toggle">
-        <input type="checkbox" id="toggle-notif-corr" onchange="updateNotifCorr()" />
-        <span class="slider"></span>
-      </label>
-    </div>
-  </div>
-
-  <!-- Langue -->
-  <div class="params-bloc">
-    <div class="params-titre">Langue</div>
-    <div class="param-row" style="flex-direction:column;align-items:flex-start;gap:10px">
-      <div>
-        <div class="param-label">Langue d'affichage</div>
-        <div class="param-sub">Traduit les titres dans la langue choisie</div>
-      </div>
-      <select id="select-langue" onchange="sauverLangue(this.value)"
-              style="width:100%;padding:9px 12px;background:var(--bg-app);border:0.5px solid var(--border-card);
-                     border-radius:8px;color:var(--text-primary);font-size:13px;outline:none">
-        <option value="multi">Original (plusieurs langues)</option>
-        <option value="fr">Français</option>
-        <option value="en">English</option>
-        <option value="es">Español</option>
-        <option value="de">Deutsch</option>
-      </select>
-      <div style="font-size:11px;color:var(--text-secondary);line-height:1.4">
-        ⚠ Traduction IA — peut contenir des inexactitudes. Français seul entièrement supporté.
+      <div class="prm-row" id="row-notif-correlations" style="display:none">
+        <div class="prm-main"><div class="prm-titre">Corrélations du matin</div><div class="prm-sub">Le récap quotidien des sujets liés</div></div>
+        <label class="toggle"><input type="checkbox" id="toggle-notif-corr" onchange="updateNotifCorr()" /><span class="slider"></span></label>
       </div>
     </div>
   </div>
 
-  <!-- Pays -->
-  <div class="params-bloc">
-    <div class="params-titre">Pays</div>
-    <div class="param-row" style="flex-direction:column;align-items:flex-start;gap:10px">
-      <div>
-        <div class="param-label">Actus nationales</div>
-        <div class="param-sub">Les news nationales/locales d'autres pays sont masquées</div>
+  <!-- Domaines surveillés -->
+  <div class="acc" id="acc-domaines">
+    <div class="acc-head" onclick="document.getElementById('acc-domaines').classList.toggle('open')">
+      <div class="prm-ic"><ion-icon name="albums-outline"></ion-icon></div>
+      <div class="acc-t">Domaines surveillés</div>
+      <ion-icon class="acc-chev" name="chevron-forward"></ion-icon>
+    </div>
+    <div class="acc-body">
+      <div class="prm-row">
+        <div class="prm-ic"><span class="dom-dot" style="background:var(--geo)"></span></div>
+        <div class="prm-main"><div class="prm-titre">Géopolitique</div><div class="prm-sub">BBC · Le Monde · RFI</div></div>
+        <label class="toggle"><input type="checkbox" id="toggle-geo" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
       </div>
-      <select id="select-pays" onchange="sauverPays(this.value)"
-              style="width:100%;padding:9px 12px;background:var(--bg-app);border:0.5px solid var(--border-card);
-                     border-radius:8px;color:var(--text-primary);font-size:13px;outline:none">
-        <option value="France">France</option>
-        <option value="Belgique">Belgique</option>
-        <option value="Suisse">Suisse</option>
-        <option value="Canada">Canada</option>
-        <option value="Côte d'Ivoire">Côte d'Ivoire</option>
-        <option value="Sénégal">Sénégal</option>
-        <option value="Maroc">Maroc</option>
-        <option value="Tunisie">Tunisie</option>
-        <option value="Algérie">Algérie</option>
-        <option value="RD Congo">RD Congo</option>
-        <option value="tous">Tous les pays</option>
-      </select>
-      <div style="font-size:11px;color:var(--text-secondary);line-height:1.4">
-        ⚠ Seule la France est entièrement supportée pour l'instant (sources d'actu). Pour les autres pays, peu de national disponible.
+      <div class="prm-row">
+        <div class="prm-ic"><span class="dom-dot" style="background:var(--sci)"></span></div>
+        <div class="prm-main"><div class="prm-titre">Science</div><div class="prm-sub">NASA · Science Daily · Futura</div></div>
+        <label class="toggle"><input type="checkbox" id="toggle-sci" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+      </div>
+      <div class="prm-row">
+        <div class="prm-ic"><span class="dom-dot" style="background:var(--tech)"></span></div>
+        <div class="prm-main"><div class="prm-titre">Tech & IA</div><div class="prm-sub">The Verge · Wired · MIT Tech</div></div>
+        <label class="toggle"><input type="checkbox" id="toggle-tech" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+      </div>
+      <div class="prm-row">
+        <div class="prm-ic"><span class="dom-dot" style="background:var(--finance)"></span></div>
+        <div class="prm-main"><div class="prm-titre">Finance</div><div class="prm-sub">Reuters · Les Échos</div></div>
+        <label class="toggle"><input type="checkbox" id="toggle-finance" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+      </div>
+      <div class="prm-row">
+        <div class="prm-ic"><span class="dom-dot" style="background:var(--env)"></span></div>
+        <div class="prm-main"><div class="prm-titre">Environnement</div><div class="prm-sub">Le Monde Planète · Reporterre</div></div>
+        <label class="toggle"><input type="checkbox" id="toggle-env" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
+      </div>
+      <div class="prm-row">
+        <div class="prm-ic"><span class="dom-dot" style="background:var(--sport)"></span></div>
+        <div class="prm-main"><div class="prm-titre">Sport</div><div class="prm-sub">L'Équipe · BBC Sport · Reuters</div></div>
+        <label class="toggle"><input type="checkbox" id="toggle-sport" checked onchange="sauverDomaines()" /><span class="slider"></span></label>
       </div>
     </div>
   </div>
 
-  <!-- Préférences -->
-  <div class="params-bloc">
-    <div class="params-titre">Préférences</div>
-    <div class="param-row">
-      <div><div class="param-label">Thème</div></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-theme" data-t="dark"  onclick="setTheme('dark')">Dark</button>
-        <button class="btn-theme" data-t="slate" onclick="setTheme('slate')">Slate</button>
-        <button class="btn-theme" data-t="light" onclick="setTheme('light')">Light</button>
+  <!-- Région & langue -->
+  <div class="acc" id="acc-region">
+    <div class="acc-head" onclick="document.getElementById('acc-region').classList.toggle('open')">
+      <div class="prm-ic"><ion-icon name="globe-outline"></ion-icon></div>
+      <div class="acc-t">Région & langue</div>
+      <ion-icon class="acc-chev" name="chevron-forward"></ion-icon>
+    </div>
+    <div class="acc-body">
+      <div class="prm-row">
+        <div class="prm-ic"><ion-icon name="language-outline"></ion-icon></div>
+        <div class="prm-main"><div class="prm-titre">Langue d'affichage</div><div class="prm-sub">Traduction IA — peut contenir des inexactitudes</div></div>
+        <select id="select-langue" onchange="sauverLangue(this.value)" class="mini-select">
+          <option value="multi">Original</option>
+          <option value="fr">Français</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="de">Deutsch</option>
+        </select>
       </div>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Articles aujourd'hui</div></div>
-      <div class="param-label" id="stat-jour" style="font-weight:400;color:var(--text-secondary)">—</div>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Total des alertes</div></div>
-      <div class="param-label" id="stat-total" style="font-weight:400;color:var(--text-secondary)">—</div>
+      <div class="prm-row">
+        <div class="prm-ic"><ion-icon name="flag-outline"></ion-icon></div>
+        <div class="prm-main"><div class="prm-titre">Actus nationales</div><div class="prm-sub">Masque le national des autres pays</div></div>
+        <select id="select-pays" onchange="sauverPays(this.value)" class="mini-select">
+          <option value="France">France</option>
+          <option value="Belgique">Belgique</option>
+          <option value="Suisse">Suisse</option>
+          <option value="Canada">Canada</option>
+          <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+          <option value="Sénégal">Sénégal</option>
+          <option value="Maroc">Maroc</option>
+          <option value="Tunisie">Tunisie</option>
+          <option value="Algérie">Algérie</option>
+          <option value="RD Congo">RD Congo</option>
+          <option value="tous">Tous les pays</option>
+        </select>
+      </div>
     </div>
   </div>
 
-  <!-- Système -->
-  <div class="params-bloc">
-    <div class="params-titre">Système</div>
-    <div class="param-row">
-      <div><div class="param-label">Fréquence</div><div class="param-sub">Vérification toutes les 15 min</div></div>
+  <!-- Apparence -->
+  <div class="acc" id="acc-apparence">
+    <div class="acc-head" onclick="document.getElementById('acc-apparence').classList.toggle('open')">
+      <div class="prm-ic"><ion-icon name="contrast-outline"></ion-icon></div>
+      <div class="acc-t">Apparence</div>
+      <ion-icon class="acc-chev" name="chevron-forward"></ion-icon>
     </div>
-    <div class="param-row">
-      <div><div class="param-label">Modèle IA</div><div class="param-sub">Llama 3.1 · Groq</div></div>
-    </div>
-    <div class="param-row">
-      <div><div class="param-label">Confidentialité</div></div>
-      <a href="/privacy" target="_blank" style="font-size:13px;color:var(--text-secondary);text-decoration:none">Voir →</a>
+    <div class="acc-body">
+      <div class="prm-row">
+        <div class="prm-main"><div class="prm-titre">Thème</div></div>
+        <div class="seg">
+          <button class="btn-theme" data-t="dark"  onclick="setTheme('dark')">Noir</button>
+          <button class="btn-theme" data-t="slate" onclick="setTheme('slate')">Gris</button>
+          <button class="btn-theme" data-t="light" onclick="setTheme('light')">Blanc</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Zone danger -->
-  <div class="params-bloc" style="border-color:#3a1515">
-    <div class="params-titre" style="color:#7a3030">Zone de danger</div>
-    <div class="param-row" id="row-delete-compte">
-      <div>
-        <div class="param-label">Supprimer mon compte</div>
-        <div class="param-sub">Supprime toutes tes données définitivement</div>
-      </div>
-      <button onclick="demanderSuppression()"
-              style="background:none;border:none;font-size:13px;color:#7a3030;cursor:pointer;padding:0;white-space:nowrap">
-        Supprimer →
-      </button>
-    </div>
-    <div id="row-confirm-delete" style="display:none;padding:14px 16px;flex-direction:column;gap:10px">
-      <div style="font-size:12px;color:#e05252;line-height:1.5">
-        Cette action est irréversible. Toutes tes alertes, préférences et données seront supprimées.
-      </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="confirmerSuppression()"
-                style="flex:1;padding:9px;background:#e05252;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
-          Confirmer la suppression
-        </button>
-        <button onclick="annulerSuppression()"
-                style="flex:1;padding:9px;background:none;color:var(--text-secondary);border:0.5px solid var(--border-card);border-radius:8px;font-size:13px;cursor:pointer">
-          Annuler
-        </button>
-      </div>
-    </div>
+  <!-- Pied : stats + système -->
+  <div class="prm-foot">
+    <span id="stat-total">—</span> alertes · <span id="stat-jour">—</span> aujourd'hui<br>
+    Vérification toutes les 15 min · Llama 3.1 · Groq<br>
+    <a href="/logout">Déconnexion</a>
   </div>
 </div>
 
@@ -333,6 +315,6 @@
   </button>
 </nav>
 
-<script src="/static/app.js?v=20260616i"></script>
+<script src="/static/app.js?v=20260616j"></script>
 </body>
 </html>

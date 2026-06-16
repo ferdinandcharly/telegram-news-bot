@@ -906,6 +906,15 @@
     }
   }
 
+  // Met à jour l'en-tête de la carte compte (nom affiché + initiale de l'avatar).
+  function majIdentite(nom, email) {
+    const aff = nom || email || "—";
+    const header = document.getElementById("dn-header");
+    const avatar = document.getElementById("dn-avatar");
+    if (header) header.textContent = aff;
+    if (avatar) avatar.textContent = (aff[0] || "?").toUpperCase();
+  }
+
   function toggleEditNom() {
     const texte  = document.getElementById("dn-texte");
     const input  = document.getElementById("dn-input");
@@ -934,6 +943,7 @@
     btnSave.style.display = "none";
     texte.style.display  = "inline";
     btnEdit.style.display = "inline-block";
+    majIdentite(val, document.getElementById("user-email").textContent);
   }
 
   function demanderSuppression() {
@@ -990,6 +1000,8 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────
   async function init() {
+    // Verrou portrait (efficace surtout en PWA installée ; ignoré sinon)
+    try { await screen.orientation.lock("portrait"); } catch {}
     document.getElementById("feed").innerHTML = skeletonFeedHTML();
     const data = await fetch("/api/init").then(r => r.json());
 
@@ -997,17 +1009,12 @@
     const theme = (data.preferences.theme || "dark").replace("dim", "slate");
     setTheme(theme, false);
 
-    // nom d'affichage
+    // nom d'affichage + carte compte
     const dn = data.preferences.display_name;
     const dnTexte = document.getElementById("dn-texte");
-    // email réel toujours affiché dans le bloc Compte
+    if (dnTexte) dnTexte.textContent = dn || "—";
     document.getElementById("user-email").textContent = data.email || "—";
-    // nom d'affichage dans le header et les champs
-    if (dn) {
-      if (dnTexte) dnTexte.textContent = dn;
-    } else {
-      if (dnTexte) dnTexte.textContent = data.email;
-    }
+    majIdentite(dn, data.email);
 
     // langue
     userLangue = data.preferences.langue || "multi";

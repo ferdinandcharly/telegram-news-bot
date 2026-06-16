@@ -23,6 +23,7 @@
   --overlay-bg:     rgba(0,0,0,0.75);
   --modal-handle:   #333333;
   --slider-bg:      #2a2a2a;
+  --bg-inset:       #222222;
   --btn-bg:         #e8e8e8;
   --btn-text:       #111111;
   --thumb-geo:      #1c0f10;
@@ -45,6 +46,7 @@
   --overlay-bg:     rgba(0,0,0,0.5);
   --modal-handle:   #d0d7de;
   --slider-bg:      #d0d7de;
+  --bg-inset:       #f1f1f1;
   --btn-bg:         #111111;
   --btn-text:       #ffffff;
   --thumb-geo:      #fdf0f0;
@@ -67,6 +69,7 @@
   --overlay-bg:     rgba(0,0,0,0.7);
   --modal-handle:   #4a4d57;
   --slider-bg:      #4a4d57;
+  --bg-inset:       #3a3d47;
   --btn-bg:         #e5e7eb;
   --btn-text:       #2a2d35;
   --thumb-geo:      #2a1515;
@@ -964,6 +967,72 @@ body.modal-ouvert { overflow: hidden; }
   background: var(--text-secondary); border-radius: 50%; transition: 0.2s;
 }
 .toggle input:checked + .slider:before { transform: translateX(18px); background: var(--text-primary); }
+
+/* ── Garde portrait (mobile en paysage) ── */
+#rotate-guard { display: none; }
+@media (orientation: landscape) and (max-height: 560px) {
+  #rotate-guard {
+    display: flex; position: fixed; inset: 0; z-index: 9999;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; padding: 24px; line-height: 1.5;
+    background: var(--bg-app); color: var(--text-primary);
+    font-size: 15px; font-weight: 500;
+  }
+}
+
+/* ── Paramètres : refonte (carte compte + accordéons) ── */
+.pg-titre { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 18px; color: var(--text-primary); }
+
+/* lignes génériques */
+.prm-row { display: flex; align-items: center; gap: 13px; padding: 13px 15px; border-bottom: 0.5px solid var(--border-card); }
+.prm-row:last-child { border-bottom: none; }
+.prm-ic { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center;
+          justify-content: center; background: var(--bg-inset); color: var(--text-primary); }
+.prm-ic ion-icon { font-size: 16px; }
+.prm-main { flex: 1; min-width: 0; }
+.prm-titre { font-size: 14px; font-weight: 500; letter-spacing: -0.1px; color: var(--text-primary); }
+.prm-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+.prm-val { font-size: 13px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.prm-row.tap { cursor: pointer; }
+.prm-danger .prm-titre { color: #e05252; }
+.prm-danger .prm-ic { background: rgba(224,82,82,0.12); color: #e05252; }
+.dom-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* carte compte (profil dépliable) */
+.compte { border: 0.5px solid var(--border-card); border-radius: 16px; overflow: hidden;
+          background: var(--bg-card); margin-bottom: 14px; }
+.compte-head { display: flex; align-items: center; gap: 14px; padding: 16px; cursor: pointer; }
+.avatar { width: 50px; height: 50px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center;
+          justify-content: center; font-size: 19px; font-weight: 700; color: #fff;
+          background: linear-gradient(135deg, var(--geo), var(--finance)); }
+.compte-info { min-width: 0; flex: 1; }
+.compte-nom { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.compte-mail { font-size: 12.5px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compte-body { display: none; border-top: 0.5px solid var(--border-card); }
+.compte.open .compte-body { display: block; }
+
+/* accordéon */
+.acc { border: 0.5px solid var(--border-card); border-radius: 14px; overflow: hidden; background: var(--bg-card); margin-bottom: 12px; }
+.acc-head { display: flex; align-items: center; gap: 13px; padding: 15px; cursor: pointer; }
+.acc-t { flex: 1; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.acc-chev { color: var(--text-secondary); font-size: 16px; transition: transform 0.25s; flex-shrink: 0; }
+.compte.open .acc-chev, .acc.open .acc-chev { transform: rotate(90deg); }
+.acc-body { display: none; border-top: 0.5px solid var(--border-card); }
+.acc.open .acc-body { display: block; }
+
+/* select compact */
+.mini-select { background: var(--bg-inset); border: none; color: var(--text-primary); font-size: 13px;
+               padding: 7px 10px; border-radius: 8px; outline: none; cursor: pointer; flex-shrink: 0; max-width: 42%; }
+
+/* segmented control (thème) */
+.seg { display: flex; background: var(--bg-inset); border-radius: 9px; padding: 3px; gap: 3px; }
+.seg .btn-theme { border: none; background: none; color: var(--text-secondary); font-size: 12.5px;
+                  font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+.seg .btn-theme.actif { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+
+/* pied de page */
+.prm-foot { text-align: center; font-size: 11.5px; color: var(--text-secondary); line-height: 1.7; margin-top: 14px; }
+.prm-foot a { color: var(--text-secondary); }
 
 /* ── Nav flottante (pilule) ── */
 nav {
