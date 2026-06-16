@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=20260616j" />
+  <link rel="stylesheet" href="/static/style.css?v=20260616k" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
@@ -77,7 +77,7 @@
   <!-- Compte (carte profil dépliable : nom + mot de passe + suppression) -->
   <div class="compte open" id="compte-bloc">
     <div class="compte-head" onclick="document.getElementById('compte-bloc').classList.toggle('open')">
-      <div class="avatar" id="dn-avatar">·</div>
+      <button class="avatar" id="dn-avatar" onclick="event.stopPropagation();choisirPhoto()" aria-label="Changer la photo">·<span class="avatar-cam"><ion-icon name="camera"></ion-icon></span></button>
       <div class="compte-info">
         <div class="compte-nom" id="dn-header">—</div>
         <div class="compte-mail" id="user-email">—</div>
@@ -85,6 +85,15 @@
       <ion-icon class="acc-chev" name="chevron-forward"></ion-icon>
     </div>
     <div class="compte-body" onclick="event.stopPropagation()">
+      <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="changerPhoto(this)" />
+      <div class="prm-row">
+        <div class="prm-ic"><ion-icon name="image-outline"></ion-icon></div>
+        <div class="prm-main"><div class="prm-titre">Photo de profil</div></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="avatar-remove" onclick="retirerPhoto()" style="display:none;font-size:13px;color:#e05252;cursor:pointer">Retirer</span>
+          <span class="prm-val tap" onclick="choisirPhoto()" style="cursor:pointer">Changer <ion-icon name="chevron-forward" style="font-size:14px;opacity:.6"></ion-icon></span>
+        </div>
+      </div>
       <div class="prm-row">
         <div class="prm-ic"><ion-icon name="person-outline"></ion-icon></div>
         <div class="prm-main"><div class="prm-titre">Nom d'utilisateur</div></div>
@@ -315,6 +324,6 @@
   </button>
 </nav>
 
-<script src="/static/app.js?v=20260616j"></script>
+<script src="/static/app.js?v=20260616k"></script>
 </body>
 </html>

@@ -1158,6 +1158,7 @@ def api_init():
         "pays":          prefs_row.get("pays") or "France"                     if prefs_row else "France",
         # activé par défaut ; ne devient False que si l'utilisateur a explicitement coupé
         "notif_correlations": (prefs_row.get("notif_correlations") if prefs_row else None) is not False,
+        "avatar":        (prefs_row.get("avatar") or "") if prefs_row else "",
     }
 
     # filtrer par domaines préférés
@@ -1205,7 +1206,7 @@ def api_preferences():
         return jsonify({"erreur": "non authentifié"}), 401
     data  = request.get_json()
     prefs = {"user_id": user_id}
-    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "portees", "pays", "notif_correlations"):
+    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "portees", "pays", "notif_correlations", "avatar"):
         if key in data:
             prefs[key] = data[key]
     http.post(sb("user_preferences"),

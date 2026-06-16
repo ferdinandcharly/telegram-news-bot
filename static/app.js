@@ -3,6 +3,7 @@
   let userLangue    = "multi";
   let userPortees   = {};
   let userPays      = "France";
+  let userAvatar    = "";   // photo de profil (dataURL base64) ou "" si initiale
   let sigFeed       = "";   // signature des alertes affichées (évite un re-render inutile)
 
   // empreinte du cache : si elle ne change pas, inutile de ré-afficher (clignotement)
@@ -906,13 +907,70 @@
     }
   }
 
-  // Met à jour l'en-tête de la carte compte (nom affiché + initiale de l'avatar).
+  // Met à jour l'en-tête de la carte compte (nom affiché + avatar : photo ou initiale).
   function majIdentite(nom, email) {
     const aff = nom || email || "—";
     const header = document.getElementById("dn-header");
     const avatar = document.getElementById("dn-avatar");
     if (header) header.textContent = aff;
-    if (avatar) avatar.textContent = (aff[0] || "?").toUpperCase();
+    if (avatar) {
+      if (userAvatar) {
+        avatar.firstChild.textContent = "";
+        avatar.style.backgroundImage = `url('${userAvatar}')`;
+        avatar.classList.add("a-photo");
+      } else {
+        avatar.style.backgroundImage = "";
+        avatar.classList.remove("a-photo");
+        avatar.firstChild.textContent = (aff[0] || "?").toUpperCase();
+      }
+    }
+    const rm = document.getElementById("avatar-remove");
+    if (rm) rm.style.display = userAvatar ? "inline" : "none";
+  }
+
+  // Ouvre le sélecteur de fichier (clic sur l'avatar).
+  function choisirPhoto() {
+    document.getElementById("avatar-input").click();
+  }
+
+  // Redimensionne l'image choisie en carré ~256px (JPEG) puis la sauvegarde.
+  async function changerPhoto(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const dataURL = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = rej;
+      fr.readAsDataURL(file);
+    });
+    const img = new Image();
+    img.onload = async () => {
+      const T = 256;
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = T;
+      const ctx = cv.getContext("2d");
+      const c = Math.min(img.width, img.height);            // crop carré centré
+      ctx.drawImage(img, (img.width - c) / 2, (img.height - c) / 2, c, c, 0, 0, T, T);
+      userAvatar = cv.toDataURL("image/jpeg", 0.82);
+      majIdentite(document.getElementById("dn-header").textContent, "");
+      await fetch("/api/preferences", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ avatar: userAvatar })
+      });
+    };
+    img.src = dataURL;
+    input.value = "";   // permet de re-choisir le même fichier
+  }
+
+  async function retirerPhoto() {
+    userAvatar = "";
+    majIdentite(document.getElementById("dn-header").textContent, "");
+    await fetch("/api/preferences", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ avatar: "" })
+    });
   }
 
   function toggleEditNom() {
@@ -1014,6 +1072,7 @@
     const dnTexte = document.getElementById("dn-texte");
     if (dnTexte) dnTexte.textContent = dn || "—";
     document.getElementById("user-email").textContent = data.email || "—";
+    userAvatar = data.preferences.avatar || "";
     majIdentite(dn, data.email);
 
     // langue

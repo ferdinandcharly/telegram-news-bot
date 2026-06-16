@@ -1002,9 +1002,15 @@ body.modal-ouvert { overflow: hidden; }
 .compte { border: 0.5px solid var(--border-card); border-radius: 16px; overflow: hidden;
           background: var(--bg-card); margin-bottom: 14px; }
 .compte-head { display: flex; align-items: center; gap: 14px; padding: 16px; cursor: pointer; }
-.avatar { width: 50px; height: 50px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center;
-          justify-content: center; font-size: 19px; font-weight: 700; color: #fff;
-          background: linear-gradient(135deg, var(--geo), var(--finance)); }
+.avatar { position: relative; width: 50px; height: 50px; border-radius: 50%; flex-shrink: 0; padding: 0;
+          border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          font-size: 19px; font-weight: 700; color: #fff; font-family: inherit;
+          background: linear-gradient(135deg, var(--geo), var(--finance)); background-size: cover; background-position: center; }
+.avatar.a-photo { color: transparent; }
+.avatar-cam { position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; border-radius: 50%;
+          background: var(--bg-card); border: 1.5px solid var(--bg-card); display: flex; align-items: center;
+          justify-content: center; color: var(--text-secondary); }
+.avatar-cam ion-icon { font-size: 11px; }
 .compte-info { min-width: 0; flex: 1; }
 .compte-nom { font-size: 16px; font-weight: 600; color: var(--text-primary); }
 .compte-mail { font-size: 12.5px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
