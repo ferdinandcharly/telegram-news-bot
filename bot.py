@@ -283,6 +283,31 @@ def pre_filtre_rejette(titre, lien):
     return False
 
 
+# Termes sans ambiguïté : un article qui les contient est du sport,
+# même s'il vient d'un flux d'actualité générale (BBC World, Le Monde…).
+_SPORT_TITRE = (
+    "fifa", "uefa", "ballon d'or", "coupe du monde", "world cup", "ligue des champions",
+    "champions league", "premier league", "ligue 1", "la liga", "bundesliga", "serie a",
+    "roland-garros", "roland garros", "wimbledon", "jeux olympiques", "olympic", "jo 2",
+    "nba", "nfl", "tour de france", "grand prix", "formule 1", "formula 1", "six nations",
+    "ballon d or", "champions cup", "europa league", "psg", "real madrid", "fc barcelone",
+    "top 14", "roland‑garros",
+)
+_SPORT_URL = ("/sport/", "/sports/", "lequipe.fr", "/football/", "/rugby/", "/tennis/")
+
+
+def reclasser_domaine(domaine, titre, lien):
+    """Rebascule en Sport un article clairement sportif venu d'un flux généraliste.
+    0 appel Groq : simple détection de mots-clés sans ambiguïté."""
+    if "Sport" in domaine:
+        return domaine
+    t = _sans_accents(titre)
+    u = (lien or "").lower()
+    if any(m in t for m in _SPORT_TITRE) or any(p in u for p in _SPORT_URL):
+        return "⚽ Sport"
+    return domaine
+
+
 def triage_groupe(lot):
     """Triage grossier et PERMISSIF de plusieurs articles en un seul appel Groq.
     `lot` : liste de dicts {domaine, titre, ...}.
@@ -365,7 +390,11 @@ def verifier(premiere_fois=False):
                     if pre_filtre_rejette(titre, lien):
                         continue
 
-                    candidats.append({"domaine": domaine, "titre": titre,
+                    # Reclassement par contenu : un flux généraliste (BBC World…)
+                    # publie parfois du sport → on le remet dans le bon domaine.
+                    dom = reclasser_domaine(domaine, titre, lien)
+
+                    candidats.append({"domaine": dom, "titre": titre,
                                       "resume": resume, "lien": lien, "article": article})
             except Exception as e:
                 print(f"  Erreur flux {url[:50]} : {e}")
