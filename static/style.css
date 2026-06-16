@@ -505,6 +505,61 @@ header {
 .fm-portee { display: inline-flex; align-items: center; gap: 3px; }
 .fm-sep { color: var(--border-card); }
 
+/* ════════ Feed : rails par domaine + carrousel circulaire ════════ */
+.rail { margin-top: 14px; }
+.rail-head { display: flex; align-items: center; gap: 8px; padding: 0 16px 2px; }
+.rail-dot { width: 9px; height: 9px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
+.rail-name { font-size: 13.5px; font-weight: 700; letter-spacing: .2px; color: var(--text-primary); }
+.rail-star { font-size: 11px; color: var(--accent); }
+
+.carousel { position: relative; height: 190px; touch-action: pan-y; cursor: grab; user-select: none; }
+.carousel:active { cursor: grabbing; }
+.stage { position: absolute; inset: 0; }
+.cc {
+  position: absolute; left: 50%; top: 8px; width: 150px;
+  background: var(--bg-card); border: .5px solid var(--border-card); border-radius: 14px; overflow: hidden;
+  transition: transform .34s cubic-bezier(.22,.61,.36,1), opacity .34s; will-change: transform; cursor: pointer;
+}
+.cc.center { border-color: color-mix(in srgb, var(--accent) 55%, var(--border-card)); }
+.cc.crit   { border-color: color-mix(in srgb, #ef4444 60%, var(--border-card)); }
+.cc-thumb {
+  height: 78px; display: flex; align-items: center; justify-content: center; position: relative;
+  font-size: 26px; background: var(--thumb); overflow: hidden;
+}
+.cc-img { width: 100%; height: 100%; object-fit: cover; }
+.cc-badge {
+  position: absolute; top: 7px; left: 7px; font-size: 8px; font-weight: 700; letter-spacing: .4px;
+  padding: 2px 6px; border-radius: 4px; background: rgba(239,68,68,.92); color: #fff;
+}
+.cc-badge.inline { position: static; vertical-align: 1px; margin-left: 2px; }
+.cc-body { padding: 9px 11px 11px; }
+.cc-cat { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--accent); }
+.cc-d { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.cc-title {
+  font-size: 12.5px; font-weight: 600; line-height: 1.3; letter-spacing: -.1px; margin: 6px 0 8px; color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 32px;
+}
+.cc-foot { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--text-secondary); }
+.cc-foot ion-icon { font-size: 12px; }
+
+.rail-foot { display: flex; align-items: center; justify-content: space-between; padding: 6px 18px 0; }
+.rail-count { font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.rail-all { font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; }
+
+/* ── Page domaine (« Voir tout ») ── */
+#feed-domain { display: none; }
+.dp-head { display: flex; align-items: center; gap: 12px; padding: 4px 16px 8px; }
+.dp-back { font: inherit; font-size: 13px; background: none; border: .5px solid var(--border-card); color: var(--text-primary); border-radius: 9px; padding: 7px 12px; cursor: pointer; }
+.dp-title { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
+.dp-sub { font-size: 11px; color: var(--text-secondary); margin-left: auto; }
+.dp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 4px 16px 24px; }
+.gcard { background: var(--bg-card); border: .5px solid var(--border-card); border-radius: 12px; padding: 10px 11px; cursor: pointer; transition: border-color .2s; }
+.gcard:hover { border-color: var(--text-secondary); }
+.gcat { display: flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; color: var(--accent); }
+.gtitle { font-size: 12.5px; font-weight: 600; line-height: 1.32; margin: 6px 0 8px; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 48px; }
+.gfoot { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-secondary); }
+.gfoot ion-icon { font-size: 12px; }
+
 .btn-save {
   display: inline-flex;
   align-items: center;

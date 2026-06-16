@@ -60,6 +60,7 @@
   // ── Navigation ──────────────────────────────────────────────────────────
   function afficherPage(page, btn) {
     document.activeElement?.blur();
+    fermerDomaine();   // toujours revenir aux rails en quittant/rouvrant le feed
     ["feed","corr","saved","params"].forEach(p => {
       document.getElementById("page-" + p).style.display = "none";
     });
@@ -223,45 +224,195 @@
 
   // ── Alertes ─────────────────────────────────────────────────────────────
   // Rendu du feed depuis le cache local (filtre + recherche), sans réseau.
+  // Le feed est organisé en rails par domaine (carrousel circulaire).
+  // En recherche ou avec un filtre de domaine précis, on retombe sur une liste plate.
   function afficherFeed() {
+    fermerDomaine();
+    const q = (document.getElementById("recherche")?.value || "").trim();
+    if (filtreCourant === "Tout" && !q) { afficherRails(); return; }
+    afficherListePlate(q);
+  }
+
+  // ── Vue liste plate (recherche / filtre domaine) ──
+  function afficherListePlate(q) {
     let alertes = filtreCourant === "Tout"
       ? filtrerParPrefs(alertesCache)
       : alertesCache.filter(a => (a.domaine || "").includes(filtreCourant));
     alertes = filtrerParPorteePays(alertes);
 
-    const q = (document.getElementById("recherche")?.value || "").trim().toLowerCase();
-    if (q) {
+    const ql = q.toLowerCase();
+    if (ql) {
       alertes = alertes.filter(a =>
-        (a.titre    || "").toLowerCase().includes(q) ||
-        (a.accroche || "").toLowerCase().includes(q) ||
-        (a.contexte || "").toLowerCase().includes(q) ||
-        (a.domaine  || "").toLowerCase().includes(q)
+        (a.titre    || "").toLowerCase().includes(ql) ||
+        (a.accroche || "").toLowerCase().includes(ql) ||
+        (a.contexte || "").toLowerCase().includes(ql) ||
+        (a.domaine  || "").toLowerCase().includes(ql)
       );
     }
 
     const feed = document.getElementById("feed");
     if (!alertes.length) {
       feed.innerHTML = `<div class="vide">${q ? "Aucun résultat pour « " + esc(q) + " »." : "Aucune alerte pour le moment.<br>Vérification toutes les 15 min."}</div>`;
-    } else {
-      // "À la une" : on met en avant la dernière alerte critique (niveau 3) récente.
-      // À défaut (aucune critique récente), la plus récente reste en hero.
-      const LIMITE_HERO = Date.now() - 48 * 3600 * 1000;
-      const idxCritique = alertes.findIndex(a =>
-        (a.niveau || 2) >= 3 && parseDate(a.date).getTime() >= LIMITE_HERO
-      );
-      if (idxCritique > 0) {
-        alertes = [
-          alertes[idxCritique],
-          ...alertes.slice(0, idxCritique),
-          ...alertes.slice(idxCritique + 1),
-        ];
-      }
-      let html = "";
-      alertes.forEach((a, i) => {
-        html += carteHTML(a, i === 0);
-      });
-      feed.innerHTML = html;
+      return;
     }
+    const LIMITE_HERO = Date.now() - 48 * 3600 * 1000;
+    const idx = alertes.findIndex(a => (a.niveau || 2) >= 3 && parseDate(a.date).getTime() >= LIMITE_HERO);
+    if (idx > 0) alertes = [alertes[idx], ...alertes.slice(0, idx), ...alertes.slice(idx + 1)];
+    feed.innerHTML = alertes.map((a, i) => carteHTML(a, i === 0)).join("");
+  }
+
+  // ── Tri / regroupement pour les rails ──
+  function critiqueDuJour(a) {
+    return (a.niveau || 2) >= 3 && parseDate(a.date).getTime() >= Date.now() - 48 * 3600 * 1000;
+  }
+  function trierArts(arts) {
+    return [...arts].sort((x, y) => {
+      const dc = (critiqueDuJour(y) ? 1 : 0) - (critiqueDuJour(x) ? 1 : 0);
+      if (dc) return dc;                                  // critique du jour d'abord
+      return parseDate(y.date) - parseDate(x.date);       // puis le plus récent
+    });
+  }
+  function ordreDomaines() {
+    const est_pref = m => userDomaines.some(d => d.includes(m.key));
+    return [...DOMAINES_MAP.filter(est_pref), ...DOMAINES_MAP.filter(m => !est_pref(m))];
+  }
+
+  // ── Vue rails par domaine ──
+  function afficherRails() {
+    const feed = document.getElementById("feed");
+    const alertes = filtrerParPorteePays(alertesCache);
+    if (!alertes.length) {
+      feed.innerHTML = `<div class="vide">Aucune alerte pour le moment.<br>Vérification toutes les 15 min.</div>`;
+      return;
+    }
+    let html = "";
+    // "À la une" : critiques du jour, tous domaines confondus
+    const unes = trierArts(alertes.filter(critiqueDuJour)).slice(0, 10);
+    if (unes.length) html += railHTML({ cls: "une", label: "À la une" }, unes, false, true);
+    // Un rail par domaine, préférés en haut
+    for (const m of ordreDomaines()) {
+      const arts = alertes.filter(a => getDomaine(a.domaine || "").cls === m.cls);
+      if (!arts.length) continue;
+      html += railHTML(m, trierArts(arts).slice(0, 10), userDomaines.some(d => d.includes(m.key)), false);
+    }
+    feed.innerHTML = html;
+    feed.querySelectorAll(".carousel").forEach(initCarousel);
+  }
+
+  function railHTML(m, arts, pref, isUne) {
+    const accent = isUne ? "#ef4444" : `var(--${m.cls})`;
+    const star = pref ? `<span class="rail-star">★</span>` : "";
+    const foot = isUne ? "" :
+      `<div class="rail-foot"><span class="rail-count"></span><span class="rail-all" onclick="ouvrirDomaine('${m.cls}')">Voir tout →</span></div>`;
+    return `<div class="rail" style="--accent:${accent}">
+      <div class="rail-head"><span class="rail-dot"></span><span class="rail-name">${esc(m.label)}</span>${star}</div>
+      <div class="carousel" data-cur="0"><div class="stage">${arts.map(carteCarousel).join("")}</div></div>
+      ${foot}
+    </div>`;
+  }
+
+  function carteCarousel(a) {
+    const dom  = getDomaine(a.domaine || "");
+    const crit = (a.niveau || 2) >= 3;
+    const titre = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
+    const visuel = a.image
+      ? `<img class="cc-img" src="${esc(a.image)}" loading="lazy" alt="" onerror="this.remove()">`
+      : `<span class="cc-ic">${dom.icon || ""}</span>`;
+    return `<div class="cc carte-${dom.cls} ${crit ? "crit" : ""}" data-id="${a.id}"
+        style="--accent:var(--${dom.cls});--thumb:var(--thumb-${dom.cls})">
+      <div class="cc-thumb">${visuel}${crit ? '<span class="cc-badge">CRITIQUE</span>' : ""}</div>
+      <div class="cc-body">
+        <div class="cc-cat"><span class="cc-d"></span>${esc(dom.label)}</div>
+        <div class="cc-title">${titre}</div>
+        <div class="cc-foot">${porteeHeureHTML(a)}</div>
+      </div></div>`;
+  }
+
+  function carteGrille(a) {
+    const dom  = getDomaine(a.domaine || "");
+    const crit = (a.niveau || 2) >= 3;
+    const titre = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
+    return `<div class="gcard carte-${dom.cls}" data-id="${a.id}"
+        style="--accent:var(--${dom.cls})" onclick="ouvrirModal(${a.id})">
+      <div class="gcat"><span class="cc-d"></span>${esc(dom.label)}${crit ? ' <span class="cc-badge inline">CRITIQUE</span>' : ""}</div>
+      <div class="gtitle">${titre}</div>
+      <div class="gfoot">${porteeHeureHTML(a)}</div>
+    </div>`;
+  }
+
+  // Portée (icône + libellé) · heure — réutilisé carrousel + grille
+  function porteeHeureHTML(a) {
+    const p = a.portee ? PORTEE_LABELS[a.portee] : null;
+    const portee = p
+      ? `<span class="fm-portee ${p.cls}"><ion-icon name="${p.icon}"></ion-icon>${p.txt}</span><span class="fm-sep">·</span>`
+      : "";
+    return `${portee}<span class="fm-time">${formatHeure(a.date)}</span>`;
+  }
+
+  // ── Mécanique du carrousel circulaire (placement en sinus) ──
+  const C_STEP = Math.PI / 4, C_R = 86;
+  function layoutCarousel(car) {
+    const cards = [...car.querySelectorAll(".cc")], n = cards.length, cur = +car.dataset.cur;
+    cards.forEach((card, i) => {
+      let off = i - cur; if (off > n / 2) off -= n; if (off < -n / 2) off += n;
+      const a = Math.abs(off), ang = off * C_STEP, depth = Math.cos(ang);
+      const tx = Math.sin(ang) * C_R, sc = Math.max(0.5, 0.62 + 0.38 * depth);
+      const op = a <= 2 ? 1 : (a <= 3 ? 0.28 : 0);   // cartes proches opaques
+      card.style.transform = `translateX(calc(-50% + ${tx}px)) scale(${sc})`;
+      card.style.opacity = op;
+      card.style.zIndex = Math.round(depth * 100) + 100;
+      card.style.pointerEvents = a > 2 ? "none" : "auto";
+      card.classList.toggle("center", off === 0);
+    });
+  }
+  function majCarousel(car) {
+    const el = car.parentElement.querySelector(".rail-count");
+    if (el) el.textContent = `${(+car.dataset.cur) + 1} / ${car.querySelectorAll(".cc").length}`;
+  }
+  function tourneCarousel(car, dir) {
+    const n = car.querySelectorAll(".cc").length;
+    car.dataset.cur = ((+car.dataset.cur) + dir + n) % n;
+    layoutCarousel(car); majCarousel(car);
+  }
+  function initCarousel(car) {
+    layoutCarousel(car); majCarousel(car);
+    let x0 = null;
+    car.addEventListener("pointerdown", e => { x0 = e.clientX; car._moved = false; });
+    car.addEventListener("pointermove", e => { if (x0 !== null && Math.abs(e.clientX - x0) > 8) car._moved = true; });
+    car.addEventListener("pointerup", e => {
+      if (x0 === null) return; const dx = e.clientX - x0; x0 = null;
+      if (Math.abs(dx) > 30) tourneCarousel(car, dx < 0 ? 1 : -1);
+    });
+    car.querySelectorAll(".cc").forEach((card, i) => {
+      card.addEventListener("click", () => {
+        if (car._moved) return;                                   // c'était un glissé
+        if (card.classList.contains("center")) ouvrirModal(+card.dataset.id);
+        else { car.dataset.cur = i; layoutCarousel(car); majCarousel(car); }
+      });
+    });
+  }
+
+  // ── Page domaine (« Voir tout ») ──
+  function ouvrirDomaine(cls) {
+    const m = DOMAINES_MAP.find(x => x.cls === cls); if (!m) return;
+    const arts = trierArts(filtrerParPorteePays(alertesCache).filter(a => getDomaine(a.domaine || "").cls === cls));
+    const dv = document.getElementById("feed-domain");
+    dv.innerHTML = `
+      <div class="dp-head">
+        <button class="dp-back" onclick="fermerDomaine()">‹ Retour</button>
+        <span class="dp-title">${esc(m.label)}</span>
+        <span class="dp-sub">${arts.length} info${arts.length > 1 ? "s" : ""}</span>
+      </div>
+      <div class="dp-grid">${arts.map(carteGrille).join("") || '<div class="vide">Aucune info.</div>'}</div>`;
+    document.getElementById("feed").style.display = "none";
+    dv.style.display = "block";
+    window.scrollTo(0, 0);
+  }
+  function fermerDomaine() {
+    const dv = document.getElementById("feed-domain");
+    if (dv) { dv.style.display = "none"; dv.innerHTML = ""; }
+    const f = document.getElementById("feed");
+    if (f) f.style.display = "";
   }
 
   // Rafraîchit le cache depuis le réseau puis ré-affiche.
