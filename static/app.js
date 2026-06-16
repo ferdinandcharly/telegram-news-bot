@@ -3,6 +3,12 @@
   let userLangue    = "multi";
   let userPortees   = {};
   let userPays      = "France";
+  let sigFeed       = "";   // signature des alertes affichées (évite un re-render inutile)
+
+  // empreinte du cache : si elle ne change pas, inutile de ré-afficher (clignotement)
+  function signatureAlertes() {
+    return alertesCache.map(a => `${a.id}:${a.titre_fr ? 1 : 0}`).join(",");
+  }
 
   function filtrerParPrefs(alertes) {
     if (!userDomaines.length) return alertes;
@@ -906,6 +912,7 @@
     savedIds     = new Set(data.saved_ids);
     alertesCache = data.alertes;
     afficherFeed();
+    sigFeed = signatureAlertes();
     chargerStats();
     majBadgeNonLus();
   }
@@ -950,10 +957,14 @@
     try {
       alertesCache = await fetch("/api/alertes").then(r => r.json());
     } catch { return; }
-    // ne pas casser la navigation en cours : page domaine ouverte ou modale affichée
+    // ne ré-afficher que si le contenu a réellement changé (sinon clignotement inutile)
+    const sig = signatureAlertes();
     const domaineOuvert = document.getElementById("feed-domain")?.style.display === "block";
     const modaleOuverte = document.body.classList.contains("modal-ouvert");
-    if (!domaineOuvert && !modaleOuverte) afficherFeed();
+    if (sig !== sigFeed && !domaineOuvert && !modaleOuverte) {
+      sigFeed = sig;
+      afficherFeed();
+    }
     chargerStats();
     majBadgeNonLus();
   }, 30000);
