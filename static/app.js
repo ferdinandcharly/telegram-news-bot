@@ -5,6 +5,7 @@
   let userPays      = "France";
   let userAvatar    = "";   // photo de profil (dataURL base64) ou "" si initiale
   let sigFeed       = "";   // signature des alertes affichées (évite un re-render inutile)
+  let feedEnAttente = false;// de nouvelles infos sont prêtes mais pas encore affichées
 
   // empreinte du cache : si elle ne change pas, inutile de ré-afficher (clignotement)
   function signatureAlertes() {
@@ -81,11 +82,22 @@
     btn = btn || document.querySelector(`.nav-btn[onclick*="'${page}'"]`);
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("actif"));
     if (btn) btn.classList.add("actif");
+    if (page === "feed" && feedEnAttente) appliquerFeedEnAttente();  // infos en attente → fraîchir
     if (page === "feed")  marquerLus();
     if (page === "saved") chargerSauvegardes();
     if (page === "corr")  chargerCorrelations();
     // Remonte en haut de la page sélectionnée, avec défilement animé
     // (sauf si l'utilisateur a demandé moins d'animations)
+    const doux = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    window.scrollTo({ top: 0, behavior: doux });
+  }
+
+  // Applique les nouvelles infos en attente (clic sur la pastille ou retour au feed).
+  function appliquerFeedEnAttente() {
+    feedEnAttente = false;
+    document.getElementById("feed-refresh").classList.remove("visible");
+    sigFeed = signatureAlertes();
+    afficherFeed();
     const doux = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
     window.scrollTo({ top: 0, behavior: doux });
   }
@@ -1192,13 +1204,21 @@
     try {
       alertesCache = await fetch("/api/alertes").then(r => r.json());
     } catch { return; }
-    // ne ré-afficher que si le contenu a réellement changé (sinon clignotement inutile)
+    // ne rien faire si le contenu n'a pas changé (sinon clignotement inutile)
     const sig = signatureAlertes();
     const domaineOuvert = document.getElementById("feed-domain")?.style.display === "block";
     const modaleOuverte = document.body.classList.contains("modal-ouvert");
     if (sig !== sigFeed && !domaineOuvert && !modaleOuverte) {
-      sigFeed = sig;
-      afficherFeed();
+      const feedVisible = document.getElementById("page-feed").style.display !== "none";
+      if (feedVisible) {
+        // ne pas reconstruire le feed sous l'utilisateur : proposer un rafraîchissement
+        feedEnAttente = true;
+        document.getElementById("feed-refresh").classList.add("visible");
+      } else {
+        // feed masqué (autre onglet) : appliquer en silence, aucune gêne visuelle
+        sigFeed = sig;
+        afficherFeed();
+      }
     }
     chargerStats();
     majBadgeNonLus();
