@@ -615,25 +615,76 @@
   // ── Modal synthèse ───────────────────────────────────────────────────────
   let alertesCache = [];
 
+  // Ligne méta de la modale : source · portée · heure
+  function modalMetaHTML(a) {
+    const bits = [];
+    const src = a.sources && a.sources[0] && a.sources[0].nom;
+    if (src) bits.push(`<span class="mm-src">${esc(src)}</span>`);
+    const p = a.portee ? PORTEE_LABELS[a.portee] : null;
+    if (p) bits.push(`<span class="mm-portee"><ion-icon name="${p.icon}"></ion-icon>${p.txt}</span>`);
+    bits.push(`<span>${formatHeure(a.date)}</span>`);
+    return bits.join('<span class="mm-sep">·</span>');
+  }
+
+  // Liste des sources liées (cliquables → article d'origine)
+  function modalSourcesHTML(a) {
+    const sources = a.sources || [];
+    if (sources.length < 2) return "";
+    const rows = sources.map(s => {
+      const nom = esc(s.nom || s.url || "Source");
+      const url = esc(s.url || a.lien || "#");
+      return `<a class="modal-src-row" href="${url}" target="_blank" rel="noopener">
+          <span class="modal-src-dot"></span>
+          <span class="modal-src-nom">${nom}</span>
+          <ion-icon name="chevron-forward-outline"></ion-icon>
+        </a>`;
+    }).join("");
+    return `<div class="modal-sources-label">${sources.length} sources</div>${rows}`;
+  }
+
   async function ouvrirModal(id) {
     alerteModal = alertesCache.find(a => a.id === id);
     if (!alerteModal) return;
 
     const dom = getDomaine(alerteModal.domaine);
-    document.getElementById("modal-domaine").textContent = dom.label;
-    document.getElementById("modal-domaine").className   = "modal-domaine modal-" + dom.cls;
-    document.getElementById("modal-lien").href = esc(alerteModal.lien);
-    document.getElementById("modal-titre").textContent    = alerteModal.titre;
-    document.getElementById("modal-lien").href            = alerteModal.lien;
-    document.getElementById("modal-synthese").innerHTML   =
+    const crit = (alerteModal.niveau || 2) >= 3;
+
+    // Couverture : image de l'article, ou fond teinté + icône du domaine
+    const cover = document.getElementById("modal-cover");
+    cover.style.setProperty("--accent", `var(--${dom.cls})`);
+    const coverIc = document.getElementById("modal-cover-ic");
+    if (alerteModal.image) {
+      cover.classList.remove("no-img");
+      cover.style.background = "";
+      cover.style.backgroundImage = `url("${esc(alerteModal.image)}")`;
+      coverIc.textContent = "";
+    } else {
+      cover.classList.add("no-img");
+      cover.style.backgroundImage = "";
+      cover.style.background = `var(--thumb-${dom.cls})`;
+      coverIc.textContent = dom.icon || "";
+    }
+
+    const badge = document.getElementById("modal-domaine");
+    badge.innerHTML = `<span class="modal-dom-dot"></span>${esc(dom.label)}`;
+    badge.style.setProperty("--mc", `var(--${dom.cls})`);
+    document.getElementById("modal-crit").style.display = crit ? "inline-flex" : "none";
+
+    const titreFr = userLangue === "fr" && alerteModal.titre_fr ? alerteModal.titre_fr : alerteModal.titre;
+    document.getElementById("modal-titre").textContent = titreFr;
+    document.getElementById("modal-meta").innerHTML    = modalMetaHTML(alerteModal);
+    document.getElementById("modal-lien").href         = alerteModal.lien;
+    document.getElementById("modal-sources").innerHTML = modalSourcesHTML(alerteModal);
+    document.getElementById("modal-synthese").innerHTML =
       `<div class="loading">Génération en cours <div class="loading-dots"><span></span><span></span><span></span></div></div>`;
 
     const saved = savedIds.has(id);
     const saveBtn = document.getElementById("modal-save-btn");
-    saveBtn.textContent = saved ? "Retirer des sauvegardés" : "Sauvegarder";
-    saveBtn.className   = "btn-secondary" + (saved ? " saved" : "");
+    saveBtn.innerHTML = `<ion-icon name="${saved ? "bookmark" : "bookmark-outline"}"></ion-icon>`;
+    saveBtn.className  = "btn-secondary btn-icon-only" + (saved ? " saved" : "");
 
     document.getElementById("modal").classList.add("visible");
+    document.getElementById("modal-box").scrollTop = 0;
     document.body.classList.add("modal-ouvert");
 
     try {
@@ -657,8 +708,8 @@
     else          { savedIds.add(id); }
     const saveBtn = document.getElementById("modal-save-btn");
     const nowSaved = savedIds.has(id);
-    saveBtn.textContent = nowSaved ? "Retirer des sauvegardés" : "Sauvegarder";
-    saveBtn.className   = "btn-secondary" + (nowSaved ? " saved" : "");
+    saveBtn.innerHTML = `<ion-icon name="${nowSaved ? "bookmark" : "bookmark-outline"}"></ion-icon>`;
+    saveBtn.className  = "btn-secondary btn-icon-only" + (nowSaved ? " saved" : "");
     afficherFeed();
   }
 

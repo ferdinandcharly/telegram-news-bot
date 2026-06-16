@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=20260616f" />
+  <link rel="stylesheet" href="/static/style.css?v=20260616g" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
@@ -270,17 +270,21 @@
   </div>
 </div>
 
-<!-- ── Modal synthèse ── -->
+<!-- ── Modal synthèse (style éditorial) ── -->
 <div class="modal-overlay" id="modal" onclick="fermerModal(event)">
   <div class="modal" id="modal-box">
-    <div class="modal-topbar">
-      <div class="modal-handle"></div>
-      <button class="modal-close" aria-label="Fermer" onclick="document.getElementById('modal').classList.remove('visible'); document.body.classList.remove('modal-ouvert')">✕</button>
+    <button class="modal-close" aria-label="Fermer" onclick="document.getElementById('modal').classList.remove('visible'); document.body.classList.remove('modal-ouvert')">✕</button>
+    <div class="modal-cover" id="modal-cover">
+      <span class="modal-cover-ic" id="modal-cover-ic"></span>
+      <div class="modal-cover-shade"></div>
+      <div class="modal-cover-badges">
+        <span class="modal-domaine" id="modal-domaine"></span>
+        <span class="modal-crit" id="modal-crit" style="display:none">CRITIQUE</span>
+      </div>
     </div>
     <div class="modal-content">
-      <div class="modal-domaine" id="modal-domaine"></div>
       <div class="modal-titre" id="modal-titre"></div>
-      <div class="modal-sep"></div>
+      <div class="modal-meta" id="modal-meta"></div>
       <div class="modal-synthese-label">Synthèse</div>
       <div class="modal-synthese" id="modal-synthese">
         <div class="loading">
@@ -288,10 +292,16 @@
           <div class="loading-dots"><span></span><span></span><span></span></div>
         </div>
       </div>
-      <div class="modal-actions">
-        <a class="btn-primary" id="modal-lien" href="#">Lire l'article original</a>
-        <button class="btn-secondary" id="modal-save-btn" onclick="toggleSaveModal()">Sauvegarder</button>
-      </div>
+      <div class="modal-sources" id="modal-sources"></div>
+    </div>
+    <div class="modal-actions">
+      <a class="btn-primary" id="modal-lien" href="#" target="_blank" rel="noopener">Lire l'article</a>
+      <button class="btn-secondary btn-icon-only" id="modal-save-btn" aria-label="Sauvegarder" onclick="toggleSaveModal()">
+        <ion-icon name="bookmark-outline"></ion-icon>
+      </button>
+      <button class="btn-secondary btn-icon-only" aria-label="Partager" onclick="partagerAlerte(alerteModal && alerteModal.id)">
+        <ion-icon name="share-outline"></ion-icon>
+      </button>
     </div>
   </div>
 </div>
@@ -313,6 +323,6 @@
   </button>
 </nav>
 
-<script src="/static/app.js?v=20260616f"></script>
+<script src="/static/app.js?v=20260616g"></script>
 </body>
 </html>
