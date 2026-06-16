@@ -340,40 +340,40 @@
       html += railHTML(m, trierArts(arts).slice(0, 10), userDomaines.some(d => d.includes(m.key)), false);
     }
     feed.innerHTML = html;
-    feed.querySelectorAll(".carousel").forEach(initCarousel);
   }
 
   function railHTML(m, arts, pref, isUne) {
     const accent = isUne ? "#ef4444" : `var(--${m.cls})`;
     const star = pref ? `<span class="rail-star">★</span>` : "";
-    const foot = isUne ? "" :
-      `<div class="rail-foot"><span class="rail-count"></span><span class="rail-all" onclick="ouvrirDomaine('${m.cls}')">Voir tout →</span></div>`;
+    // "Voir tout" dans l'en-tête, à droite (sauf pour "À la une")
+    const all = isUne ? "" :
+      `<span class="rail-all" onclick="ouvrirDomaine('${m.cls}')">Voir tout ›</span>`;
     return `<div class="rail" style="--accent:${accent}">
-      <div class="rail-head"><span class="rail-dot"></span><span class="rail-name">${esc(m.label)}</span>${star}</div>
-      <div class="carousel" data-cur="0"><div class="stage">${arts.map(carteCarousel).join("")}</div></div>
-      ${foot}
+      <div class="rail-head"><span class="rail-dot"></span><span class="rail-name">${esc(m.label)}</span>${star}${all}</div>
+      <div class="rail-track">${arts.map(carteRail).join("")}</div>
     </div>`;
   }
 
-  function carteCarousel(a) {
+  // Carte du rail horizontal plat (clic → modale).
+  function carteRail(a) {
     const dom  = getDomaine(a.domaine || "");
     const crit = (a.niveau || 2) >= 3;
     const titre = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
     const visuel = a.image
-      ? `<img class="cc-img" src="${esc(a.image)}" loading="lazy" alt="" onerror="this.remove()">`
-      : `<span class="cc-ic">${dom.icon || ""}</span>`;
-    const acc = a.accroche ? `<div class="cc-acc">${esc(a.accroche)}</div>` : "";
+      ? `<img class="rc-img" src="${esc(a.image)}" loading="lazy" alt="" onerror="this.remove()">`
+      : `<span class="rc-ic">${dom.icon || ""}</span>`;
+    const acc = a.accroche ? `<div class="rc-acc">${esc(a.accroche)}</div>` : "";
     const src = (a.sources && a.sources[0] && a.sources[0].nom)
-      ? `<span class="cc-src">${esc(a.sources[0].nom)}</span><span class="cc-sep">·</span>`
+      ? `<span class="rc-src">${esc(a.sources[0].nom)}</span><span class="rc-sep">·</span>`
       : "";
-    return `<div class="cc carte-${dom.cls} ${crit ? "crit" : ""}" data-id="${a.id}"
-        style="--accent:var(--${dom.cls});--thumb:var(--thumb-${dom.cls})">
-      <div class="cc-thumb">${visuel}${crit ? '<span class="cc-badge">CRITIQUE</span>' : ""}</div>
-      <div class="cc-body">
-        <div class="cc-cat"><span class="cc-d"></span>${esc(dom.label)}</div>
-        <div class="cc-title">${titre}</div>
+    return `<div class="rcard carte-${dom.cls} ${crit ? "crit" : ""}" data-id="${a.id}"
+        style="--accent:var(--${dom.cls});--thumb:var(--thumb-${dom.cls})" onclick="ouvrirModal(${a.id})">
+      <div class="rc-thumb">${visuel}${crit ? '<span class="cc-badge">CRITIQUE</span>' : ""}</div>
+      <div class="rc-body">
+        <div class="rc-cat"><span class="cc-d"></span>${esc(dom.label)}</div>
+        <div class="rc-title">${titre}</div>
         ${acc}
-        <div class="cc-foot">${src}${porteeHeureHTML(a)}</div>
+        <div class="rc-foot">${src}${porteeHeureHTML(a)}</div>
       </div></div>`;
   }
 
@@ -402,77 +402,6 @@
       ? `<span class="fm-portee ${p.cls}"><ion-icon name="${p.icon}"></ion-icon>${p.txt}</span><span class="fm-sep">·</span>`
       : "";
     return `${portee}<span class="fm-time">${formatHeure(a.date)}</span>`;
-  }
-
-  // ── Mécanique du carrousel circulaire (placement en sinus) ──
-  const C_STEP = Math.PI / 4, C_R = 124;
-  const C_DRAG_PX = 150;   // distance de glissé (px) correspondant à une carte
-  const C_FLICK   = 90;    // poids de l'inertie (plus grand = flick porte plus loin)
-  // `cur` peut être fractionnaire pendant le glissé pour suivre le doigt en continu.
-  function layoutCarousel(car, curLive) {
-    const cards = [...car.querySelectorAll(".cc")], n = cards.length;
-    const cur = (curLive == null) ? +car.dataset.cur : curLive;
-    const enDrag = curLive != null;
-    cards.forEach((card, i) => {
-      let off = i - cur; if (off > n / 2) off -= n; if (off < -n / 2) off += n;
-      const a = Math.abs(off), ang = off * C_STEP, depth = Math.cos(ang);
-      const tx = Math.sin(ang) * C_R, sc = Math.max(0.5, 0.64 + 0.36 * depth);
-      const op = a <= 2 ? 1 : (a <= 3 ? Math.max(0, 0.28 * (3 - a)) : 0);
-      card.style.transform = `translateX(calc(-50% + ${tx}px)) scale(${sc})`;
-      card.style.opacity = op;
-      card.style.zIndex = Math.round(depth * 40);   // max 40 < nav (z-index 50)
-      card.style.pointerEvents = a > 1.5 ? "none" : "auto";
-      // la carte centrale ne se fige qu'une fois posée (pas en plein glissé)
-      card.classList.toggle("center", !enDrag && off === 0);
-    });
-  }
-  function majCarousel(car) {
-    const el = car.parentElement.querySelector(".rail-count");
-    if (el) el.textContent = `${(+car.dataset.cur) + 1} / ${car.querySelectorAll(".cc").length}`;
-  }
-  function tourneCarousel(car, dir) {
-    const n = car.querySelectorAll(".cc").length;
-    car.dataset.cur = ((+car.dataset.cur) + dir + n) % n;
-    layoutCarousel(car); majCarousel(car);
-  }
-  function initCarousel(car) {
-    layoutCarousel(car); majCarousel(car);
-    let x0 = null, curStart = 0, lastX = 0, lastT = 0, vel = 0;
-    car.addEventListener("pointerdown", e => {
-      x0 = e.clientX; curStart = +car.dataset.cur; car._moved = false;
-      lastX = e.clientX; lastT = e.timeStamp; vel = 0;
-      car.classList.add("dragging");           // coupe la transition → suivi 1:1
-      try { car.setPointerCapture(e.pointerId); } catch {}
-    });
-    car.addEventListener("pointermove", e => {
-      if (x0 === null) return;
-      const dx = e.clientX - x0;
-      if (Math.abs(dx) > 6) car._moved = true;
-      const dt = e.timeStamp - lastT;          // vitesse instantanée lissée (px/ms)
-      if (dt > 0) vel = 0.8 * (e.clientX - lastX) / dt + 0.2 * vel;
-      lastX = e.clientX; lastT = e.timeStamp;
-      layoutCarousel(car, curStart - dx / C_DRAG_PX);   // suit le doigt en continu
-    });
-    const finDrag = e => {
-      if (x0 === null) return;
-      const dx = e.clientX - x0; x0 = null;
-      car.classList.remove("dragging");          // réactive la transition (calage animé)
-      const n = car.querySelectorAll(".cc").length;
-      // inertie : un flick rapide prolonge le défilement de quelques cartes
-      const elan = Math.max(-3, Math.min(3, -vel * C_FLICK / C_DRAG_PX));
-      let cible = Math.round(curStart - dx / C_DRAG_PX + elan);
-      car.dataset.cur = ((cible % n) + n) % n;
-      layoutCarousel(car); majCarousel(car);
-    };
-    car.addEventListener("pointerup", finDrag);
-    car.addEventListener("pointercancel", finDrag);
-    car.querySelectorAll(".cc").forEach((card, i) => {
-      card.addEventListener("click", () => {
-        if (car._moved) return;                                   // c'était un glissé
-        if (card.classList.contains("center")) ouvrirModal(+card.dataset.id);
-        else { car.dataset.cur = i; layoutCarousel(car); majCarousel(car); }
-      });
-    });
   }
 
   // ── Page domaine (« Voir tout ») ──

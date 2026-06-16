@@ -293,9 +293,9 @@ header {
 .skel-rail { margin-top: 14px; }
 .skel-rail-head { display: flex; align-items: center; gap: 8px; padding: 0 16px 8px; }
 .skel-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
-.skel-carousel { display: flex; justify-content: center; }
+.skel-carousel { display: flex; padding: 0 16px; overflow: hidden; }
 .skel-cc {
-  width: 240px; background: var(--bg-card); border: .5px solid var(--border-card);
+  flex: 0 0 auto; width: 248px; background: var(--bg-card); border: .5px solid var(--border-card);
   border-radius: 16px; overflow: hidden;
 }
 .skel-cc-thumb { height: 130px; }
@@ -530,61 +530,55 @@ header {
 .fm-portee { display: inline-flex; align-items: center; gap: 3px; }
 .fm-sep { color: var(--border-card); }
 
-/* ════════ Feed : rails par domaine + carrousel circulaire ════════ */
-.rail { margin-top: 14px; }
+/* ════════ Feed : rails par domaine (suite horizontale plate) ════════ */
+.rail { margin-top: 16px; }
 .rail-head { display: flex; align-items: center; gap: 8px; padding: 0 16px 2px; }
 .rail-dot { width: 9px; height: 9px; border-radius: 3px; background: var(--accent); flex-shrink: 0; }
 .rail-name { font-size: 13.5px; font-weight: 700; letter-spacing: .2px; color: var(--text-primary); }
 .rail-star { font-size: 11px; color: var(--accent); }
+.rail-all { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; flex-shrink: 0; }
 
-.carousel { position: relative; height: 340px; touch-action: pan-y; cursor: grab; user-select: none; }
-.carousel:active { cursor: grabbing; }
-.stage { position: absolute; inset: 0; }
-.cc {
-  position: absolute; left: 50%; top: 8px; width: 240px;
-  background: var(--bg-card); border: .5px solid var(--border-card); border-radius: 16px; overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,.18);
-  transition: transform .5s cubic-bezier(.22,1,.36,1), opacity .5s cubic-bezier(.22,1,.36,1), box-shadow .5s;
-  will-change: transform, opacity; cursor: pointer;
+/* piste : défilement horizontal natif avec accroche (scroll-snap) */
+.rail-track {
+  display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
+  padding: 8px 16px 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
-/* Pendant le glissé : aucune transition → les cartes suivent le doigt en temps réel */
-.carousel.dragging .cc { transition: none; }
-@media (prefers-reduced-motion: reduce) { .cc { transition: none; } }
-/* La carte centrale se détache nettement des voisines (plus de bord d'image confus) */
-.cc.center { border-color: color-mix(in srgb, var(--accent) 55%, var(--border-card)); box-shadow: 0 8px 28px rgba(0,0,0,.34); }
-.cc.crit   { border-color: color-mix(in srgb, #ef4444 60%, var(--border-card)); }
-.cc-thumb {
+.rail-track::-webkit-scrollbar { display: none; }
+
+.rcard {
+  flex: 0 0 auto; width: 248px; scroll-snap-align: start;
+  background: var(--bg-card); border: .5px solid var(--border-card); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12); cursor: pointer; transition: border-color .2s, transform .12s;
+}
+.rcard:active { transform: scale(.985); }
+.rcard.crit { border-color: color-mix(in srgb, #ef4444 60%, var(--border-card)); }
+.rc-thumb {
   height: 130px; display: flex; align-items: center; justify-content: center; position: relative;
   font-size: 30px; background: var(--thumb); overflow: hidden;
 }
-.cc-img { width: 100%; height: 100%; object-fit: cover; }
+.rc-img { width: 100%; height: 100%; object-fit: cover; }
+.rc-body { padding: 11px 13px 13px; }
+.rc-cat { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--accent); }
+.rc-title {
+  font-size: 15px; font-weight: 600; line-height: 1.32; letter-spacing: -.1px; margin: 8px 0 6px; color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.rc-acc {
+  font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); margin-bottom: 10px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.rc-foot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+.rc-foot ion-icon { font-size: 12px; }
+.rc-src { font-weight: 600; color: var(--text-primary); }
+.rc-sep { opacity: .5; }
+
+/* badge critique + pastille catégorie (réutilisés par le rail et la grille) */
 .cc-badge {
   position: absolute; top: 8px; left: 8px; font-size: 8.5px; font-weight: 700; letter-spacing: .4px;
   padding: 3px 7px; border-radius: 5px; background: rgba(239,68,68,.92); color: #fff;
 }
-.cc-badge.inline { position: static; vertical-align: 1px; margin-left: 2px; }
-.cc-body { padding: 10px 12px 12px; }
-.cc-cat { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--accent); }
 .cc-d { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-/* Titre à taille fixe : l'effet « plus gros au centre » vient de l'échelle de la
-   carte (transform), pas d'un changement de font-size — sinon le texte se ré-habille
-   pendant le swipe et ça saute. */
-.cc-title {
-  font-size: 15px; font-weight: 600; line-height: 1.3; letter-spacing: -.1px; margin: 7px 0 6px; color: var(--text-primary);
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
-}
-.cc-acc {
-  font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); margin-bottom: 9px;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
-}
-.cc-foot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
-.cc-foot ion-icon { font-size: 12px; }
-.cc-src { font-weight: 600; color: var(--text-primary); }
-.cc-sep { opacity: .5; }
-
-.rail-foot { display: flex; align-items: center; justify-content: space-between; padding: 6px 18px 0; }
-.rail-count { font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.rail-all { font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; }
 
 /* ── Page domaine (« Voir tout ») ── */
 #feed-domain { display: none; }
