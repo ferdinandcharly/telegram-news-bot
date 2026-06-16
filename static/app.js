@@ -834,6 +834,7 @@
       btn.classList.remove("active");
       document.getElementById("notif-status").textContent = "Non activées";
       document.getElementById("row-notif-important").style.display = "none";
+      document.getElementById("row-notif-correlations").style.display = "none";
       return;
     }
     const permission = await Notification.requestPermission();
@@ -847,6 +848,7 @@
       btn.classList.add("active");
       document.getElementById("notif-status").textContent = "Activées sur cet appareil";
       document.getElementById("row-notif-important").style.display = "flex";
+      document.getElementById("row-notif-correlations").style.display = "flex";
     } catch (e) {
       document.getElementById("notif-status").textContent = "Erreur : " + e.message;
     }
@@ -866,6 +868,15 @@
     });
   }
 
+  async function updateNotifCorr() {
+    const actif = document.getElementById("toggle-notif-corr").checked;
+    await fetch("/api/preferences", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ notif_correlations: actif })
+    });
+  }
+
   async function initNotifications() {
     if (!("serviceWorker" in navigator)) return;
     await navigator.serviceWorker.register("/sw.js");
@@ -877,6 +888,7 @@
       btn.classList.add("active");
       document.getElementById("notif-status").textContent = "Activées sur cet appareil";
       document.getElementById("row-notif-important").style.display = "flex";
+      document.getElementById("row-notif-correlations").style.display = "flex";
     }
   }
 
@@ -1027,6 +1039,10 @@
     const niveauNotif = data.preferences.niveau_notif || 3;
     const toggleImp = document.getElementById("toggle-notif-important");
     if (toggleImp) toggleImp.checked = niveauNotif <= 2;
+
+    // corrélations du matin (activé par défaut)
+    const toggleCorr = document.getElementById("toggle-notif-corr");
+    if (toggleCorr) toggleCorr.checked = data.preferences.notif_correlations !== false;
 
     // alertes & sauvegardes
     savedIds     = new Set(data.saved_ids);

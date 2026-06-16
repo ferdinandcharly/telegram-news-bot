@@ -1156,6 +1156,8 @@ def api_init():
         "langue":        prefs_row.get("langue") or "multi"                   if prefs_row else "multi",
         "portees":       prefs_row.get("portees") or {}                        if prefs_row else {},
         "pays":          prefs_row.get("pays") or "France"                     if prefs_row else "France",
+        # activé par défaut ; ne devient False que si l'utilisateur a explicitement coupé
+        "notif_correlations": (prefs_row.get("notif_correlations") if prefs_row else None) is not False,
     }
 
     # filtrer par domaines préférés
@@ -1203,7 +1205,7 @@ def api_preferences():
         return jsonify({"erreur": "non authentifié"}), 401
     data  = request.get_json()
     prefs = {"user_id": user_id}
-    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "portees", "pays"):
+    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "portees", "pays", "notif_correlations"):
         if key in data:
             prefs[key] = data[key]
     http.post(sb("user_preferences"),
@@ -1557,8 +1559,9 @@ def check_resumes_matinaux(heure):
         return
 
     try:
+        # select="*" : robuste si la colonne notif_correlations n'existe pas encore
         r = http.get(sb("user_preferences"), headers=SB_SERVICE,
-                     params={"select": "user_id,domaines,display_name"}, timeout=5)
+                     params={"select": "*"}, timeout=5)
         users = r.json() if r.ok and isinstance(r.json(), list) else []
     except Exception as e:
         print(f"[Resume] Erreur lecture utilisateurs : {e}")
@@ -1571,6 +1574,8 @@ def check_resumes_matinaux(heure):
         if not uid or _resumes_envoyes.get(uid) == today:
             continue
         _resumes_envoyes[uid] = today
+        if u.get("notif_correlations") is False:   # l'utilisateur a coupé le récap
+            continue
 
         # filtrer les corrélations globales par les domaines de l'utilisateur
         mots = [d.split(" ", 1)[-1] for d in (u.get("domaines") or [])]
