@@ -769,7 +769,9 @@ def check_auth():
                "/api/refresh-token", "/forgot-password", "/reset-password",
                "/api/update-password", "/privacy", "/auth/google", "/auth/callback",
                "/api/oauth-session", "/api/cron/recap"]
-    if request.path in exempts or request.path.startswith("/a/"):
+    # /static/ public : Chrome récupère manifest + icônes SANS cookie (fetch anonyme),
+    # sinon ils sont redirigés vers /login et la PWA devient "non installable".
+    if request.path in exempts or request.path.startswith("/a/") or request.path.startswith("/static/"):
         return
     if not session.get("access_token"):
         if request.path.startswith("/api"):
