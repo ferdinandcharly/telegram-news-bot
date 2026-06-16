@@ -215,16 +215,36 @@
       </div>`;
   }
 
-  // ── Skeleton de chargement ────────────────────────────────────────────────
-  function skeletonHTML(n = 6) {
-    const card = `<div class="skel-card">
-      <div class="skel-vignette"></div>
-      <div class="skel-body">
-        <div class="skel-line court"></div>
-        <div class="skel-line long"></div>
-        <div class="skel-line moyen"></div>
-      </div>
-    </div>`;
+  // ── Skeletons de chargement ───────────────────────────────────────────────
+  // Feed : reprend la forme des rails (titre + grande carte centrale du carrousel)
+  function skeletonFeedHTML(rails = 3) {
+    const card = `<div class="skel-cc">
+        <div class="skel-cc-thumb"></div>
+        <div class="skel-cc-body">
+          <div class="skel-line court"></div>
+          <div class="skel-line long"></div>
+          <div class="skel-line long"></div>
+          <div class="skel-line moyen"></div>
+        </div>
+      </div>`;
+    const rail = `<div class="skel-rail">
+        <div class="skel-rail-head"><span class="skel-dot"></span><span class="skel-line" style="width:120px;height:13px"></span></div>
+        <div class="skel-carousel">${card}</div>
+      </div>`;
+    return Array(rails).fill(rail).join("");
+  }
+
+  // Corrélations : reprend la forme des cartes d'analyse (titre + fil d'étapes)
+  function skeletonCorrHTML(n = 3) {
+    const step = `<div class="skel-corr-step">
+        <span class="skel-dot"></span>
+        <div class="skel-corr-lines"><div class="skel-line court"></div><div class="skel-line long"></div></div>
+      </div>`;
+    const card = `<div class="skel-corr-card">
+        <div class="skel-line" style="width:45%;height:10px"></div>
+        <div class="skel-line" style="width:80%;height:16px;margin-top:9px"></div>
+        <div class="skel-corr-steps">${step}${step}${step}</div>
+      </div>`;
     return Array(n).fill(card).join("");
   }
 
@@ -367,7 +387,7 @@
   }
 
   // ── Mécanique du carrousel circulaire (placement en sinus) ──
-  const C_STEP = Math.PI / 4, C_R = 138;
+  const C_STEP = Math.PI / 4, C_R = 124;
   function layoutCarousel(car) {
     const cards = [...car.querySelectorAll(".cc")], n = cards.length, cur = +car.dataset.cur;
     cards.forEach((card, i) => {
@@ -454,7 +474,7 @@
 
   async function chargerCorrelations() {
     const feed = document.getElementById("feed-corr");
-    feed.innerHTML = skeletonHTML(3);
+    feed.innerHTML = skeletonCorrHTML(3);
     const corrs = await fetch("/api/correlations").then(r => r.json()).catch(() => []);
 
     if (!corrs.length) {
@@ -863,7 +883,7 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────
   async function init() {
-    document.getElementById("feed").innerHTML = skeletonHTML();
+    document.getElementById("feed").innerHTML = skeletonFeedHTML();
     const data = await fetch("/api/init").then(r => r.json());
 
     // thème ("dim" est l'ancien nom de "slate")
