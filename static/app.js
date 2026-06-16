@@ -395,6 +395,7 @@
   // ── Mécanique du carrousel circulaire (placement en sinus) ──
   const C_STEP = Math.PI / 4, C_R = 124;
   const C_DRAG_PX = 150;   // distance de glissé (px) correspondant à une carte
+  const C_FLICK   = 90;    // poids de l'inertie (plus grand = flick porte plus loin)
   // `cur` peut être fractionnaire pendant le glissé pour suivre le doigt en continu.
   function layoutCarousel(car, curLive) {
     const cards = [...car.querySelectorAll(".cc")], n = cards.length;
@@ -424,9 +425,10 @@
   }
   function initCarousel(car) {
     layoutCarousel(car); majCarousel(car);
-    let x0 = null, curStart = 0;
+    let x0 = null, curStart = 0, lastX = 0, lastT = 0, vel = 0;
     car.addEventListener("pointerdown", e => {
       x0 = e.clientX; curStart = +car.dataset.cur; car._moved = false;
+      lastX = e.clientX; lastT = e.timeStamp; vel = 0;
       car.classList.add("dragging");           // coupe la transition → suivi 1:1
       try { car.setPointerCapture(e.pointerId); } catch {}
     });
@@ -434,6 +436,9 @@
       if (x0 === null) return;
       const dx = e.clientX - x0;
       if (Math.abs(dx) > 6) car._moved = true;
+      const dt = e.timeStamp - lastT;          // vitesse instantanée lissée (px/ms)
+      if (dt > 0) vel = 0.8 * (e.clientX - lastX) / dt + 0.2 * vel;
+      lastX = e.clientX; lastT = e.timeStamp;
       layoutCarousel(car, curStart - dx / C_DRAG_PX);   // suit le doigt en continu
     });
     const finDrag = e => {
@@ -441,7 +446,9 @@
       const dx = e.clientX - x0; x0 = null;
       car.classList.remove("dragging");          // réactive la transition (calage animé)
       const n = car.querySelectorAll(".cc").length;
-      let cible = Math.round(curStart - dx / C_DRAG_PX);
+      // inertie : un flick rapide prolonge le défilement de quelques cartes
+      const elan = Math.max(-3, Math.min(3, -vel * C_FLICK / C_DRAG_PX));
+      let cible = Math.round(curStart - dx / C_DRAG_PX + elan);
       car.dataset.cur = ((cible % n) + n) % n;
       layoutCarousel(car); majCarousel(car);
     };

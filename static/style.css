@@ -544,7 +544,7 @@ header {
   position: absolute; left: 50%; top: 8px; width: 240px;
   background: var(--bg-card); border: .5px solid var(--border-card); border-radius: 16px; overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,.18);
-  transition: transform .42s cubic-bezier(.16,.84,.34,1), opacity .42s cubic-bezier(.16,.84,.34,1), box-shadow .42s;
+  transition: transform .5s cubic-bezier(.22,1,.36,1), opacity .5s cubic-bezier(.22,1,.36,1), box-shadow .5s;
   will-change: transform, opacity; cursor: pointer;
 }
 /* Pendant le glissé : aucune transition → les cartes suivent le doigt en temps réel */
