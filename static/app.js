@@ -332,11 +332,17 @@
     const dom  = getDomaine(a.domaine || "");
     const crit = (a.niveau || 2) >= 3;
     const titre = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
-    return `<div class="gcard carte-${dom.cls}" data-id="${a.id}"
-        style="--accent:var(--${dom.cls})" onclick="ouvrirModal(${a.id})">
-      <div class="gcat"><span class="cc-d"></span>${esc(dom.label)}${crit ? ' <span class="cc-badge inline">CRITIQUE</span>' : ""}</div>
-      <div class="gtitle">${titre}</div>
-      <div class="gfoot">${porteeHeureHTML(a)}</div>
+    const visuel = a.image
+      ? `<img class="g-img" src="${esc(a.image)}" loading="lazy" alt="" onerror="this.remove()">`
+      : `<span class="g-ic">${dom.icon || ""}</span>`;
+    return `<div class="gcard carte-${dom.cls} ${crit ? "crit" : ""}" data-id="${a.id}"
+        style="--accent:var(--${dom.cls});--thumb:var(--thumb-${dom.cls})" onclick="ouvrirModal(${a.id})">
+      <div class="g-thumb">${visuel}${crit ? '<span class="cc-badge">CRITIQUE</span>' : ""}</div>
+      <div class="g-body">
+        <div class="gcat"><span class="cc-d"></span>${esc(dom.label)}</div>
+        <div class="gtitle">${titre}</div>
+        <div class="gfoot">${porteeHeureHTML(a)}</div>
+      </div>
     </div>`;
   }
 
@@ -360,7 +366,7 @@
       const op = a <= 2 ? 1 : (a <= 3 ? 0.28 : 0);   // cartes proches opaques
       card.style.transform = `translateX(calc(-50% + ${tx}px)) scale(${sc})`;
       card.style.opacity = op;
-      card.style.zIndex = Math.round(depth * 100) + 100;
+      card.style.zIndex = Math.round(depth * 10);   // sous la nav (z-index 50)
       card.style.pointerEvents = a > 2 ? "none" : "auto";
       card.classList.toggle("center", off === 0);
     });
@@ -549,29 +555,6 @@
     });
     feed.innerHTML = html;
   }
-
-  // ── Scroll hide filtres ───────────────────────────────────────────────────
-  (() => {
-    let lastY = 0;
-    let ticking = false;
-    window.addEventListener("scroll", () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const barre = document.getElementById("barre-filtres");
-          if (!barre) { ticking = false; return; }
-          const curr = window.scrollY;
-          if (curr > lastY && curr > 60) {
-            barre.classList.add("masque");
-          } else {
-            barre.classList.remove("masque");
-          }
-          lastY = curr;
-          ticking = false;
-        });
-        ticking = true;
-      }
-    }, { passive: true });
-  })();
 
   function partagerAlerte(id) {
     const url = `${location.origin}/a/${id}`;
@@ -967,7 +950,10 @@
     try {
       alertesCache = await fetch("/api/alertes").then(r => r.json());
     } catch { return; }
-    afficherFeed();
+    // ne pas casser la navigation en cours : page domaine ouverte ou modale affichée
+    const domaineOuvert = document.getElementById("feed-domain")?.style.display === "block";
+    const modaleOuverte = document.body.classList.contains("modal-ouvert");
+    if (!domaineOuvert && !modaleOuverte) afficherFeed();
     chargerStats();
     majBadgeNonLus();
   }, 30000);
