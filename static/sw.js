@@ -1,3 +1,11 @@
+// Prise de contrôle immédiate (la page est "contrôlée" → critère d'installabilité)
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", event => event.waitUntil(self.clients.claim()));
+
+// Handler fetch minimal : sans lui, Android Chrome propose un simple raccourci
+// (icône générique + barre Chrome) au lieu de "Installer l'application".
+self.addEventListener("fetch", () => {});
+
 self.addEventListener("push", event => {
   const data = event.data ? event.data.json() : {};
   event.waitUntil(
