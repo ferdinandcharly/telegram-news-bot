@@ -324,13 +324,18 @@
     const visuel = a.image
       ? `<img class="cc-img" src="${esc(a.image)}" loading="lazy" alt="" onerror="this.remove()">`
       : `<span class="cc-ic">${dom.icon || ""}</span>`;
+    const acc = a.accroche ? `<div class="cc-acc">${esc(a.accroche)}</div>` : "";
+    const src = (a.sources && a.sources[0] && a.sources[0].nom)
+      ? `<span class="cc-src">${esc(a.sources[0].nom)}</span><span class="cc-sep">·</span>`
+      : "";
     return `<div class="cc carte-${dom.cls} ${crit ? "crit" : ""}" data-id="${a.id}"
         style="--accent:var(--${dom.cls});--thumb:var(--thumb-${dom.cls})">
       <div class="cc-thumb">${visuel}${crit ? '<span class="cc-badge">CRITIQUE</span>' : ""}</div>
       <div class="cc-body">
         <div class="cc-cat"><span class="cc-d"></span>${esc(dom.label)}</div>
         <div class="cc-title">${titre}</div>
-        <div class="cc-foot">${porteeHeureHTML(a)}</div>
+        ${acc}
+        <div class="cc-foot">${src}${porteeHeureHTML(a)}</div>
       </div></div>`;
   }
 
@@ -362,13 +367,13 @@
   }
 
   // ── Mécanique du carrousel circulaire (placement en sinus) ──
-  const C_STEP = Math.PI / 4, C_R = 86;
+  const C_STEP = Math.PI / 4, C_R = 138;
   function layoutCarousel(car) {
     const cards = [...car.querySelectorAll(".cc")], n = cards.length, cur = +car.dataset.cur;
     cards.forEach((card, i) => {
       let off = i - cur; if (off > n / 2) off -= n; if (off < -n / 2) off += n;
       const a = Math.abs(off), ang = off * C_STEP, depth = Math.cos(ang);
-      const tx = Math.sin(ang) * C_R, sc = Math.max(0.5, 0.62 + 0.38 * depth);
+      const tx = Math.sin(ang) * C_R, sc = Math.max(0.5, 0.64 + 0.36 * depth);
       const op = a <= 2 ? 1 : (a <= 3 ? 0.28 : 0);   // cartes proches opaques
       card.style.transform = `translateX(calc(-50% + ${tx}px)) scale(${sc})`;
       card.style.opacity = op;
