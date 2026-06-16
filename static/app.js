@@ -71,7 +71,12 @@
     ["feed","corr","saved","params"].forEach(p => {
       document.getElementById("page-" + p).style.display = "none";
     });
-    document.getElementById("page-" + page).style.display = "block";
+    const elPage = document.getElementById("page-" + page);
+    elPage.style.display = "block";
+    // relance l'animation d'apparition (fondu + léger glissé)
+    elPage.classList.remove("page-in");
+    void elPage.offsetWidth;        // force un reflow pour rejouer l'animation
+    elPage.classList.add("page-in");
     // appel programmatique (ex: depuis une notif) : retrouver le bouton nav correspondant
     btn = btn || document.querySelector(`.nav-btn[onclick*="'${page}'"]`);
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("actif"));

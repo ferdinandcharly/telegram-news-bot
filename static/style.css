@@ -1035,6 +1035,18 @@ body.modal-ouvert { overflow: hidden; }
 .seg .btn-theme { border: none; background: none; color: var(--text-secondary); font-size: 12.5px;
                   font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
 .seg .btn-theme.actif { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+.seg .btn-theme { transition: color 0.18s, background 0.18s; }
+
+/* ── Animations de transition (onglets, accordéons) ── */
+@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.page-in { animation: pageIn 0.28s cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+@keyframes accIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+.acc.open .acc-body, .compte.open .compte-body { animation: accIn 0.24s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-in, .acc.open .acc-body, .compte.open .compte-body { animation: none; }
+}
 
 /* pied de page */
 .prm-foot { text-align: center; font-size: 11.5px; color: var(--text-secondary); line-height: 1.7; margin-top: 14px; }
@@ -1058,8 +1070,9 @@ nav {
   width: 44px; height: 44px; border-radius: 50%;
   background: none; border: none; color: var(--text-secondary);
   cursor: pointer; padding: 0;
-  transition: color 0.15s, background 0.15s; position: relative;
+  transition: color 0.18s, background 0.18s, transform 0.12s; position: relative;
 }
+.nav-btn:active { transform: scale(0.86); }
 
 .nav-btn.actif { color: var(--text-primary); background: var(--bg-card); }
 .nav-icon { font-size: 22px; line-height: 1; display: flex; }
