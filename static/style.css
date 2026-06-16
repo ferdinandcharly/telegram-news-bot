@@ -1,5 +1,11 @@
 /* ── Reset ── */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box; margin: 0; padding: 0;
+  /* Supprime le surlignage rectangulaire au tap sur Android (déborde des boutons ronds) */
+  -webkit-tap-highlight-color: transparent;
+}
+/* Pas de sélection de texte involontaire sur les éléments interactifs (feeling natif) */
+button, nav, .nav-btn, .rcard, .acc-head, .prm-row { -webkit-user-select: none; user-select: none; }
 
 /* ── Domain accent colors (invariants) ── */
 :root {
@@ -90,7 +96,11 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Coupe le pull-to-refresh d'Android : tirer vers le bas rechargeait toute
+     l'app (retour au feed) au lieu de rester sur la page courante. */
+  overscroll-behavior-y: contain;
 }
+html { overscroll-behavior-y: contain; }
 
 /* ── Focus clavier visible (accessibilité) ── */
 :focus-visible {
