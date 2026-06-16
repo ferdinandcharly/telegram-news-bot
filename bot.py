@@ -154,22 +154,54 @@ def _mots_cles(titre):
              "est","sont","a","ont","the","a","an","in","of","to","for","is","are"}
     return {m for m in titre.lower().split() if len(m) > 3 and m not in bruit}
 
+# Entités trop génériques : partagées par trop d'articles sans rapport, donc
+# insuffisantes à elles seules pour fusionner (ex: deux news Macron distinctes).
+_ENTITES_LARGES = {"france","macron","trump","biden","poutine","europe","europeenne",
+                   "etats","unis","usa","chine","russie","paris","monde","gouvernement",
+                   "president","ministre","union",
+                   # sigles d'institutions permanentes : trop fréquents pour fusionner seuls
+                   "onu","otan","ue","fmi","omc","ocde","oms","bce","ia"}
+
+def _entites(titre):
+    """Entités fortes d'un titre : sigles (G7, ONU, COP28...) et noms propres.
+    Sert à détecter qu'un même évènement revient sous des angles différents."""
+    ents = set()
+    for brut in titre.replace("'", " ").replace("’", " ").split():
+        tok = brut.strip(".,;:!?()«»\"-–—")
+        if len(tok) < 2:
+            continue
+        if tok.isupper() and 2 <= len(tok) <= 6:         # sigle : G7, ONU, OTAN, COP28, UE
+            ents.add(_sans_accents(tok))
+        elif tok[0].isupper() and len(tok) > 3:           # nom propre : Ormuz, Macron...
+            ents.add(_sans_accents(tok))
+    return ents
+
 # Titres récents pour clustering (les 200 derniers articles sauvegardés)
 # Chaque entrée : {"titre": str, "alerte_id": int}
 _titres_recents = []
 
 def trouver_doublon(titre):
-    """Retourne alerte_id si un article similaire a déjà été sauvegardé, sinon None."""
+    """Retourne alerte_id si un article couvre le même évènement qu'une alerte déjà
+    sauvegardée. Deux voies : recouvrement de titre élevé, ou entité forte commune
+    (même sigle/nom propre) avec un minimum de recouvrement."""
     mots = _mots_cles(titre)
-    if not mots:
+    ents = _entites(titre)
+    if not mots and not ents:
         return None
     for item in _titres_recents[-200:]:
         mots_ancien = _mots_cles(item["titre"])
-        if not mots_ancien:
-            continue
-        communs = mots & mots_ancien
-        if len(communs) / max(len(mots), len(mots_ancien)) > 0.55:
+        ratio = (len(mots & mots_ancien) / max(len(mots), len(mots_ancien))
+                 if mots and mots_ancien else 0)
+        # Voie 1 : titres très proches (ancien comportement, seuil assoupli).
+        if ratio > 0.50:
             return item["alerte_id"]
+        # Voie 2 : entité commune.
+        communes = ents & _entites(item["titre"])
+        if communes:
+            # Une entité spécifique (G7, Ormuz...) suffit à fusionner ; une entité
+            # large (ONU, Macron...) demande un minimum de recouvrement de titre.
+            if communes - _ENTITES_LARGES or ratio > 0.20:
+                return item["alerte_id"]
     return None
 
 

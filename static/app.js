@@ -684,7 +684,9 @@
     saveBtn.className  = "btn-secondary btn-icon-only" + (saved ? " saved" : "");
 
     document.getElementById("modal").classList.add("visible");
-    document.getElementById("modal-box").scrollTop = 0;
+    const box = document.getElementById("modal-box");
+    box.scrollTop = 0;
+    box.style.transition = box.style.transform = box.style.opacity = "";  // reset geste précédent
     document.body.classList.add("modal-ouvert");
 
     try {
@@ -713,12 +715,54 @@
     afficherFeed();
   }
 
-  function fermerModal(e) {
-    if (e.target === document.getElementById("modal")) {
-      document.getElementById("modal").classList.remove("visible");
-      document.body.classList.remove("modal-ouvert");
-    }
+  function fermerModalMaintenant() {
+    document.getElementById("modal").classList.remove("visible");
+    document.body.classList.remove("modal-ouvert");
   }
+
+  function fermerModal(e) {
+    if (e.target === document.getElementById("modal")) fermerModalMaintenant();
+  }
+
+  // Geste « glisser vers le bas pour fermer » sur la modale.
+  (function brancherSwipeFermeture() {
+    const box = document.getElementById("modal-box");
+    if (!box) return;
+    let y0 = null, dy = 0, depart = false;
+
+    box.addEventListener("pointerdown", e => {
+      // On n'amorce le geste que si le contenu est en haut (sinon on scrolle).
+      depart = box.scrollTop <= 0;
+      y0 = e.clientY; dy = 0;
+    });
+    box.addEventListener("pointermove", e => {
+      if (y0 === null || !depart) return;
+      dy = e.clientY - y0;
+      if (dy > 0) {
+        box.style.transition = "none";
+        box.style.transform  = `translateY(${dy}px)`;
+        box.style.opacity    = String(Math.max(0.4, 1 - dy / 600));
+      }
+    });
+    const fin = () => {
+      if (y0 === null) return;
+      y0 = null;
+      box.style.transition = "transform .25s ease, opacity .25s ease";
+      if (dy > 110) {                       // assez glissé → on ferme
+        box.style.transform = `translateY(${window.innerHeight}px)`;
+        box.style.opacity   = "0";
+        setTimeout(() => {
+          fermerModalMaintenant();
+          box.style.transition = box.style.transform = box.style.opacity = "";
+        }, 220);
+      } else {                              // pas assez → retour en place
+        box.style.transform = "";
+        box.style.opacity   = "";
+      }
+    };
+    box.addEventListener("pointerup", fin);
+    box.addEventListener("pointercancel", fin);
+  })();
 
   // ── Paramètres domaines ──────────────────────────────────────────────────
   async function sauverDomaines() {
