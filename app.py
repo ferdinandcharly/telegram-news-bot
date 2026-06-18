@@ -71,7 +71,8 @@ _CSS_AUTH = """
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0d0d0d;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
      min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px}
-.brand{font-size:9px;letter-spacing:3px;color:#333;text-transform:uppercase;font-weight:600;text-align:center;margin-bottom:48px}
+.brand{display:flex;align-items:center;justify-content:center;gap:9px;font-size:9px;letter-spacing:3px;color:#333;text-transform:uppercase;font-weight:600;text-align:center;margin-bottom:48px}
+.brand .brand-logo{width:24px;height:24px;border-radius:6px;display:block}
 h1{font-size:24px;font-weight:700;color:#fff;text-align:center;letter-spacing:-0.5px;margin-bottom:4px}
 .sub{font-size:12px;color:#444;text-align:center;margin-bottom:32px}
 .form{width:100%;max-width:280px}
@@ -101,7 +102,7 @@ def _auth_page(titre, sous_titre, contenu, liens=""):
 <style>{_CSS_AUTH}</style></head>
 <body>
 <div tabindex="0" style="position:fixed;opacity:0;pointer-events:none;width:0;height:0"></div>
-<div class="brand">Korrel</div>
+<div class="brand"><img class="brand-logo" src="/static/icon-192.png?v=20260618" alt=""/>Korrel</div>
 <h1>{titre}</h1>
 <p class="sub">{sous_titre}</p>
 <div class="form">{contenu}</div>
@@ -445,6 +446,8 @@ body { background: var(--bg); color: var(--text);
 
 .s-kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
             color: var(--accent); margin-bottom: 14px; }
+.s-kicker.brand-kicker { display: flex; align-items: center; gap: 9px; }
+.s-kicker .kicker-logo { width: 24px; height: 24px; border-radius: 6px; display: block; }
 .s-title { font-size: 27px; font-weight: 700; line-height: 1.22; letter-spacing: -0.5px; margin-bottom: 12px; }
 .s-sub { font-size: 14px; color: var(--sub); line-height: 1.6; margin-bottom: 28px; }
 
@@ -551,7 +554,7 @@ input[type=text]:focus { border-color: var(--accent); }
   <div class="screens" id="screens">
 
     <section class="screen on" data-next="Commencer">
-      <div class="s-kicker">Korrel</div>
+      <div class="s-kicker brand-kicker"><img class="kicker-logo" src="/static/icon-192.png?v=20260618" alt=""/>Korrel</div>
       <div class="s-title">Parle-nous de toi</div>
       <div class="s-sub">Quelques questions rapides pour personnaliser ton fil d'actualité. Ça prend moins d'une minute, et tu pourras tout changer plus tard.</div>
     </section>
