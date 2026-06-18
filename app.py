@@ -492,6 +492,21 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
               background: none; color: var(--sub); font-size: 12px; font-weight: 500;
               cursor: pointer; transition: all 0.15s; }
 .portee-btn.on { border-color: var(--text); color: var(--text); background: var(--surface); }
+
+.opt-row { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+           padding: 14px 16px; background: var(--surface); border: 1px solid var(--line);
+           border-radius: 10px; margin-top: 10px; }
+.opt-titre { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.opt-desc { font-size: 12px; color: var(--sub); line-height: 1.45; }
+.sw-toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.sw-toggle input { opacity: 0; width: 0; height: 0; }
+.sw-toggle .knob { position: absolute; inset: 0; background: var(--line);
+                   border-radius: 999px; cursor: pointer; transition: background 0.15s; }
+.sw-toggle .knob::before { content: ""; position: absolute; height: 20px; width: 20px;
+                   left: 3px; top: 3px; background: var(--text); border-radius: 50%;
+                   transition: transform 0.15s; }
+.sw-toggle input:checked + .knob { background: var(--text); }
+.sw-toggle input:checked + .knob::before { transform: translateX(18px); background: var(--bg); }
 </style></head>
 <body>
 
@@ -545,6 +560,20 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
 <div class="step">
   <div class="step-num">Étape 4</div>
+  <div class="step-title">Langue d'affichage</div>
+  <div class="step-sub">Traduction par IA — peut contenir des inexactitudes. Modifiable à tout moment.</div>
+  <select id="onb-langue" style="width:100%;margin-top:14px;padding:12px 14px;background:var(--surface);
+          border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:14px;outline:none">
+    <option value="multi">Original (langue de la source)</option>
+    <option value="fr">Français</option>
+    <option value="en">English</option>
+    <option value="es">Español</option>
+    <option value="de">Deutsch</option>
+  </select>
+</div>
+
+<div class="step">
+  <div class="step-num">Étape 5</div>
   <div class="step-title">Ton thème</div>
   <div class="step-sub">Tu pourras le changer dans les paramètres</div>
   <div class="themes">
@@ -565,7 +594,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
 
 <div class="step">
-  <div class="step-num">Étape 5</div>
+  <div class="step-num">Étape 6</div>
   <div class="step-title">Notifications push</div>
   <div class="step-sub">Reçois une alerte immédiate sur ton téléphone pour les événements critiques</div>
   <div class="notif-card" id="notif-card">
@@ -576,6 +605,21 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
     <button type="button" class="btn-notif-ob" id="btn-notif-ob" onclick="demanderNotifs()">Activer</button>
   </div>
   <div id="notif-state" style="font-size:13px;color:var(--sub);margin-top:12px;display:none"></div>
+
+  <div class="opt-row">
+    <div>
+      <div class="opt-titre">Inclure les importantes</div>
+      <div class="opt-desc">Alertes 🟡 en plus des critiques 🔴</div>
+    </div>
+    <label class="sw-toggle"><input type="checkbox" id="onb-important"/><span class="knob"></span></label>
+  </div>
+  <div class="opt-row">
+    <div>
+      <div class="opt-titre">Corrélations du matin</div>
+      <div class="opt-desc">Le récap quotidien des sujets liés</div>
+    </div>
+    <label class="sw-toggle"><input type="checkbox" id="onb-corr" checked/><span class="knob"></span></label>
+  </div>
 </div>
 
 <div class="cta">
@@ -689,10 +733,14 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
     const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
     const display_name = document.getElementById("display-name").value.trim();
     const pays         = document.getElementById("onb-pays").value;
+    const langue       = document.getElementById("onb-langue").value;
+    const niveau_notif = document.getElementById("onb-important").checked ? 2 : 3;
+    const notif_correlations = document.getElementById("onb-corr").checked;
     await fetch("/api/preferences", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ display_name, theme, domaines, portees, pays })
+      body: JSON.stringify({ display_name, theme, domaines, portees, pays,
+                             langue, niveau_notif, notif_correlations })
     });
     window.location.href = "/";
   }
