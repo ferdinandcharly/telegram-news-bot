@@ -507,6 +507,27 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
                    transition: transform 0.15s; }
 .sw-toggle input:checked + .knob { background: var(--text); }
 .sw-toggle input:checked + .knob::before { transform: translateX(18px); background: var(--bg); }
+
+.avatar-pick { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.ob-avatar { position: relative; width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+             background: var(--surface); border: 1px solid var(--line); cursor: pointer;
+             background-size: cover; background-position: center; color: var(--sub);
+             display: flex; align-items: center; justify-content: center; }
+.ob-avatar.has-photo svg { display: none; }
+.ob-avatar-cam { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px;
+             border-radius: 50%; background: var(--text); color: var(--bg);
+             display: flex; align-items: center; justify-content: center;
+             border: 2px solid var(--bg); }
+.avatar-hint { font-size: 12px; color: var(--sub); line-height: 1.45; }
+
+.ob-sel { position: relative; margin-top: 14px; }
+.ob-select { width: 100%; padding: 12px 40px 12px 14px; background: var(--surface);
+             border: 1px solid var(--line); border-radius: 10px; color: var(--text);
+             font-size: 14px; outline: none; cursor: pointer;
+             appearance: none; -webkit-appearance: none; }
+.ob-sel::after { content: ""; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px;
+             border-right: 2px solid var(--sub); border-bottom: 2px solid var(--sub);
+             transform: translateY(-70%) rotate(45deg); pointer-events: none; }
 </style></head>
 <body>
 
@@ -518,8 +539,24 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 
 <div class="step">
   <div class="step-num">Étape 1</div>
-  <div class="step-title">Comment t'appeler ?</div>
-  <div class="step-sub">Optionnel — utilisé dans tes notifications matinales</div>
+  <div class="step-title">Ton profil</div>
+  <div class="step-sub">Optionnel — une photo et un nom pour personnaliser ton espace</div>
+  <div class="avatar-pick">
+    <button type="button" class="ob-avatar" id="ob-avatar"
+            onclick="document.getElementById('ob-avatar-input').click()" aria-label="Ajouter une photo">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      <span class="ob-avatar-cam">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+             stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
+    </button>
+    <div class="avatar-hint">Ajoute une photo de profil<br>(facultatif)</div>
+  </div>
+  <input type="file" id="ob-avatar-input" accept="image/*" style="display:none" onchange="changerPhotoOb(this)"/>
   <input type="text" id="display-name" placeholder="Prénom ou pseudo" maxlength="30"/>
 </div>
 
@@ -542,34 +579,36 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
   <div class="step-num">Étape 3</div>
   <div class="step-title">Ton pays</div>
   <div class="step-sub">Pour les actus nationales. Seule la France est entièrement supportée pour l'instant.</div>
-  <select id="onb-pays" style="width:100%;margin-top:14px;padding:12px 14px;background:var(--surface);
-          border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:14px;outline:none">
-    <option value="France">France</option>
-    <option value="Belgique">Belgique</option>
-    <option value="Suisse">Suisse</option>
-    <option value="Canada">Canada</option>
-    <option value="Côte d'Ivoire">Côte d'Ivoire</option>
-    <option value="Sénégal">Sénégal</option>
-    <option value="Maroc">Maroc</option>
-    <option value="Tunisie">Tunisie</option>
-    <option value="Algérie">Algérie</option>
-    <option value="RD Congo">RD Congo</option>
-    <option value="tous">Tous les pays</option>
-  </select>
+  <div class="ob-sel">
+    <select id="onb-pays" class="ob-select">
+      <option value="France">France</option>
+      <option value="Belgique">Belgique</option>
+      <option value="Suisse">Suisse</option>
+      <option value="Canada">Canada</option>
+      <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+      <option value="Sénégal">Sénégal</option>
+      <option value="Maroc">Maroc</option>
+      <option value="Tunisie">Tunisie</option>
+      <option value="Algérie">Algérie</option>
+      <option value="RD Congo">RD Congo</option>
+      <option value="tous">Tous les pays</option>
+    </select>
+  </div>
 </div>
 
 <div class="step">
   <div class="step-num">Étape 4</div>
   <div class="step-title">Langue d'affichage</div>
   <div class="step-sub">Traduction par IA — peut contenir des inexactitudes. Modifiable à tout moment.</div>
-  <select id="onb-langue" style="width:100%;margin-top:14px;padding:12px 14px;background:var(--surface);
-          border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:14px;outline:none">
-    <option value="multi">Original (langue de la source)</option>
-    <option value="fr">Français</option>
-    <option value="en">English</option>
-    <option value="es">Español</option>
-    <option value="de">Deutsch</option>
-  </select>
+  <div class="ob-sel">
+    <select id="onb-langue" class="ob-select">
+      <option value="multi">Original (langue de la source)</option>
+      <option value="fr">Français</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+      <option value="de">Deutsch</option>
+    </select>
+  </div>
 </div>
 
 <div class="step">
@@ -628,6 +667,35 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 </div>
 
 <script>
+  let obAvatar = "";   // photo de profil choisie (dataURL) ou "" si aucune
+
+  // Redimensionne la photo en carré 256px (JPEG), comme dans les paramètres.
+  async function changerPhotoOb(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const dataURL = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = rej;
+      fr.readAsDataURL(file);
+    });
+    const img = new Image();
+    img.onload = () => {
+      const T = 256;
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = T;
+      const ctx = cv.getContext("2d");
+      const c = Math.min(img.width, img.height);            // crop carré centré
+      ctx.drawImage(img, (img.width - c) / 2, (img.height - c) / 2, c, c, 0, 0, T, T);
+      obAvatar = cv.toDataURL("image/jpeg", 0.82);
+      const av = document.getElementById("ob-avatar");
+      av.style.backgroundImage = `url('${obAvatar}')`;
+      av.classList.add("has-photo");
+    };
+    img.src = dataURL;
+    input.value = "";   // permet de re-choisir le même fichier
+  }
+
   const porteeSection = document.getElementById("portees-section");
 
   function updatePorteeRows() {
@@ -736,11 +804,13 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
     const langue       = document.getElementById("onb-langue").value;
     const niveau_notif = document.getElementById("onb-important").checked ? 2 : 3;
     const notif_correlations = document.getElementById("onb-corr").checked;
+    const prefs = { display_name, theme, domaines, portees, pays,
+                    langue, niveau_notif, notif_correlations };
+    if (obAvatar) prefs.avatar = obAvatar;
     await fetch("/api/preferences", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ display_name, theme, domaines, portees, pays,
-                             langue, niveau_notif, notif_correlations })
+      body: JSON.stringify(prefs)
     });
     window.location.href = "/";
   }
