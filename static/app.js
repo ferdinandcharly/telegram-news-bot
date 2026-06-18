@@ -753,6 +753,7 @@
       .filter(([id]) => document.getElementById(id)?.checked)
       .map(([, label]) => label);
     userDomaines = domaines; // mise à jour locale immédiate
+    afficherFeed();          // ré-affiche aussitôt : préférés en haut, les autres en dessous
 
     await fetch("/api/preferences", {
       method: "POST",
