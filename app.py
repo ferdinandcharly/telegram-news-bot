@@ -1719,17 +1719,23 @@ def generer_correlations():
         + bloc_suites
         + """
 
-Identifie les groupes d'événements DISTINCTS RÉELLEMENT liés par un mécanisme concret
-(cause→effet, même acteur, ressource ou marché commun, escalade). N'invente pas
-de lien thématique vague.
+Identifie les groupes d'alertes RÉELLEMENT liées par un mécanisme concret
+(cause→effet, même acteur, ressource ou marché commun, dynamique d'ensemble).
+N'invente pas de lien thématique vague.
 
-NE GROUPE PAS :
-- Deux alertes qui décrivent le MÊME événement sous deux angles (ce n'est pas une
-  corrélation, c'est un doublon). Ex: « l'Ukraine développe un missile » + « l'Ukraine
-  présente une alternative au Patriot » = même sujet → IGNORE.
-- Deux infos qui parlent juste « du même thème » sans mécanisme reliant l'une à l'autre.
-Une vraie corrélation relie des événements SÉPARÉS (ex: une frappe quelque part QUI FAIT
-monter un prix ailleurs ; une décision d'un acteur QUI déclenche la réponse d'un autre).
+COMBINE EN PROFONDEUR : quand plusieurs alertes éclairent une MÊME situation
+d'ensemble, fusionne-les dans UNE SEULE corrélation riche qui les tisse, au lieu
+d'émettre une carte par alerte. Ex: « inflation au Japon » + « la BoJ relève ses
+taux » + « le yen se renforce » → UNE corrélation « Bascule monétaire du Japon »
+qui explique l'enchaînement (l'inflation force la banque centrale à durcir, ce
+qui soutient le yen mais alourdit le coût de la dette publique). Vise 3-4 faits
+par corrélation quand c'est possible : une analyse dense qui relie plusieurs
+alertes vaut bien mieux que plusieurs cartes partielles sur le même sujet.
+
+NE FAIS PAS de cartes séparées pour deux alertes qui décrivent le MÊME événement
+sous deux angles (c'est un doublon, pas une corrélation) : fusionne-les, ou ignore
+la redondante. Ex: « l'Ukraine développe un missile » + « l'Ukraine présente une
+alternative au Patriot » = même fait → une seule mention.
 
 Pour chaque groupe (2 alertes ou +), rédige en français, FACTUEL et SPÉCIFIQUE.
 
@@ -1748,7 +1754,8 @@ RÈGLES ABSOLUES :
 Rôle PRÉCIS et NON REDONDANT de chaque champ :
 - titre : le lien en max 8 mots, concret (ex: « Frappes mer Noire → pétrole +12% »).
 - contexte : les FAITS. Plante le décor (la crise de fond, ex: « Dans le contexte du
-  conflit Iran-Israël… ») puis les acteurs et ce qui s'est passé. 2-3 phrases.
+  conflit Iran-Israël… ») puis les acteurs et ce qui s'est passé. Si la corrélation
+  combine plusieurs alertes, réunis-en les faits clés ici. 2-4 phrases.
 - analyse : le POURQUOI ça compte, SANS redire les faits. Ce qui est en jeu —
   ressources, argent, territoire, pouvoir : qui gagne, qui perd, par quel mécanisme.
 - implication : une PRÉDICTION concrète. Nomme l'événement futur précis possible
@@ -1774,7 +1781,7 @@ Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
         rep = bot.client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1500, temperature=0.2,
+            max_tokens=2200, temperature=0.2,
         )
         contenu = rep.choices[0].message.content.strip()
         debut = contenu.find("[")
