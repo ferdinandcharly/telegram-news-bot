@@ -24,6 +24,18 @@ git push origin multi-users
 
 Render détecte le push et redémarre automatiquement. Start command Render : `python3 app.py`.
 
+### Worker autonome (bot séparé du web)
+
+`worker.py` fait tourner **uniquement le bot** (RSS + IA + Supabase + push), sans serveur Flask, pour 24/7 sur une machine dédiée (ex: second PC) :
+
+```bash
+py worker.py
+```
+
+Il importe `app.py` (ce qui câble `bot.on_alerte`) et lance `app.boucle()` avec supervision (relance auto si la boucle plante). Tout est sortant → aucun port à ouvrir. Même `.env` que le web requis.
+
+Si le worker tourne, mettre **`RUN_BOT=0`** dans l'env de l'instance web Render → sinon deux bots en parallèle = alertes et push en double. Par défaut (`RUN_BOT` absent) le web lance le bot comme avant.
+
 ## Architecture
 
 ```

@@ -1929,7 +1929,12 @@ def boucle():
 if __name__ == "__main__":
     init_vapid()
     alertes.extend(charger_alertes())
-    t = threading.Thread(target=boucle, daemon=True)
-    t.start()
+    # RUN_BOT=0 sur l'instance web quand le bot tourne sur un worker dédié
+    # (ex: worker.py sur un second PC) → évite deux bots en parallèle.
+    if os.getenv("RUN_BOT", "1") != "0":
+        t = threading.Thread(target=boucle, daemon=True)
+        t.start()
+    else:
+        print("[BOT] désactivé sur cette instance (RUN_BOT=0) — worker externe")
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
