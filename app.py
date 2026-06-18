@@ -780,13 +780,39 @@ def check_auth():
 
 
 # ── Alertes (globales) ────────────────────────────────────────────────────────
+# Mots-clés identifiant chaque domaine dans la colonne `domaine` (ex: "🌍 Géopolitique").
+DOMAINES_CLES = ["Géo", "Science", "Tech", "Finance", "Environnement", "Sport"]
+
+def _completer_domaines(liste, mini=6):
+    """Aucun domaine ne doit disparaître du feed faute d'actu récente.
+    Pour chaque domaine sous-représenté dans les 250 alertes récentes,
+    on complète avec ses dernières alertes en date."""
+    ids = {a.get("id") for a in liste}
+    for cle in DOMAINES_CLES:
+        present = sum(1 for a in liste if cle in (a.get("domaine") or ""))
+        if present >= mini:
+            continue
+        try:
+            r = http.get(sb("alertes"), headers=SB_SERVICE,
+                         params={"order": "date.desc", "limit": str(mini),
+                                 "domaine": f"ilike.*{cle}*"}, timeout=10)
+            if r.ok:
+                for a in r.json():
+                    if a.get("id") not in ids:
+                        liste.append(a)
+                        ids.add(a.get("id"))
+        except Exception as e:
+            print(f"Supabase _completer_domaines {cle} : {e}")
+
 def charger_alertes():
     if SUPABASE_URL:
         try:
             r = http.get(sb("alertes"), headers=SB_SERVICE,
                          params={"order": "date.desc", "limit": "250"}, timeout=10)
             if r.ok:
-                return r.json()
+                liste = r.json()
+                _completer_domaines(liste)
+                return liste
         except Exception as e:
             print(f"Supabase charger_alertes : {e}")
     if os.path.exists(ALERTES_FILE):
