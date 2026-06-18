@@ -102,7 +102,7 @@ def _auth_page(titre, sous_titre, contenu, liens=""):
 <style>{_CSS_AUTH}</style></head>
 <body>
 <div tabindex="0" style="position:fixed;opacity:0;pointer-events:none;width:0;height:0"></div>
-<div class="brand"><img class="brand-logo" src="/static/icon-192.png?v=20260618" alt=""/>Korrel</div>
+<div class="brand"><img class="brand-logo" src="/static/logo.png?v=20260618b" alt=""/>Korrel</div>
 <h1>{titre}</h1>
 <p class="sub">{sous_titre}</p>
 <div class="form">{contenu}</div>
@@ -554,7 +554,7 @@ input[type=text]:focus { border-color: var(--accent); }
   <div class="screens" id="screens">
 
     <section class="screen on" data-next="Commencer">
-      <div class="s-kicker brand-kicker"><img class="kicker-logo" src="/static/icon-192.png?v=20260618" alt=""/>Korrel</div>
+      <div class="s-kicker brand-kicker"><img class="kicker-logo" src="/static/logo.png?v=20260618b" alt=""/>Korrel</div>
       <div class="s-title">Parle-nous de toi</div>
       <div class="s-sub">Quelques questions rapides pour personnaliser ton fil d'actualité. Ça prend moins d'une minute, et tu pourras tout changer plus tard.</div>
     </section>
