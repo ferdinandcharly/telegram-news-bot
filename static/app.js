@@ -114,6 +114,12 @@
     else { input.value = ""; afficherFeed(); }
   }
 
+  // Clic sur le logo/Korrel → remonte en haut du feed.
+  function remonterFeed() {
+    const doux = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    window.scrollTo({ top: 0, behavior: doux });
+  }
+
   // ── Filtres ─────────────────────────────────────────────────────────────
   function setFiltre(val, btn) {
     filtreCourant = val;

@@ -140,6 +140,8 @@ header {
   display: flex;
   align-items: center;
   gap: 5px;                 /* collé au mot, façon lockup YouTube */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .brand-logo {
