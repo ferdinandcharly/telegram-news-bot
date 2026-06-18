@@ -808,7 +808,7 @@ def charger_alertes():
     if SUPABASE_URL:
         try:
             r = http.get(sb("alertes"), headers=SB_SERVICE,
-                         params={"order": "date.desc", "limit": "250"}, timeout=10)
+                         params={"order": "date.desc", "limit": "300"}, timeout=10)
             if r.ok:
                 liste = r.json()
                 _completer_domaines(liste)
