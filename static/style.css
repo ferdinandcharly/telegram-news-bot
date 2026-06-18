@@ -139,13 +139,12 @@ header {
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;                 /* collé au mot, façon lockup YouTube */
 }
 
 .brand-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
+  width: 38px;
+  height: 38px;
   display: block;
 }
 
@@ -154,6 +153,13 @@ header {
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.3px;
+}
+
+/* Wordmark plus marqué uniquement dans le lockup de marque (pas les titres de page) */
+.brand-lockup .topbar-brand {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .topbar-right {
