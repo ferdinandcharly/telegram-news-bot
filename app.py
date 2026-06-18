@@ -1,10 +1,12 @@
 import os
 import gc
+import re
 import time
 import json
 import base64
 import threading
 import tempfile
+import unicodedata
 from datetime import datetime, timedelta, date as dt_date
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor
@@ -1297,6 +1299,40 @@ def api_vapid_public():
 
 
 # ── API notif manuelle ────────────────────────────────────────────────────────
+# Mots vides ignorés pour comparer les sujets de deux corrélations.
+_STOP_CORR = {
+    "dans", "pour", "avec", "plus", "cette", "leur", "leurs", "entre", "contre",
+    "selon", "vers", "sans", "sous", "apres", "avant", "face", "alors", "mais",
+    "donc", "elle", "cela", "quoi", "tout", "tous", "etre", "sont", "aussi",
+    "deux", "trois", "fait", "fois", "pres", "grand", "grande", "nouvelle",
+    "nouveau", "depuis", "encore", "vont", "vers", "que", "qui", "des", "les",
+    "une", "aux", "sur", "par", "son", "ses", "ont", "est",
+}
+
+def _corr_tokens(c):
+    """Mots significatifs (≥4 lettres, sans accents) du titre + contexte d'une corrélation."""
+    txt = f"{c.get('titre', '')} {c.get('contexte', '')}".lower()
+    txt = unicodedata.normalize("NFD", txt)
+    txt = "".join(ch for ch in txt if unicodedata.category(ch) != "Mn")
+    return {m for m in re.findall(r"[a-z]{4,}", txt) if m not in _STOP_CORR}
+
+def _dedup_correlations(corrs):
+    """Regroupe les corrélations d'un même sujet et ne garde que la plus récente.
+    `corrs` doit être trié par date décroissante. Deux corrélations sont jugées
+    du même sujet si elles partagent des alertes_ids, ou ≥3 mots-clés significatifs."""
+    gardees, signatures = [], []
+    for c in corrs:
+        toks = _corr_tokens(c)
+        ids  = set(c.get("alertes_ids") or [])
+        doublon = any(
+            (ids and gids and (ids & gids)) or len(toks & gtoks) >= 3
+            for gtoks, gids in signatures
+        )
+        if not doublon:
+            gardees.append(c)
+            signatures.append((toks, ids))
+    return gardees
+
 @app.route("/api/correlations")
 def api_correlations():
     hdrs    = user_headers()
@@ -1329,7 +1365,9 @@ def api_correlations():
             return True
         return any(any(mk in cd for mk in mots_cles) for cd in c_dom)
 
-    return jsonify([c for c in all_corr if match(c)])
+    # all_corr est déjà trié par date décroissante → on garde la version la plus
+    # récente de chaque sujet et on écarte les doublons accumulés sur 3 jours.
+    return jsonify(_dedup_correlations([c for c in all_corr if match(c)]))
 
 
 @app.route("/api/notifier/<alerte_id>", methods=["POST"])
