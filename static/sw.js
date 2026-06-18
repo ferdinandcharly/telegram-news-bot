@@ -9,7 +9,7 @@ self.addEventListener("fetch", () => {});
 self.addEventListener("push", event => {
   const data = event.data ? event.data.json() : {};
   event.waitUntil(
-    self.registration.showNotification(data.title || "News Alert", {
+    self.registration.showNotification(data.title || "Korrel", {
       body: data.body || "",
       icon: "/static/icon-192.png",
       badge: "/static/icon-192.png",

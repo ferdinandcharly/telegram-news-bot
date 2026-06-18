@@ -565,7 +565,7 @@
   function partagerAlerte(id) {
     const url = `${location.origin}/a/${id}`;
     if (navigator.share) {
-      navigator.share({ title: "News Alert", url });
+      navigator.share({ title: "Korrel", url });
     } else {
       navigator.clipboard.writeText(url).then(() => {
         const btn = event.target;

@@ -95,11 +95,11 @@ button[type=submit]{width:100%;padding:12px;background:#fff;color:#000;border:no
 def _auth_page(titre, sous_titre, contenu, liens=""):
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>{titre} — News Alert</title>
+<title>{titre} — Korrel</title>
 <style>{_CSS_AUTH}</style></head>
 <body>
 <div tabindex="0" style="position:fixed;opacity:0;pointer-events:none;width:0;height:0"></div>
-<div class="brand">News Alert</div>
+<div class="brand">Korrel</div>
 <h1>{titre}</h1>
 <p class="sub">{sous_titre}</p>
 <div class="form">{contenu}</div>
@@ -140,7 +140,7 @@ def auth_callback():
     """Page de callback OAuth — le token est dans le fragment URL (#), traité en JS."""
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Connexion — News Alert</title>
+<title>Connexion — Korrel</title>
 <style>*{{margin:0;padding:0}}body{{background:#0d0d0d;color:#fff;font-family:system-ui,sans-serif;
 display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:13px;color:#555}}</style>
 </head><body>Connexion en cours…
@@ -263,7 +263,7 @@ def api_update_password():
 def privacy():
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Politique de confidentialité — News Alert</title>
+<title>Politique de confidentialité — Korrel</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:#0d0d0d;color:#ccc;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
@@ -412,7 +412,7 @@ def logout():
 _ONBOARDING_HTML = """<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>News Alert</title>
+<title>Korrel</title>
 <style>
 :root, [data-theme="dark"] { --bg:#000; --text:#f0f0f0; --sub:#555; --line:#1a1a1a; --surface:#0e0e0e; }
 [data-theme="dim"]   { --bg:#161b22; --text:#e6edf3; --sub:#8b949e; --line:#30363d; --surface:#1c2128; }
@@ -496,7 +496,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
 <body>
 
 <div class="hero">
-  <div class="hero-brand">News Alert</div>
+  <div class="hero-brand">Korrel</div>
   <h1>Personnalise<br>ton fil d'actu</h1>
   <p>Choisis tes sujets, reçois uniquement<br>les événements qui comptent vraiment.</p>
 </div>
@@ -1321,8 +1321,8 @@ h1{{font-size:22px;font-weight:700;line-height:1.35;margin-bottom:20px}}
   {"<div class='section'><div class='label'>Contexte</div><div class='text'>" + contexte + "</div></div>" if contexte else ""}
   {"<div class='section'><div class='label'>À suivre</div><div class='text'>" + suite + "</div></div>" if suite else ""}
 </div>
-<div class="cta"><a href="{app_url}">Ouvrir News Alert →</a></div>
-<div class="footer">Partagé via News Alert</div>
+<div class="cta"><a href="{app_url}">Ouvrir Korrel →</a></div>
+<div class="footer">Partagé via Korrel</div>
 </body></html>"""
 
 @app.route("/")
