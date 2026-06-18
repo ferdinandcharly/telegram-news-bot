@@ -410,266 +410,408 @@ def logout():
     return redirect("/login")
 
 _ONBOARDING_HTML = """<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<html lang="fr" data-theme="dark"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Korrel</title>
 <style>
-:root, [data-theme="dark"] { --bg:#000; --text:#f0f0f0; --sub:#555; --line:#1a1a1a; --surface:#0e0e0e; }
-[data-theme="dim"]   { --bg:#161b22; --text:#e6edf3; --sub:#8b949e; --line:#30363d; --surface:#1c2128; }
-[data-theme="light"] { --bg:#fff; --text:#111; --sub:#888; --line:#e8e8e8; --surface:#f5f5f5; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+:root, [data-theme="dark"]  { --bg:#000;     --text:#f0f0f0; --sub:#6a6a6a; --line:#1c1c1c; --surface:#0e0e0e; --accent:#d4691f; }
+[data-theme="dim"]          { --bg:#161b22;  --text:#e6edf3; --sub:#8b949e; --line:#30363d; --surface:#1c2128; --accent:#e07b2e; }
+[data-theme="light"]        { --bg:#fff;     --text:#111;    --sub:#999;    --line:#e8e8e8; --surface:#f6f6f6; --accent:#c85c12; }
+html, body { height: 100%; }
 body { background: var(--bg); color: var(--text);
-       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-       min-height: 100vh; padding-bottom: 48px; }
+       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+       -webkit-tap-highlight-color: transparent; }
 
-.hero { padding: 56px 28px 36px; border-bottom: 1px solid var(--line); }
-.hero-brand { font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-              text-transform: uppercase; color: var(--sub); margin-bottom: 20px; }
-.hero h1 { font-size: 26px; font-weight: 700; line-height: 1.25;
-           letter-spacing: -0.4px; margin-bottom: 10px; }
-.hero p { font-size: 14px; color: var(--sub); line-height: 1.65; }
+.wiz { display: flex; flex-direction: column; height: 100dvh; max-width: 520px; margin: 0 auto; }
 
-.step { padding: 32px 28px; border-bottom: 1px solid var(--line); }
-.step-num { font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
-            text-transform: uppercase; color: var(--sub); margin-bottom: 8px; }
-.step-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-.step-sub { font-size: 13px; color: var(--sub); margin-bottom: 20px; line-height: 1.5; }
+.wiz-top { display: flex; align-items: center; gap: 14px;
+           padding: calc(16px + env(safe-area-inset-top)) 24px 0; }
+.back { width: 34px; height: 34px; flex-shrink: 0; border: none; background: none;
+        color: var(--sub); font-size: 28px; line-height: 1; cursor: pointer; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; transition: color 0.15s; }
+.back:active { color: var(--text); }
+.back.hide { visibility: hidden; }
+.bar { flex: 1; height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; width: 0; background: var(--accent); border-radius: 99px;
+            transition: width 0.35s cubic-bezier(.4,0,.2,1); }
 
-input[type=text] { width: 100%; padding: 14px 16px; background: var(--surface);
-                   border: 1px solid var(--line); border-radius: 10px; color: var(--text);
-                   font-size: 15px; outline: none; transition: border-color 0.15s; }
-input[type=text]:focus { border-color: var(--sub); }
+.screens { flex: 1; overflow-y: auto; padding: 0 24px; }
+.screen { display: none; min-height: 100%; flex-direction: column; justify-content: center; padding: 28px 0; }
+.screen.on { display: flex; animation: fade 0.28s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-.topics { display: flex; flex-wrap: wrap; gap: 8px; }
-.topic { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line);
-         background: none; color: var(--sub); font-size: 14px; font-weight: 500;
-         cursor: pointer; transition: all 0.15s; user-select: none; }
-.topic.on { border-color: var(--text); color: var(--text); background: var(--surface); }
+.s-kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+            color: var(--accent); margin-bottom: 14px; }
+.s-title { font-size: 27px; font-weight: 700; line-height: 1.22; letter-spacing: -0.5px; margin-bottom: 12px; }
+.s-sub { font-size: 14px; color: var(--sub); line-height: 1.6; margin-bottom: 28px; }
+
+input[type=text] { width: 100%; padding: 15px 17px; background: var(--surface);
+                   border: 1px solid var(--line); border-radius: 12px; color: var(--text);
+                   font-size: 16px; outline: none; transition: border-color 0.15s; }
+input[type=text]:focus { border-color: var(--accent); }
+
+.choices { display: flex; flex-direction: column; gap: 10px; }
+.choice { display: flex; align-items: center; gap: 13px; padding: 16px 18px;
+          border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+          cursor: pointer; transition: border-color 0.15s; }
+.choice .dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line);
+               flex-shrink: 0; position: relative; transition: border-color 0.15s; }
+.choice.on { border-color: var(--accent); }
+.choice.on .dot { border-color: var(--accent); }
+.choice.on .dot::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); }
+.choice .lbl { font-size: 15px; font-weight: 500; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip { padding: 11px 17px; border-radius: 10px; border: 1px solid var(--line);
+        background: var(--surface); color: var(--sub); font-size: 14px; font-weight: 500;
+        cursor: pointer; transition: border-color 0.15s, color 0.15s; user-select: none; }
+.chip.on { border-color: var(--accent); color: var(--text); }
 
 .themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.theme-card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 10px;
-              cursor: pointer; text-align: center; transition: all 0.15s; background: none; }
-.theme-card.on { border-color: var(--text); background: var(--surface); }
-.theme-swatch { height: 36px; border-radius: 6px; margin-bottom: 10px; }
-.sw-dark  { background: #000; border: 1px solid #222; }
+.theme-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px 10px;
+              cursor: pointer; text-align: center; transition: border-color 0.15s; background: var(--surface); }
+.theme-card.on { border-color: var(--accent); }
+.theme-swatch { height: 38px; border-radius: 7px; margin-bottom: 10px; }
+.sw-dark  { background: #000;    border: 1px solid #2a2a2a; }
 .sw-dim   { background: #161b22; border: 1px solid #30363d; }
-.sw-light { background: #fff; border: 1px solid #e8e8e8; }
+.sw-light { background: #fff;    border: 1px solid #e0e0e0; }
 .theme-name { font-size: 12px; font-weight: 500; color: var(--sub); }
 .theme-card.on .theme-name { color: var(--text); }
 
-.heure-row { display: flex; align-items: center; justify-content: space-between;
-             padding: 14px 16px; background: var(--surface);
-             border: 1px solid var(--line); border-radius: 10px; }
-.heure-label { font-size: 14px; color: var(--text); }
-select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line);
-         border-radius: 8px; color: var(--text); font-size: 14px; outline: none; }
-
-.cta { padding: 28px; }
-.btn-go { width: 100%; padding: 15px; background: var(--text); color: var(--bg); border: none;
-          border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
-          letter-spacing: -0.1px; transition: opacity 0.15s; }
-.btn-go:disabled { opacity: 0.25; cursor: default; }
-.cancel { display: block; text-align: center; margin-top: 18px;
-          font-size: 13px; color: var(--sub); text-decoration: none; }
-
-.notif-card { display: flex; align-items: center; justify-content: space-between;
-              gap: 16px; padding: 16px; background: var(--surface);
-              border: 1px solid var(--line); border-radius: 10px; }
-.notif-titre { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-.notif-desc { font-size: 12px; color: var(--sub); line-height: 1.5; }
-.btn-notif-ob { flex-shrink: 0; padding: 9px 18px; background: var(--text); color: var(--bg);
-                border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
-                cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
-.btn-notif-ob:disabled { opacity: 0.35; cursor: default; }
-
-.portees-section { margin-top: 20px; display: none; flex-direction: column; }
-.portee-row { display: flex; align-items: center; justify-content: space-between;
-              padding: 11px 0; border-bottom: 1px solid var(--line); gap: 12px; }
-.portee-row:last-child { border-bottom: none; }
-.portee-domain { font-size: 13px; color: var(--text); }
-.portee-btns { display: flex; gap: 6px; flex-shrink: 0; }
-.portee-btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);
-              background: none; color: var(--sub); font-size: 12px; font-weight: 500;
-              cursor: pointer; transition: all 0.15s; }
-.portee-btn.on { border-color: var(--text); color: var(--text); background: var(--surface); }
-
-.opt-row { display: flex; align-items: center; justify-content: space-between; gap: 16px;
-           padding: 14px 16px; background: var(--surface); border: 1px solid var(--line);
-           border-radius: 10px; margin-top: 10px; }
-.opt-titre { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
-.opt-desc { font-size: 12px; color: var(--sub); line-height: 1.45; }
-.sw-toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
-.sw-toggle input { opacity: 0; width: 0; height: 0; }
-.sw-toggle .knob { position: absolute; inset: 0; background: var(--line);
-                   border-radius: 999px; cursor: pointer; transition: background 0.15s; }
-.sw-toggle .knob::before { content: ""; position: absolute; height: 20px; width: 20px;
-                   left: 3px; top: 3px; background: var(--text); border-radius: 50%;
-                   transition: transform 0.15s; }
-.sw-toggle input:checked + .knob { background: var(--text); }
-.sw-toggle input:checked + .knob::before { transform: translateX(18px); background: var(--bg); }
-
-.avatar-pick { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
-.ob-avatar { position: relative; width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+.avatar-pick { display: flex; align-items: center; gap: 18px; }
+.ob-avatar { position: relative; width: 84px; height: 84px; border-radius: 50%; flex-shrink: 0;
              background: var(--surface); border: 1px solid var(--line); cursor: pointer;
              background-size: cover; background-position: center; color: var(--sub);
              display: flex; align-items: center; justify-content: center; }
 .ob-avatar.has-photo svg { display: none; }
-.ob-avatar-cam { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px;
-             border-radius: 50%; background: var(--text); color: var(--bg);
-             display: flex; align-items: center; justify-content: center;
-             border: 2px solid var(--bg); }
-.avatar-hint { font-size: 12px; color: var(--sub); line-height: 1.45; }
+.ob-avatar-cam { position: absolute; right: 0; bottom: 0; width: 26px; height: 26px;
+             border-radius: 50%; background: var(--accent); color: #fff;
+             display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); }
+.avatar-hint { font-size: 13px; color: var(--sub); line-height: 1.5; }
 
-.ob-sel { position: relative; margin-top: 14px; }
-.ob-select { width: 100%; padding: 12px 40px 12px 14px; background: var(--surface);
-             border: 1px solid var(--line); border-radius: 10px; color: var(--text);
-             font-size: 14px; outline: none; cursor: pointer;
-             appearance: none; -webkit-appearance: none; }
-.ob-sel::after { content: ""; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px;
+.ob-sel { position: relative; }
+.ob-select { width: 100%; padding: 15px 42px 15px 17px; background: var(--surface);
+             border: 1px solid var(--line); border-radius: 12px; color: var(--text);
+             font-size: 16px; outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; }
+.ob-sel::after { content: ""; position: absolute; right: 18px; top: 50%; width: 9px; height: 9px;
              border-right: 2px solid var(--sub); border-bottom: 2px solid var(--sub);
              transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+
+.portees-section { display: flex; flex-direction: column; }
+.portee-row { display: flex; align-items: center; justify-content: space-between;
+              padding: 14px 0; border-bottom: 1px solid var(--line); gap: 12px; }
+.portee-row:last-child { border-bottom: none; }
+.portee-domain { font-size: 14px; color: var(--text); }
+.portee-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.portee-btn { padding: 7px 13px; border-radius: 8px; border: 1px solid var(--line);
+              background: none; color: var(--sub); font-size: 12px; font-weight: 500; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+.portee-btn.on { border-color: var(--accent); color: var(--text); }
+
+.notif-card { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+              padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.notif-titre { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.notif-desc { font-size: 12px; color: var(--sub); line-height: 1.5; }
+.btn-notif-ob { flex-shrink: 0; padding: 10px 18px; background: var(--accent); color: #fff;
+                border: none; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer;
+                white-space: nowrap; transition: opacity 0.15s; }
+.btn-notif-ob:disabled { opacity: 0.4; cursor: default; }
+
+.opt-row { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+           padding: 14px 16px; background: var(--surface); border: 1px solid var(--line);
+           border-radius: 12px; margin-top: 10px; }
+.opt-titre { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.opt-desc { font-size: 12px; color: var(--sub); line-height: 1.45; }
+.sw-toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.sw-toggle input { opacity: 0; width: 0; height: 0; }
+.sw-toggle .knob { position: absolute; inset: 0; background: var(--line); border-radius: 999px;
+                   cursor: pointer; transition: background 0.15s; }
+.sw-toggle .knob::before { content: ""; position: absolute; height: 20px; width: 20px; left: 3px; top: 3px;
+                   background: var(--text); border-radius: 50%; transition: transform 0.15s; }
+.sw-toggle input:checked + .knob { background: var(--accent); }
+.sw-toggle input:checked + .knob::before { transform: translateX(18px); background: #fff; }
+
+.wiz-foot { padding: 16px 24px calc(18px + env(safe-area-inset-bottom)); }
+.next { width: 100%; padding: 16px; background: var(--text); color: var(--bg); border: none;
+        border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.next:disabled { opacity: 0.3; cursor: default; }
+.cancel { display: block; text-align: center; margin-top: 14px; font-size: 13px;
+          color: var(--sub); text-decoration: none; }
 </style></head>
 <body>
 
-<div class="hero">
-  <div class="hero-brand">Korrel</div>
-  <h1>Personnalise<br>ton fil d'actu</h1>
-  <p>Choisis tes sujets, reçois uniquement<br>les événements qui comptent vraiment.</p>
-</div>
-
-<div class="step">
-  <div class="step-num">Étape 1</div>
-  <div class="step-title">Ton profil</div>
-  <div class="step-sub">Optionnel — une photo et un nom pour personnaliser ton espace</div>
-  <div class="avatar-pick">
-    <button type="button" class="ob-avatar" id="ob-avatar"
-            onclick="document.getElementById('ob-avatar-input').click()" aria-label="Ajouter une photo">
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
-           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-        <circle cx="12" cy="13" r="4"/>
-      </svg>
-      <span class="ob-avatar-cam">
-        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
-             stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      </span>
-    </button>
-    <div class="avatar-hint">Ajoute une photo de profil<br>(facultatif)</div>
+<div class="wiz">
+  <div class="wiz-top">
+    <button class="back hide" id="back" onclick="goPrev()" aria-label="Retour">&lsaquo;</button>
+    <div class="bar"><div class="bar-fill" id="bar"></div></div>
   </div>
-  <input type="file" id="ob-avatar-input" accept="image/*" style="display:none" onchange="changerPhotoOb(this)"/>
-  <input type="text" id="display-name" placeholder="Prénom ou pseudo" maxlength="30"/>
-</div>
 
-<div class="step">
-  <div class="step-num">Étape 2</div>
-  <div class="step-title">Quels sujets t'intéressent ?</div>
-  <div class="step-sub">Choisis au moins un domaine</div>
-  <div class="topics" id="domaines-chips">
-    <button type="button" class="topic" data-d="🌍 Géopolitique">🌍 Géopolitique</button>
-    <button type="button" class="topic" data-d="🔬 Science">🔬 Science</button>
-    <button type="button" class="topic" data-d="💻 Tech & IA">💻 Tech &amp; IA</button>
-    <button type="button" class="topic" data-d="💰 Finance">💰 Finance</button>
-    <button type="button" class="topic" data-d="🌱 Environnement">🌱 Environnement</button>
-    <button type="button" class="topic" data-d="⚽ Sport">⚽ Sport</button>
+  <div class="screens" id="screens">
+
+    <section class="screen on" data-next="Commencer">
+      <div class="s-kicker">Korrel</div>
+      <div class="s-title">Parle-nous de toi</div>
+      <div class="s-sub">Quelques questions rapides pour personnaliser ton fil d'actualité. Ça prend moins d'une minute, et tu pourras tout changer plus tard.</div>
+    </section>
+
+    <section class="screen">
+      <div class="s-kicker">Profil</div>
+      <div class="s-title">Une photo ?</div>
+      <div class="s-sub">Facultatif. Elle apparaît sur ta carte de compte.</div>
+      <div class="avatar-pick">
+        <button type="button" class="ob-avatar" id="ob-avatar"
+                onclick="document.getElementById('ob-avatar-input').click()" aria-label="Ajouter une photo">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span class="ob-avatar-cam">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+                 stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </span>
+        </button>
+        <div class="avatar-hint">Touche le cercle<br>pour choisir une image</div>
+      </div>
+      <input type="file" id="ob-avatar-input" accept="image/*" style="display:none" onchange="changerPhotoOb(this)"/>
+    </section>
+
+    <section class="screen">
+      <div class="s-kicker">Profil</div>
+      <div class="s-title">Comment t'appeler ?</div>
+      <div class="s-sub">Utilisé dans tes notifications et résumés. Facultatif.</div>
+      <input type="text" id="display-name" placeholder="Prénom ou pseudo" maxlength="30" autocomplete="off"/>
+    </section>
+
+    <section class="screen">
+      <div class="s-kicker">Profil</div>
+      <div class="s-title">Tu es…</div>
+      <div class="s-sub">Pour adapter le ton de tes résumés. Facultatif.</div>
+      <div class="choices" id="genre-choices">
+        <div class="choice" data-v="homme"><span class="dot"></span><span class="lbl">Homme</span></div>
+        <div class="choice" data-v="femme"><span class="dot"></span><span class="lbl">Femme</span></div>
+        <div class="choice" data-v="autre"><span class="dot"></span><span class="lbl">Autre</span></div>
+        <div class="choice" data-v="non_precise"><span class="dot"></span><span class="lbl">Préfère ne pas dire</span></div>
+      </div>
+    </section>
+
+    <section class="screen" data-require="domaines">
+      <div class="s-kicker">Centres d'intérêt</div>
+      <div class="s-title">Quels sujets suivre ?</div>
+      <div class="s-sub">Choisis-en au moins un. Tu pourras en ajouter ou en retirer à tout moment.</div>
+      <div class="chips" id="domaines-chips">
+        <button type="button" class="chip" data-d="🌍 Géopolitique">🌍 Géopolitique</button>
+        <button type="button" class="chip" data-d="🔬 Science">🔬 Science</button>
+        <button type="button" class="chip" data-d="💻 Tech & IA">💻 Tech &amp; IA</button>
+        <button type="button" class="chip" data-d="💰 Finance">💰 Finance</button>
+        <button type="button" class="chip" data-d="🌱 Environnement">🌱 Environnement</button>
+        <button type="button" class="chip" data-d="⚽ Sport">⚽ Sport</button>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="s-kicker">Couverture</div>
+      <div class="s-title">Mondial ou national ?</div>
+      <div class="s-sub">Pour chaque domaine, indique si tu veux aussi l'actualité nationale de ton pays.</div>
+      <div class="portees-section" id="portees-section"></div>
+    </section>
+
+    <section class="screen">
+      <div class="s-kicker">Région</div>
+      <div class="s-title">Ton pays</div>
+      <div class="s-sub">Pour filtrer les actus nationales. Seule la France est entièrement supportée pour l'instant.</div>
+      <div class="ob-sel">
+        <select id="onb-pays" class="ob-select">
+          <option value="France">France</option>
+          <option value="Belgique">Belgique</option>
+          <option value="Suisse">Suisse</option>
+          <option value="Canada">Canada</option>
+          <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+          <option value="Sénégal">Sénégal</option>
+          <option value="Maroc">Maroc</option>
+          <option value="Tunisie">Tunisie</option>
+          <option value="Algérie">Algérie</option>
+          <option value="RD Congo">RD Congo</option>
+          <option value="tous">Tous les pays</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="s-kicker">Langue</div>
+      <div class="s-title">Langue d'affichage</div>
+      <div class="s-sub">Traduction par IA — peut contenir des inexactitudes. Modifiable à tout moment.</div>
+      <div class="ob-sel">
+        <select id="onb-langue" class="ob-select">
+          <option value="multi">Original (langue de la source)</option>
+          <option value="fr">Français</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="s-kicker">Apparence</div>
+      <div class="s-title">Choisis ton thème</div>
+      <div class="s-sub">Modifiable dans les paramètres.</div>
+      <div class="themes">
+        <button type="button" class="theme-card on" data-t="dark">
+          <div class="theme-swatch sw-dark"></div><div class="theme-name">Noir</div>
+        </button>
+        <button type="button" class="theme-card" data-t="dim">
+          <div class="theme-swatch sw-dim"></div><div class="theme-name">Gris</div>
+        </button>
+        <button type="button" class="theme-card" data-t="light">
+          <div class="theme-swatch sw-light"></div><div class="theme-name">Blanc</div>
+        </button>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="s-kicker">Alertes</div>
+      <div class="s-title">Reste informé en temps réel</div>
+      <div class="s-sub">Une notification immédiate pour les événements qui comptent vraiment.</div>
+      <div class="notif-card">
+        <div class="notif-info">
+          <div class="notif-titre">Alertes en temps réel</div>
+          <div class="notif-desc">Guerres, catastrophes, découvertes majeures — uniquement l'essentiel.</div>
+        </div>
+        <button type="button" class="btn-notif-ob" id="btn-notif-ob" onclick="demanderNotifs()">Activer</button>
+      </div>
+      <div id="notif-state" style="font-size:13px;color:var(--sub);margin-top:12px;display:none"></div>
+      <div class="opt-row">
+        <div>
+          <div class="opt-titre">Inclure les importantes</div>
+          <div class="opt-desc">Alertes 🟡 en plus des critiques 🔴</div>
+        </div>
+        <label class="sw-toggle"><input type="checkbox" id="onb-important"/><span class="knob"></span></label>
+      </div>
+      <div class="opt-row">
+        <div>
+          <div class="opt-titre">Corrélations du matin</div>
+          <div class="opt-desc">Le récap quotidien des sujets liés</div>
+        </div>
+        <label class="sw-toggle"><input type="checkbox" id="onb-corr" checked/><span class="knob"></span></label>
+      </div>
+    </section>
+
+    <section class="screen" data-next="Entrer dans Korrel">
+      <div class="s-kicker">C'est prêt</div>
+      <div class="s-title" id="done-title">Bienvenue !</div>
+      <div class="s-sub">Ton fil est configuré. Tu peux tout ajuster dans les paramètres quand tu le souhaites.</div>
+    </section>
+
   </div>
-  <div class="portees-section" id="portees-section"></div>
-</div>
 
-<div class="step">
-  <div class="step-num">Étape 3</div>
-  <div class="step-title">Ton pays</div>
-  <div class="step-sub">Pour les actus nationales. Seule la France est entièrement supportée pour l'instant.</div>
-  <div class="ob-sel">
-    <select id="onb-pays" class="ob-select">
-      <option value="France">France</option>
-      <option value="Belgique">Belgique</option>
-      <option value="Suisse">Suisse</option>
-      <option value="Canada">Canada</option>
-      <option value="Côte d'Ivoire">Côte d'Ivoire</option>
-      <option value="Sénégal">Sénégal</option>
-      <option value="Maroc">Maroc</option>
-      <option value="Tunisie">Tunisie</option>
-      <option value="Algérie">Algérie</option>
-      <option value="RD Congo">RD Congo</option>
-      <option value="tous">Tous les pays</option>
-    </select>
+  <div class="wiz-foot">
+    <button class="next" id="next-btn" onclick="goNext()">Suivant</button>
+    <a href="/cancel-register" class="cancel">Annuler et supprimer mon compte</a>
   </div>
-</div>
-
-<div class="step">
-  <div class="step-num">Étape 4</div>
-  <div class="step-title">Langue d'affichage</div>
-  <div class="step-sub">Traduction par IA — peut contenir des inexactitudes. Modifiable à tout moment.</div>
-  <div class="ob-sel">
-    <select id="onb-langue" class="ob-select">
-      <option value="multi">Original (langue de la source)</option>
-      <option value="fr">Français</option>
-      <option value="en">English</option>
-      <option value="es">Español</option>
-      <option value="de">Deutsch</option>
-    </select>
-  </div>
-</div>
-
-<div class="step">
-  <div class="step-num">Étape 5</div>
-  <div class="step-title">Ton thème</div>
-  <div class="step-sub">Tu pourras le changer dans les paramètres</div>
-  <div class="themes">
-    <button type="button" class="theme-card on" data-t="dark">
-      <div class="theme-swatch sw-dark"></div>
-      <div class="theme-name">Dark</div>
-    </button>
-    <button type="button" class="theme-card" data-t="dim">
-      <div class="theme-swatch sw-dim"></div>
-      <div class="theme-name">Dim</div>
-    </button>
-    <button type="button" class="theme-card" data-t="light">
-      <div class="theme-swatch sw-light"></div>
-      <div class="theme-name">Light</div>
-    </button>
-  </div>
-</div>
-
-
-<div class="step">
-  <div class="step-num">Étape 6</div>
-  <div class="step-title">Notifications push</div>
-  <div class="step-sub">Reçois une alerte immédiate sur ton téléphone pour les événements critiques</div>
-  <div class="notif-card" id="notif-card">
-    <div class="notif-info">
-      <div class="notif-titre">Alertes en temps réel</div>
-      <div class="notif-desc">Guerres, catastrophes, découvertes majeures — uniquement ce qui compte.</div>
-    </div>
-    <button type="button" class="btn-notif-ob" id="btn-notif-ob" onclick="demanderNotifs()">Activer</button>
-  </div>
-  <div id="notif-state" style="font-size:13px;color:var(--sub);margin-top:12px;display:none"></div>
-
-  <div class="opt-row">
-    <div>
-      <div class="opt-titre">Inclure les importantes</div>
-      <div class="opt-desc">Alertes 🟡 en plus des critiques 🔴</div>
-    </div>
-    <label class="sw-toggle"><input type="checkbox" id="onb-important"/><span class="knob"></span></label>
-  </div>
-  <div class="opt-row">
-    <div>
-      <div class="opt-titre">Corrélations du matin</div>
-      <div class="opt-desc">Le récap quotidien des sujets liés</div>
-    </div>
-    <label class="sw-toggle"><input type="checkbox" id="onb-corr" checked/><span class="knob"></span></label>
-  </div>
-</div>
-
-<div class="cta">
-  <button class="btn-go" id="btn-go" onclick="submit()">Commencer →</button>
-  <a href="/cancel-register" class="cancel">Annuler et supprimer mon compte</a>
 </div>
 
 <script>
-  let obAvatar = "";   // photo de profil choisie (dataURL) ou "" si aucune
+  let obAvatar = "";
+  const screensEl = document.getElementById("screens");
+  const screens   = [...document.querySelectorAll(".screen")];
+  const backBtn   = document.getElementById("back");
+  const nextBtn   = document.getElementById("next-btn");
+  const bar       = document.getElementById("bar");
+  const porteeSection = document.getElementById("portees-section");
+  let i = 0;
 
-  // Redimensionne la photo en carré 256px (JPEG), comme dans les paramètres.
+  function render() {
+    screens.forEach((s, n) => s.classList.toggle("on", n === i));
+    bar.style.width = (i / (screens.length - 1)) * 100 + "%";
+    backBtn.classList.toggle("hide", i === 0);
+    const s = screens[i];
+    nextBtn.textContent = s.dataset.next || "Suivant";
+    if (porteeSection && s.contains(porteeSection)) updatePorteeRows();
+    if (s.querySelector("#done-title")) {
+      const nom = document.getElementById("display-name").value.trim();
+      document.getElementById("done-title").textContent = nom ? ("Bienvenue, " + nom + " 👋") : "Bienvenue 👋";
+    }
+    validate();
+    screensEl.scrollTop = 0;
+    const t = s.querySelector("input[type=text]");
+    if (t) setTimeout(() => t.focus(), 60);
+  }
+
+  function validate() {
+    const s = screens[i];
+    let ok = true;
+    if (s.dataset.require === "domaines") {
+      ok = document.querySelectorAll("#domaines-chips .chip.on").length > 0;
+    }
+    nextBtn.disabled = !ok;
+  }
+
+  function goNext() {
+    if (nextBtn.disabled) return;
+    if (i === screens.length - 1) { submit(); return; }
+    i++; render();
+  }
+  function goPrev() { if (i > 0) { i--; render(); } }
+
+  // Entrée = avancer (sur les écrans avec champ texte)
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !nextBtn.disabled) { e.preventDefault(); goNext(); }
+  });
+
+  // Domaines (multi)
+  document.querySelectorAll("#domaines-chips .chip").forEach(b => {
+    b.addEventListener("click", () => { b.classList.toggle("on"); validate(); });
+  });
+
+  // Sexe (choix unique)
+  document.querySelectorAll("#genre-choices .choice").forEach(c => {
+    c.addEventListener("click", () => {
+      document.querySelectorAll("#genre-choices .choice").forEach(x => x.classList.remove("on"));
+      c.classList.add("on");
+    });
+  });
+
+  // Thème (aperçu live)
+  document.querySelectorAll(".theme-card").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".theme-card").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+      document.documentElement.setAttribute("data-theme", b.dataset.t);
+    });
+  });
+
+  // Portées : une ligne par domaine sélectionné
+  function updatePorteeRows() {
+    const selected = [...document.querySelectorAll("#domaines-chips .chip.on")].map(b => b.dataset.d);
+    porteeSection.querySelectorAll(".portee-row").forEach(row => {
+      if (!selected.includes(row.dataset.domain)) row.remove();
+    });
+    selected.forEach(domain => {
+      if (!porteeSection.querySelector('[data-domain="' + domain + '"]')) {
+        const row = document.createElement("div");
+        row.className = "portee-row";
+        row.dataset.domain = domain;
+        row.innerHTML = '<span class="portee-domain">' + domain + '</span>'
+          + '<div class="portee-btns">'
+          + '<button type="button" class="portee-btn on" data-p="mondiale">Mondial</button>'
+          + '<button type="button" class="portee-btn" data-p="tout">+ National</button>'
+          + '</div>';
+        row.querySelectorAll(".portee-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            row.querySelectorAll(".portee-btn").forEach(x => x.classList.remove("on"));
+            btn.classList.add("on");
+          });
+        });
+        porteeSection.appendChild(row);
+      }
+    });
+    if (!selected.length) {
+      porteeSection.innerHTML = '<div class="s-sub" style="margin:0">Aucun domaine sélectionné — reviens en arrière pour en choisir.</div>';
+    }
+  }
+
+  // Photo : recadrage carré 256px JPEG
   async function changerPhotoOb(input) {
     const file = input.files && input.files[0];
     if (!file) return;
@@ -685,59 +827,16 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
       const cv = document.createElement("canvas");
       cv.width = cv.height = T;
       const ctx = cv.getContext("2d");
-      const c = Math.min(img.width, img.height);            // crop carré centré
+      const c = Math.min(img.width, img.height);
       ctx.drawImage(img, (img.width - c) / 2, (img.height - c) / 2, c, c, 0, 0, T, T);
       obAvatar = cv.toDataURL("image/jpeg", 0.82);
       const av = document.getElementById("ob-avatar");
-      av.style.backgroundImage = `url('${obAvatar}')`;
+      av.style.backgroundImage = "url('" + obAvatar + "')";
       av.classList.add("has-photo");
     };
     img.src = dataURL;
-    input.value = "";   // permet de re-choisir le même fichier
+    input.value = "";
   }
-
-  const porteeSection = document.getElementById("portees-section");
-
-  function updatePorteeRows() {
-    const selected = [...document.querySelectorAll("#domaines-chips .topic.on")].map(b => b.dataset.d);
-    // supprimer les lignes des domaines décochés
-    porteeSection.querySelectorAll(".portee-row").forEach(row => {
-      if (!selected.includes(row.dataset.domain)) row.remove();
-    });
-    // ajouter les lignes des domaines nouvellement cochés
-    selected.forEach(domain => {
-      if (!porteeSection.querySelector(`[data-domain="${domain}"]`)) {
-        const row = document.createElement("div");
-        row.className = "portee-row";
-        row.dataset.domain = domain;
-        row.innerHTML = `<span class="portee-domain">${domain}</span>
-          <div class="portee-btns">
-            <button type="button" class="portee-btn on" data-p="mondiale">Mondial</button>
-            <button type="button" class="portee-btn" data-p="tout">+ National</button>
-          </div>`;
-        row.querySelectorAll(".portee-btn").forEach(btn => {
-          btn.addEventListener("click", () => {
-            row.querySelectorAll(".portee-btn").forEach(x => x.classList.remove("on"));
-            btn.classList.add("on");
-          });
-        });
-        porteeSection.appendChild(row);
-      }
-    });
-    porteeSection.style.display = selected.length > 0 ? "flex" : "none";
-  }
-
-  document.querySelectorAll("#domaines-chips .topic").forEach(b => {
-    b.addEventListener("click", () => { b.classList.toggle("on"); updatePorteeRows(); });
-  });
-
-  document.querySelectorAll(".theme-card").forEach(b => {
-    b.addEventListener("click", () => {
-      document.querySelectorAll(".theme-card").forEach(x => x.classList.remove("on"));
-      b.classList.add("on");
-      document.documentElement.setAttribute("data-theme", b.dataset.t);
-    });
-  });
 
   function urlB64ToUint8Array(b64) {
     const pad = "=".repeat((4 - b64.length % 4) % 4);
@@ -773,7 +872,7 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
       btn.textContent = "✓ Activées";
       state.textContent = "Tu recevras les alertes critiques en temps réel.";
       state.style.display = "block";
-    } catch(e) {
+    } catch (e) {
       btn.disabled = false;
       btn.textContent = "Activer";
       state.textContent = "Erreur — réessaie depuis les paramètres.";
@@ -781,39 +880,41 @@ select { padding: 6px 10px; background: var(--bg); border: 1px solid var(--line)
     }
   }
 
-  // Vérifier si déjà accordé
   if (Notification.permission === "granted") {
-    const btn = document.getElementById("btn-notif-ob");
-    if (btn) { btn.textContent = "✓ Activées"; btn.disabled = true; }
+    const b = document.getElementById("btn-notif-ob"); if (b) { b.textContent = "✓ Activées"; b.disabled = true; }
   } else if (Notification.permission === "denied") {
-    const btn = document.getElementById("btn-notif-ob");
-    if (btn) { btn.textContent = "Bloquées"; btn.disabled = true; }
+    const b = document.getElementById("btn-notif-ob"); if (b) { b.textContent = "Bloquées"; b.disabled = true; }
   }
 
   async function submit() {
-    const domaines = [...document.querySelectorAll("#domaines-chips .topic.on")].map(b => b.dataset.d);
+    nextBtn.disabled = true;
+    nextBtn.textContent = "…";
+    const domaines = [...document.querySelectorAll("#domaines-chips .chip.on")].map(b => b.dataset.d);
     const portees  = {};
-    document.querySelectorAll(".portee-row").forEach(row => {
+    document.querySelectorAll("#portees-section .portee-row").forEach(row => {
       portees[row.dataset.domain] = row.querySelector(".portee-btn.on")?.dataset.p || "mondiale";
     });
-    document.getElementById("btn-go").disabled = true;
-
-    const theme        = document.querySelector(".theme-card.on")?.dataset.t || "dark";
-    const display_name = document.getElementById("display-name").value.trim();
-    const pays         = document.getElementById("onb-pays").value;
-    const langue       = document.getElementById("onb-langue").value;
-    const niveau_notif = document.getElementById("onb-important").checked ? 2 : 3;
-    const notif_correlations = document.getElementById("onb-corr").checked;
-    const prefs = { display_name, theme, domaines, portees, pays,
-                    langue, niveau_notif, notif_correlations };
+    const prefs = {
+      display_name: document.getElementById("display-name").value.trim(),
+      theme:        document.querySelector(".theme-card.on")?.dataset.t || "dark",
+      domaines, portees,
+      pays:         document.getElementById("onb-pays").value,
+      langue:       document.getElementById("onb-langue").value,
+      niveau_notif: document.getElementById("onb-important").checked ? 2 : 3,
+      notif_correlations: document.getElementById("onb-corr").checked,
+    };
+    const genre = document.querySelector("#genre-choices .choice.on")?.dataset.v;
+    if (genre) prefs.genre = genre;
     if (obAvatar) prefs.avatar = obAvatar;
     await fetch("/api/preferences", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(prefs)
     });
     window.location.href = "/";
   }
+
+  render();
 </script>
 </body></html>"""
 
@@ -1305,6 +1406,7 @@ def api_init():
         # activé par défaut ; ne devient False que si l'utilisateur a explicitement coupé
         "notif_correlations": (prefs_row.get("notif_correlations") if prefs_row else None) is not False,
         "avatar":        (prefs_row.get("avatar") or "") if prefs_row else "",
+        "genre":         (prefs_row.get("genre") or "") if prefs_row else "",
     }
 
     # filtrer par domaines préférés
@@ -1358,6 +1460,15 @@ def api_preferences():
     http.post(sb("user_preferences"),
               headers={**hdrs, "Prefer": "resolution=merge-duplicates,return=minimal"},
               json=prefs, timeout=10)
+    # genre : colonne optionnelle. Enregistrée séparément pour qu'une colonne
+    # absente ne fasse pas échouer l'enregistrement des autres préférences.
+    if "genre" in data:
+        try:
+            http.post(sb("user_preferences"),
+                      headers={**hdrs, "Prefer": "resolution=merge-duplicates,return=minimal"},
+                      json={"user_id": user_id, "genre": data["genre"]}, timeout=10)
+        except Exception as e:
+            print(f"Supabase genre (colonne absente ?) : {e}")
     return jsonify({"ok": True})
 
 
