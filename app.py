@@ -14,11 +14,59 @@ from concurrent.futures import ThreadPoolExecutor
 PARIS = ZoneInfo("Europe/Paris")
 from flask import Flask, jsonify, send_from_directory, request, session, redirect
 import requests as http
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import bot
+
+# ── Monitoring (Sentry, optionnel) ──────────────────────────────────────────
+# Actif seulement si SENTRY_DSN est défini. Sinon : no-op, aucun effet.
+_SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+if _SENTRY_DSN:
+    try:
+        import sentry_sdk
+        sentry_sdk.init(dsn=_SENTRY_DSN, traces_sample_rate=0.0, send_default_pii=False)
+    except Exception as e:
+        print(f"Sentry init échouée : {e}")
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+
+# Render/Cloud derrière un proxy → lire la vraie IP client (X-Forwarded-For)
+# pour que le rate limiting compte par utilisateur et pas par proxy.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
+# Rate limiting : protège login/register du brute force. Stockage mémoire
+# (suffisant en mono-instance). Pas de limite globale par défaut.
+limiter = Limiter(key_func=get_remote_address, app=app,
+                  default_limits=[], storage_uri="memory://")
+
+
+# ── Pages d'erreur (HTML propre, ou JSON pour les routes /api) ───────────────
+@app.errorhandler(429)
+def _err_429(e):
+    if request.path.startswith("/api"):
+        return jsonify({"erreur": "trop de requêtes, réessaie plus tard"}), 429
+    return _auth_page("Trop de tentatives", "Patiente une minute avant de réessayer.",
+                      '<p class="err">Trop de tentatives rapprochées.</p>',
+                      '<a href="/login">Retour à la connexion</a>'), 429
+
+@app.errorhandler(404)
+def _err_404(e):
+    if request.path.startswith("/api"):
+        return jsonify({"erreur": "introuvable"}), 404
+    return _auth_page("Page introuvable", "Cette page n'existe pas.",
+                      '<p class="sub">La page demandée est introuvable.</p>',
+                      '<a href="/">Retour à l\'accueil</a>'), 404
+
+@app.errorhandler(500)
+def _err_500(e):
+    if request.path.startswith("/api"):
+        return jsonify({"erreur": "erreur serveur"}), 500
+    return _auth_page("Erreur", "Une erreur est survenue.",
+                      '<p class="err">Une erreur inattendue est survenue. Réessaie.</p>',
+                      '<a href="/">Retour à l\'accueil</a>'), 500
 
 # ── Mémoire ───────────────────────────────────────────────────────────────────
 alertes   = []
@@ -329,7 +377,66 @@ a{{color:#555}}
 </body></html>"""
 
 
+@app.route("/terms")
+def terms():
+    return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Conditions d'utilisation — Korrel</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#0d0d0d;color:#ccc;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+     max-width:680px;margin:0 auto;padding:48px 24px}}
+h1{{font-size:22px;font-weight:700;color:#fff;margin-bottom:6px}}
+.date{{font-size:12px;color:#555;margin-bottom:40px}}
+h2{{font-size:15px;font-weight:600;color:#ddd;margin:32px 0 10px}}
+p,li{{font-size:13px;line-height:1.75;color:#888;margin-bottom:8px}}
+ul{{padding-left:18px}}
+a{{color:#555}}
+.back{{font-size:20px;color:#444;text-decoration:none;display:block;margin-bottom:32px;line-height:1}}
+.back:hover{{color:#888}}
+</style></head><body>
+<a class="back" href="javascript:history.back()">←</a>
+<h1>Conditions d'utilisation</h1>
+<p class="date">Dernière mise à jour : {datetime.now().strftime("%d/%m/%Y")}</p>
+
+<h2>1. Service</h2>
+<p>Korrel est un agrégateur d'actualités qui filtre et synthétise des articles de sources publiques à l'aide d'une IA, selon les centres d'intérêt que tu choisis. Le service est fourni « en l'état », sans garantie de disponibilité continue.</p>
+
+<h2>2. Compte</h2>
+<ul>
+<li>Tu es responsable de la confidentialité de tes identifiants.</li>
+<li>Un compte est strictement personnel.</li>
+<li>Tu peux supprimer ton compte à tout moment depuis les paramètres.</li>
+</ul>
+
+<h2>3. Contenu et exactitude</h2>
+<p>Les titres, résumés et corrélations sont générés automatiquement par IA et peuvent contenir des inexactitudes ou des erreurs. Ils ne constituent pas une information vérifiée, ni un conseil (financier, médical, juridique…). Vérifie toujours l'information à la source avant d'agir.</p>
+<p>Les articles restent la propriété de leurs éditeurs respectifs ; Korrel renvoie vers les sources d'origine.</p>
+
+<h2>4. Usage acceptable</h2>
+<ul>
+<li>Ne pas tenter de perturber, surcharger ou contourner la sécurité du service.</li>
+<li>Ne pas réutiliser le contenu de manière automatisée sans autorisation.</li>
+</ul>
+
+<h2>5. Notifications</h2>
+<p>Les notifications push sont optionnelles et désactivables à tout moment dans les paramètres de l'appareil ou de l'app.</p>
+
+<h2>6. Responsabilité</h2>
+<p>Korrel ne saurait être tenu responsable des décisions prises sur la base des informations affichées, ni des interruptions de service liées aux prestataires tiers (hébergement, sources, IA).</p>
+
+<h2>7. Évolution</h2>
+<p>Ces conditions peuvent évoluer. La date de dernière mise à jour figure en haut de page.</p>
+
+<h2>8. Contact</h2>
+<p>Pour toute question : <a href="mailto:{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}">{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}</a></p>
+
+<p style="margin-top:32px"><a href="/privacy">Politique de confidentialité →</a></p>
+</body></html>"""
+
+
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute; 40 per hour", methods=["POST"])
 def login():
     if request.method == "POST":
         email = request.form.get("email", "").strip()
@@ -370,10 +477,11 @@ def _register_form(erreur=""):
 <button type="submit">Créer mon compte</button></form>
 <div class="divider">ou</div>
 {oauth}""",
-        'Déjà un compte ? <a href="/login">Se connecter</a><br><a href="/privacy" style="color:#333">Politique de confidentialité</a>'
+        'Déjà un compte ? <a href="/login">Se connecter</a><br><a href="/privacy" style="color:#333">Confidentialité</a> · <a href="/terms" style="color:#333">Conditions d\'utilisation</a>'
     )
 
 @app.route("/register", methods=["GET", "POST"])
+@limiter.limit("6 per minute; 20 per hour", methods=["POST"])
 def register():
     if request.method == "POST":
         email   = request.form.get("email", "").strip()
@@ -991,7 +1099,7 @@ def refresh_token():
 def check_auth():
     exempts = ["/health", "/sw.js", "/login", "/register", "/onboarding", "/cancel-register",
                "/api/refresh-token", "/forgot-password", "/reset-password",
-               "/api/update-password", "/privacy", "/auth/google", "/auth/callback",
+               "/api/update-password", "/privacy", "/terms", "/auth/google", "/auth/callback",
                "/api/oauth-session", "/api/cron/recap"]
     # /static/ public : Chrome récupère manifest + icônes SANS cookie (fetch anonyme),
     # sinon ils sont redirigés vers /login et la PWA devient "non installable".
@@ -1493,21 +1601,43 @@ def api_preferences():
     user_id = session.get("user_id")
     if not hdrs or not user_id:
         return jsonify({"erreur": "non authentifié"}), 401
-    data  = request.get_json()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"erreur": "JSON invalide"}), 400
+
+    THEMES  = {"dark", "dim", "slate", "light"}
+    LANGUES = {"multi", "fr", "en", "es", "de"}
+    GENRES  = {"homme", "femme", "autre", "non_precise"}
+    MAX_AVATAR = 400_000  # ~300 Ko de base64 (une photo 256px est très en dessous)
+
+    # Validation par champ : on ignore une valeur invalide plutôt que de tout rejeter.
     prefs = {"user_id": user_id}
-    for key in ("display_name", "theme", "domaines", "niveau_notif", "langue", "portees", "pays", "notif_correlations", "avatar"):
-        if key in data:
-            prefs[key] = data[key]
+    for key in ("display_name", "theme", "domaines", "niveau_notif",
+                "langue", "portees", "pays", "notif_correlations", "avatar"):
+        if key not in data:
+            continue
+        v = data[key]
+        if   key == "display_name" and isinstance(v, str):       prefs[key] = v.strip()[:40]
+        elif key == "theme"        and v in THEMES:              prefs[key] = v
+        elif key == "langue"       and v in LANGUES:             prefs[key] = v
+        elif key == "niveau_notif" and v in (2, 3):             prefs[key] = v
+        elif key == "pays"         and isinstance(v, str):       prefs[key] = v[:40]
+        elif key == "domaines"     and isinstance(v, list):      prefs[key] = [str(d)[:40] for d in v][:20]
+        elif key == "portees"      and isinstance(v, dict):      prefs[key] = v
+        elif key == "notif_correlations" and isinstance(v, bool): prefs[key] = v
+        elif key == "avatar"       and isinstance(v, str) and len(v) <= MAX_AVATAR:
+            prefs[key] = v
     http.post(sb("user_preferences"),
               headers={**hdrs, "Prefer": "resolution=merge-duplicates,return=minimal"},
               json=prefs, timeout=10)
     # genre : colonne optionnelle. Enregistrée séparément pour qu'une colonne
     # absente ne fasse pas échouer l'enregistrement des autres préférences.
-    if "genre" in data:
+    genre = data.get("genre")
+    if genre in GENRES:
         try:
             http.post(sb("user_preferences"),
                       headers={**hdrs, "Prefer": "resolution=merge-duplicates,return=minimal"},
-                      json={"user_id": user_id, "genre": data["genre"]}, timeout=10)
+                      json={"user_id": user_id, "genre": genre}, timeout=10)
         except Exception as e:
             print(f"Supabase genre (colonne absente ?) : {e}")
     return jsonify({"ok": True})

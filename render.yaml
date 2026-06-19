@@ -1,0 +1,14 @@
+# Config de déploiement Render (reproductible).
+# Les secrets (GROQ_API_KEY, SUPABASE_*, VAPID_*, TELEGRAM_*, FLASK_SECRET_KEY,
+# APP_URL, CRON_SECRET, SENTRY_DSN…) restent gérés dans le dashboard Render,
+# pas ici. RUN_BOT=0 à mettre quand le bot tourne sur worker.py (2e PC).
+services:
+  - type: web
+    name: korrel
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 serve.py
+    envVars:
+      - key: RUN_BOT
+        value: "1"

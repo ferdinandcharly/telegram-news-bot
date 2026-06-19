@@ -120,6 +120,22 @@
     window.scrollTo({ top: 0, behavior: doux });
   }
 
+  // Petit message éphémère en bas d'écran (feedback d'action / d'erreur).
+  function toast(msg) {
+    let el = document.getElementById("toast");
+    if (!el) { el = document.createElement("div"); el.id = "toast"; el.className = "toast"; document.body.appendChild(el); }
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  // Rafraîchit le feed (bouton dédié dans la barre).
+  async function rafraichir() {
+    await chargerAlertes();
+    remonterFeed();
+  }
+
   // ── Filtres ─────────────────────────────────────────────────────────────
   function setFiltre(val, btn) {
     filtreCourant = val;
@@ -437,7 +453,7 @@
   async function chargerAlertes() {
     try {
       alertesCache = await fetch("/api/alertes").then(r => r.json());
-    } catch { /* garde le cache courant en cas d'échec réseau */ }
+    } catch { toast("Hors-ligne — affichage en cache"); }
     afficherFeed();
   }
 
@@ -1042,7 +1058,15 @@
     // Verrou portrait (efficace surtout en PWA installée ; ignoré sinon)
     try { await screen.orientation.lock("portrait"); } catch {}
     document.getElementById("feed").innerHTML = skeletonFeedHTML();
-    const data = await fetch("/api/init").then(r => r.json());
+    let data;
+    try {
+      data = await fetch("/api/init").then(r => r.json());
+    } catch {
+      // Hors-ligne / serveur injoignable au démarrage : message clair au lieu d'un skeleton figé.
+      document.getElementById("feed").innerHTML =
+        '<div class="vide">Pas de connexion.<br>Vérifie ton réseau et réessaie.</div>';
+      return;
+    }
 
     // thème ("dim" est l'ancien nom de "slate")
     const theme = (data.preferences.theme || "dark").replace("dim", "slate");

@@ -21,44 +21,37 @@ Légende sévérité : 🔴 bloquant lancement · 🟠 important avant un vrai p
 
 ---
 
-## 🟢 Phase 1 — Gratuit, sans 2ᵉ PC (À FAIRE EN PREMIER)
-
-Tout ici est du code ou de la config gratuite. Rien à payer, rien à brancher.
+## 🟢 Phase 1 — Gratuit, sans 2ᵉ PC
 
 ### Sécurité / comptes
-- [ ] 🟠 **Activer la confirmation email** dans Supabase (Auth → Email → confirm email).
-      *Pourquoi : sans ça, n'importe qui crée des comptes avec des emails bidons. Le code gère déjà les 2 cas.*
-- [ ] 🟠 **Vérifier la RLS** active sur `user_preferences`, `user_sauvegardes`, `user_subscriptions`.
-      *Pourquoi : toute la sécurité des données utilisateurs en dépend.*
-- [ ] 🟠 **Rate limiting** sur `/login` et `/register` (Flask-Limiter).
-      *Pourquoi : empêche brute force + création massive de comptes.*
-- [ ] 🟡 **Validation d'entrées** côté serveur sur `/api/preferences` (taille avatar, types).
+- [ ] 🟠 **Activer la confirmation email** dans Supabase (Auth → Providers → Email → *Confirm email*).
+      → **À FAIRE par toi dans le dashboard Supabase.** Le code gère déjà les 2 cas.
+- [ ] 🟠 **Vérifier la RLS** sur `user_preferences`, `user_sauvegardes`, `user_subscriptions`.
+      → **À FAIRE par toi** (SQL fourni dans le chat). Toute la sécu des données en dépend.
+- [x] 🟠 **Rate limiting** login (10/min) + register (6/min) — Flask-Limiter + ProxyFix.
+- [x] 🟡 **Validation d'entrées** `/api/preferences` (types, taille avatar, valeurs autorisées).
 
 ### Robustesse / visibilité
-- [ ] 🟠 **Monitoring d'erreurs** via Sentry (offre gratuite).
-      *Pourquoi : sinon tu es aveugle sur les crashs quand de vrais users arrivent.*
-- [ ] 🟠 **Serveur de prod** `gunicorn app:app` au lieu de `app.run()`.
-      *⚠️ 1 seul worker tant que le bot tourne dans le web (sinon bots en double). Devient propre après Phase 2.*
-- [ ] 🟡 **Figer les versions** dans `requirements.txt` (`flask==x.y`, etc.).
-- [ ] 🟡 **`render.yaml`** dans le repo (config de déploiement reproductible).
+- [x] 🟠 **Monitoring Sentry** — câblé, *activé si* `SENTRY_DSN` est défini. → crée un projet Sentry (gratuit) et ajoute `SENTRY_DSN` dans l'env Render.
+- [x] 🟠 **Serveur de prod** — `serve.py` (waitress, cross-platform). → sur Render, passer la **Start Command** à `python3 serve.py`.
+- [x] 🟡 **Versions figées** dans `requirements.txt`.
+- [x] 🟡 **`render.yaml`** ajouté (config reproductible).
 
 ### UI / expérience
-- [ ] 🟠 **Shell offline minimal** dans le service worker + repli si `init()` échoue.
-      *Pourquoi : aujourd'hui la PWA ouverte sans réseau = écran blanc.*
-- [ ] 🟡 **Messages d'erreur** (toasts) quand save / préférences échouent.
-- [ ] 🟡 **Page 404 / 500** personnalisée.
-- [ ] 🟡 **Action “rafraîchir”** manuelle évidente dans le feed.
-- [ ] 🟡 **Accessibilité** : passe rapide contrastes (3 thèmes) + tailles de tap.
+- [x] 🟠 **Shell offline** (service worker) + repli si `init()` échoue (message « Pas de connexion »).
+- [x] 🟡 **Toasts** d'erreur (ex: hors-ligne → « affichage en cache »).
+- [x] 🟡 **Pages 404 / 500 / 429** (HTML propre, JSON pour `/api`).
+- [x] 🟡 **Bouton rafraîchir** dans la barre du feed.
+- [ ] 🟡 **Accessibilité** : revue manuelle contrastes (3 thèmes) + tailles de tap. → à faire à l'œil sur device.
 
 ### Légal
-- [ ] 🟠 **Page CGU / Conditions d'utilisation** (la politique de confidentialité existe déjà).
+- [x] 🟠 **Page CGU** `/terms` (+ lien depuis l'inscription, à côté de la confidentialité).
 
 ---
 
 ## 🖥️ Phase 2 — Nécessite le 2ᵉ PC (gratuit, juste le matériel)
 
 - [ ] 🔴 Lancer **`worker.py`** 24/7 sur le PC + mettre **`RUN_BOT=0`** sur Render.
-      *Effet : notifications/polling fiables sans dépendre du réveil de Render.*
 - [ ] 🟠 **Auto-démarrage au boot** (Planificateur de tâches Windows).
 - [ ] 🟡 Supprimer **UptimeRobot + cron-job.org** (rustines devenues inutiles).
 
@@ -69,10 +62,8 @@ Tout ici est du code ou de la config gratuite. Rien à payer, rien à brancher.
 
 ## 💳 Phase 3 — Nécessite de payer
 
-- [ ] 🔴 **Render payant** (~7 $/mois) : instance qui ne dort pas → fin du cold start (30-50 s)
-      pour les visiteurs. *Le gros levier confort pour un vrai public.*
-- [ ] 🟡 **Supabase Pro** (25 $/mois) : seulement quand la DB approche 500 Mo ou pour les
-      backups quotidiens côté serveur. Pas avant.
+- [ ] 🔴 **Render payant** (~7 $/mois) : instance qui ne dort pas → fin du cold start (30-50 s).
+- [ ] 🟡 **Supabase Pro** (25 $/mois) : quand la DB approche 500 Mo ou pour les backups quotidiens serveur.
 - [ ] 🟡 **Domaine personnalisé** (~10 €/an) : plus propre que `onrender.com`, utile pour le TWA.
 
 ---
@@ -87,8 +78,8 @@ Tout ici est du code ou de la config gratuite. Rien à payer, rien à brancher.
 - [ ] 🔴 **Formulaire Data Safety** + content rating + fiche store.
 - [ ] 🟠 **Suppression de compte** : voie web accessible (in-app `/api/delete-account` existe déjà).
 - [ ] 🟠 **Screenshots** (fiche store + champ `screenshots` du manifest, absent aujourd'hui).
-- [ ] 🟠 **SW offline minimal** (vérifié par PWABuilder) — déjà couvert en Phase 1.
+- [x] 🟠 **SW offline minimal** (vérifié par PWABuilder) — fait en Phase 1.
 
 ---
 
-*Mis à jour le 2026-06-19.*
+*Phase 1 (code) réalisée le 2026-06-19. Restent côté toi : confirmation email + RLS Supabase, `SENTRY_DSN`, et la Start Command Render `python3 serve.py`.*
