@@ -721,44 +721,113 @@
     if (e.target === document.getElementById("modal")) fermerModalMaintenant();
   }
 
-  // Geste « glisser vers le bas pour fermer » sur la modale.
+  // Geste « glisser vers le bas pour fermer » sur la modale (touch events :
+  // on garde le contrôle via preventDefault, sinon le navigateur annule le geste).
   (function brancherSwipeFermeture() {
     const box = document.getElementById("modal-box");
     if (!box) return;
-    let y0 = null, dy = 0, depart = false;
+    let y0 = null, x0 = 0, dy = 0, actif = false, sens = null;
 
-    box.addEventListener("pointerdown", e => {
-      // On n'amorce le geste que si le contenu est en haut (sinon on scrolle).
-      depart = box.scrollTop <= 0;
-      y0 = e.clientY; dy = 0;
-    });
-    box.addEventListener("pointermove", e => {
-      if (y0 === null || !depart) return;
-      dy = e.clientY - y0;
-      if (dy > 0) {
-        box.style.transition = "none";
-        box.style.transform  = `translateY(${dy}px)`;
-        box.style.opacity    = String(Math.max(0.4, 1 - dy / 600));
+    box.addEventListener("touchstart", e => {
+      if (e.touches.length !== 1) { y0 = null; return; }
+      actif = box.scrollTop <= 0;       // amorce seulement si le contenu est en haut
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; sens = null;
+    }, { passive: true });
+
+    box.addEventListener("touchmove", e => {
+      if (y0 === null || !actif) return;
+      dy = e.touches[0].clientY - y0;
+      const dx = e.touches[0].clientX - x0;
+      if (sens === null && (Math.abs(dy) > 6 || Math.abs(dx) > 6)) {
+        sens = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
       }
-    });
+      if (sens === "h" || dy <= 0) { actif = false; box.style.transform = ""; box.style.opacity = ""; return; }
+      e.preventDefault();               // empêche le scroll/annulation natif
+      box.style.transition = "none";
+      box.style.transform  = `translateY(${dy}px)`;
+      box.style.opacity    = String(Math.max(0.4, 1 - dy / 600));
+    }, { passive: false });
+
     const fin = () => {
       if (y0 === null) return;
-      y0 = null;
+      const d = dy; y0 = null; actif = false;
       box.style.transition = "transform .25s ease, opacity .25s ease";
-      if (dy > 110) {                       // assez glissé → on ferme
+      if (d > 110) {                    // assez glissé → on ferme
         box.style.transform = `translateY(${window.innerHeight}px)`;
         box.style.opacity   = "0";
         setTimeout(() => {
           fermerModalMaintenant();
           box.style.transition = box.style.transform = box.style.opacity = "";
         }, 220);
-      } else {                              // pas assez → retour en place
+      } else {                          // pas assez → retour en place
         box.style.transform = "";
         box.style.opacity   = "";
       }
     };
-    box.addEventListener("pointerup", fin);
-    box.addEventListener("pointercancel", fin);
+    box.addEventListener("touchend", fin);
+    box.addEventListener("touchcancel", fin);
+  })();
+
+  // Pull-to-refresh custom : tirer vers le bas en haut du feed recharge.
+  // Seul le contenu (#feed) bouge ; le header est sticky donc reste fixe.
+  (function brancherPullRefresh() {
+    const feed = document.getElementById("feed");
+    const ptr  = document.getElementById("ptr");
+    if (!feed || !ptr) return;
+    const SEUIL = 70;
+    let y0 = null, x0 = 0, d = 0, actif = false, sens = null, charge = false;
+
+    function surFeed() {
+      return document.getElementById("page-feed").style.display !== "none"
+          && !document.body.classList.contains("modal-ouvert");
+    }
+
+    window.addEventListener("touchstart", e => {
+      if (charge || e.touches.length !== 1 || !surFeed() || window.scrollY > 0) { y0 = null; return; }
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; d = 0; actif = true; sens = null;
+    }, { passive: true });
+
+    window.addEventListener("touchmove", e => {
+      if (y0 === null || !actif) return;
+      const dy = e.touches[0].clientY - y0;
+      const dx = e.touches[0].clientX - x0;
+      if (sens === null && (Math.abs(dy) > 6 || Math.abs(dx) > 6)) {
+        sens = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+      }
+      if (sens === "h" || dy <= 0 || window.scrollY > 0) { actif = false; return; }
+      e.preventDefault();
+      d = Math.min(dy * 0.5, 90);                       // résistance
+      feed.style.transition = "none";
+      feed.style.transform  = `translateY(${d}px)`;
+      ptr.style.opacity   = String(Math.min(1, d / SEUIL));
+      ptr.style.transform = `translateX(-50%) rotate(${d * 3}deg)`;
+    }, { passive: false });
+
+    async function fin() {
+      if (y0 === null) return;
+      const declenche = d >= SEUIL;
+      y0 = null; actif = false;
+      feed.style.transition = "transform .25s ease";
+      feed.style.transform  = "";
+      if (declenche) {
+        charge = true;
+        ptr.style.transform = "translateX(-50%)";   // rotation pilotée par .spin (icône)
+        ptr.classList.add("spin");
+        ptr.style.opacity = "1";
+        try { await chargerAlertes(); } finally {
+          ptr.classList.remove("spin");
+          ptr.style.opacity = "0";
+          ptr.style.transform = "translateX(-50%) rotate(0deg)";
+          charge = false;
+        }
+      } else {
+        ptr.style.opacity = "0";
+        ptr.style.transform = "translateX(-50%) rotate(0deg)";
+      }
+      setTimeout(() => { feed.style.transition = ""; }, 260);
+    }
+    window.addEventListener("touchend", fin);
+    window.addEventListener("touchcancel", fin);
   })();
 
   // ── Paramètres domaines ──────────────────────────────────────────────────
