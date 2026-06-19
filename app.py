@@ -366,14 +366,14 @@ a{{color:#555}}
 <p>Tu peux à tout moment :</p>
 <ul>
 <li>Supprimer ton compte depuis les paramètres de l'app</li>
-<li>Demander l'export ou la suppression de tes données à : <a href="mailto:{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}">{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}</a></li>
+<li>Demander l'export ou la suppression de tes données à : <a href="mailto:{os.getenv('CONTACT_EMAIL','korrel.news@gmail.com')}">{os.getenv('CONTACT_EMAIL','korrel.news@gmail.com')}</a></li>
 </ul>
 
 <h2>6. Cookies et sessions</h2>
 <p>Un cookie de session est utilisé uniquement pour maintenir ta connexion (durée 30 jours). Aucun cookie publicitaire ou de tracking.</p>
 
 <h2>7. Contact</h2>
-<p>Pour toute question : <a href="mailto:{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}">{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}</a></p>
+<p>Pour toute question : <a href="mailto:{os.getenv('CONTACT_EMAIL','korrel.news@gmail.com')}">{os.getenv('CONTACT_EMAIL','korrel.news@gmail.com')}</a></p>
 </body></html>"""
 
 
@@ -429,7 +429,7 @@ a{{color:#555}}
 <p>Ces conditions peuvent évoluer. La date de dernière mise à jour figure en haut de page.</p>
 
 <h2>8. Contact</h2>
-<p>Pour toute question : <a href="mailto:{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}">{os.getenv('CONTACT_EMAIL','ferdinandcharly@gmail.com')}</a></p>
+<p>Pour toute question : <a href="mailto:{os.getenv('CONTACT_EMAIL','korrel.news@gmail.com')}">{os.getenv('CONTACT_EMAIL','korrel.news@gmail.com')}</a></p>
 
 <p style="margin-top:32px"><a href="/privacy">Politique de confidentialité →</a></p>
 </body></html>"""
@@ -1195,7 +1195,7 @@ def envoyer_push(titre, body, url, niveau=3):
             webpush(subscription_info=sub,
                     data=json.dumps({"title": titre, "body": body, "url": url}),
                     vapid_private_key=VAPID_PRIVATE_FILE,
-                    vapid_claims={"sub": "mailto:ferdinandcharly@gmail.com"})
+                    vapid_claims={"sub": "mailto:korrel.news@gmail.com"})
         except Exception as e:
             if hasattr(e, "response") and e.response and e.response.status_code in [404, 410]:
                 http.delete(sb("user_subscriptions"), headers=SB_SERVICE,
@@ -1775,7 +1775,7 @@ def envoyer_push_user(user_id, titre, body, url):
                 webpush(subscription_info=sub,
                         data=json.dumps({"title": titre, "body": body, "url": url}),
                         vapid_private_key=VAPID_PRIVATE_FILE,
-                        vapid_claims={"sub": "mailto:ferdinandcharly@gmail.com"})
+                        vapid_claims={"sub": "mailto:korrel.news@gmail.com"})
             except Exception:
                 pass
     except Exception as e:
