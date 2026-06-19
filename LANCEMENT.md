@@ -21,7 +21,7 @@ Légende sévérité : 🔴 bloquant lancement · 🟠 important avant un vrai p
 
 ---
 
-## 🟢 Phase 1 — Gratuit, sans 2ᵉ PC
+## 🟢 Phase 1 — Gratuit, sans 2ᵉ PC ✅ TERMINÉE (2026-06-19)
 
 ### Sécurité / comptes
 - [ ] 🟠 **Activer la confirmation email** dans Supabase (Auth → Providers → Email → *Confirm email*).
@@ -42,7 +42,7 @@ Légende sévérité : 🔴 bloquant lancement · 🟠 important avant un vrai p
 - [x] 🟡 **Toasts** d'erreur (ex: hors-ligne → « affichage en cache »).
 - [x] 🟡 **Pages 404 / 500 / 429** (HTML propre, JSON pour `/api`).
 - [x] 🟡 **Bouton rafraîchir** dans la barre du feed.
-- [ ] 🟡 **Accessibilité** : revue manuelle contrastes (3 thèmes) + tailles de tap. → à faire à l'œil sur device.
+- [x] 🟡 **Accessibilité** : aria-labels (recherche, ✎/✓), labels d'inputs, activation clavier du logo, focus-visible global, tap 40px. *(Reste à vérifier à l'œil : contrastes des 3 thèmes sur device.)*
 
 ### Légal
 - [x] 🟠 **Page CGU** `/terms` (+ lien depuis l'inscription, à côté de la confidentialité).

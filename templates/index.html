@@ -32,7 +32,8 @@
 <div id="page-feed">
   <header>
     <div class="topbar">
-      <span class="brand-lockup" onclick="remonterFeed()" role="button" tabindex="0" aria-label="Remonter en haut"><img class="brand-logo" src="/static/logo.png?v=20260618b" alt=""/><span class="topbar-brand">Korrel</span></span>
+      <span class="brand-lockup" onclick="remonterFeed()" role="button" tabindex="0" aria-label="Remonter en haut"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();remonterFeed()}"><img class="brand-logo" src="/static/logo.png?v=20260618b" alt=""/><span class="topbar-brand">Korrel</span></span>
       <div class="topbar-right">
         <div class="live"><div class="live-dot"></div>En direct</div>
         <button class="btn-icon" aria-label="Rafraîchir" onclick="rafraichir()">
@@ -45,7 +46,7 @@
     </div>
     <div id="barre-filtres">
       <div id="zone-recherche">
-        <input id="recherche" type="search" class="search-input"
+        <input id="recherche" type="search" class="search-input" aria-label="Rechercher"
                placeholder="Rechercher un titre, domaine..." oninput="afficherFeed()"/>
       </div>
     </div>
@@ -107,12 +108,12 @@
         <div class="prm-main"><div class="prm-titre">Nom d'utilisateur</div></div>
         <div style="display:flex;align-items:center;gap:8px">
           <span id="dn-texte" class="prm-val">—</span>
-          <button id="dn-btn-edit" onclick="toggleEditNom()"
+          <button id="dn-btn-edit" onclick="toggleEditNom()" aria-label="Modifier le nom"
                   style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:15px;padding:2px">✎</button>
-          <input type="text" id="dn-input" maxlength="30"
+          <input type="text" id="dn-input" maxlength="30" aria-label="Nom d'affichage"
                  style="display:none;width:110px;padding:6px 9px;background:var(--bg-inset);
                         border:0.5px solid var(--border-card);border-radius:8px;color:var(--text-primary);font-size:13px;outline:none"/>
-          <button id="dn-btn-save" onclick="sauverNomEdit()"
+          <button id="dn-btn-save" onclick="sauverNomEdit()" aria-label="Enregistrer le nom"
                   style="display:none;background:none;border:none;color:var(--text-primary);cursor:pointer;font-size:15px;padding:2px">✓</button>
         </div>
       </div>
