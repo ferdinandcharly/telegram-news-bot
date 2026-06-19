@@ -26,6 +26,11 @@ alertes.json
 vus.json
 sauvegardes.json
 
+# Sauvegardes DB (donnees utilisateurs — ne jamais publier)
+backups/
+
 # Outils locaux / previews scratch (ne concernent pas le deploiement)
 .claude/
 preview-*.html
+variants/
+static/variants/
