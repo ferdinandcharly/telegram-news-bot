@@ -17,7 +17,8 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
+_ICI = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_ICI, ".env"))   # .env a cote du script (robuste si lance ailleurs)
 URL = os.getenv("SUPABASE_URL")
 KEY = os.getenv("SUPABASE_KEY")           # service role (lecture globale)
 
@@ -25,7 +26,7 @@ TABLES = ["alertes", "correlations", "user_preferences",
           "user_sauvegardes", "user_subscriptions"]
 GARDER  = 14                              # nombre de sauvegardes a conserver
 PAGE    = 1000                            # taille de page REST (max Supabase)
-RACINE  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backups")
+RACINE  = os.path.join(_ICI, "backups")
 
 if not URL or not KEY:
     sys.exit("SUPABASE_URL / SUPABASE_KEY manquants dans .env")
