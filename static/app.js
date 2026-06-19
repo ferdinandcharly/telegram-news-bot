@@ -145,6 +145,15 @@
     remonterFeed();
   }
 
+  // Écran de lancement : on le masque une fois l'app prête (ou par sécurité après 6 s).
+  function cacherSplash() {
+    const s = document.getElementById("splash");
+    if (!s || s.classList.contains("hidden")) return;
+    s.classList.add("hidden");
+    setTimeout(() => s.remove(), 450);
+  }
+  setTimeout(cacherSplash, 6000);   // filet de sécurité : jamais bloqué
+
   // ── Filtres ─────────────────────────────────────────────────────────────
   function setFiltre(val, btn) {
     filtreCourant = val;
@@ -1156,6 +1165,7 @@
       // Hors-ligne / serveur injoignable au démarrage : message clair au lieu d'un skeleton figé.
       document.getElementById("feed").innerHTML =
         '<div class="vide">Pas de connexion.<br>Vérifie ton réseau et réessaie.</div>';
+      cacherSplash();
       return;
     }
 
@@ -1213,6 +1223,7 @@
     sigFeed = signatureAlertes();
     chargerStats();
     majBadgeNonLus();
+    cacherSplash();
   }
 
   async function checkNotifHash() {

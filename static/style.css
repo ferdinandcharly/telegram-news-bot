@@ -190,6 +190,30 @@ header {
 #ptr.spin ion-icon { animation: ptrspin 0.8s linear infinite; }
 @keyframes ptrspin { to { transform: rotate(360deg); } }
 
+/* Écran de lancement (splash) — fond de marque sombre, comme le splash natif */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #121315;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  transition: opacity 0.45s ease;
+}
+#splash.hidden { opacity: 0; pointer-events: none; }
+#splash img { width: 92px; height: 92px; animation: splashPop 0.5s ease both; }
+#splash .splash-nom {
+  color: #f0f0f0;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  animation: splashPop 0.5s ease 0.08s both;
+}
+@keyframes splashPop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+
 .brand-logo {
   width: 38px;
   height: 38px;
