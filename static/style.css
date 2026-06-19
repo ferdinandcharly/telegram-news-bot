@@ -168,12 +168,18 @@ header {
 /* Indicateur pull-to-refresh (le contenu #feed se translate, le header reste fixe) */
 #ptr {
   position: fixed;
-  top: calc(env(safe-area-inset-top) + 58px);
+  top: calc(env(safe-area-inset-top) + 60px);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 4;
-  color: var(--text-secondary);
-  font-size: 22px;
+  z-index: 46;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 0.5px solid var(--border-card);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+  color: var(--text-primary);
+  font-size: 20px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -1120,7 +1126,9 @@ body.modal-ouvert { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .feed-refresh { transition: none; } }
 
 /* ── Animations de transition (onglets, accordéons) ── */
-@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* fondu seul : pas de translateY ici, sinon le header (dans la page) se fait
+   translater puis remettre en place à chaque changement de page. */
+@keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
 .page-in { animation: pageIn 0.28s cubic-bezier(0.22, 0.61, 0.36, 1); }
 
 @keyframes accIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }

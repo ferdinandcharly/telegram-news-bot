@@ -96,10 +96,19 @@
   function appliquerFeedEnAttente() {
     feedEnAttente = false;
     document.getElementById("feed-refresh").classList.remove("visible");
-    sigFeed = signatureAlertes();
-    afficherFeed();
+    const ptr  = document.getElementById("ptr");
     const doux = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-    window.scrollTo({ top: 0, behavior: doux });
+    // Spinner façon Instagram (centré, dans la zone en haut) avant d'appliquer.
+    ptr.style.transform = "translateX(-50%)";
+    ptr.classList.add("spin");
+    ptr.style.opacity = "1";
+    setTimeout(() => {
+      sigFeed = signatureAlertes();
+      afficherFeed();
+      window.scrollTo({ top: 0, behavior: doux });
+      ptr.classList.remove("spin");
+      ptr.style.opacity = "0";
+    }, 650);
   }
 
   // ── Recherche ────────────────────────────────────────────────────────────
@@ -768,22 +777,32 @@
     box.addEventListener("touchcancel", fin);
   })();
 
-  // Pull-to-refresh custom : tirer vers le bas en haut du feed recharge.
-  // Seul le contenu (#feed) bouge ; le header est sticky donc reste fixe.
+  // Pull-to-refresh custom (feed, corrélations, enregistrés) : tirer vers le bas
+  // en haut de la page recharge. Seul le contenu bouge ; le header sticky reste fixe.
   (function brancherPullRefresh() {
-    const feed = document.getElementById("feed");
-    const ptr  = document.getElementById("ptr");
-    if (!feed || !ptr) return;
+    const ptr = document.getElementById("ptr");
+    if (!ptr) return;
     const SEUIL = 70;
-    let y0 = null, x0 = 0, d = 0, actif = false, sens = null, charge = false;
+    const PAGES = {
+      "page-feed":  () => ({ el: document.getElementById("feed"),       recharge: chargerAlertes }),
+      "page-corr":  () => ({ el: document.getElementById("feed-corr"),  recharge: chargerCorrelations }),
+      "page-saved": () => ({ el: document.getElementById("feed-saved"), recharge: chargerSauvegardes }),
+    };
+    let y0 = null, x0 = 0, d = 0, actif = false, sens = null, charge = false, cible = null;
 
-    function surFeed() {
-      return document.getElementById("page-feed").style.display !== "none"
-          && !document.body.classList.contains("modal-ouvert");
+    function pageActive() {
+      if (document.body.classList.contains("modal-ouvert")) return null;
+      for (const id in PAGES) {
+        const p = document.getElementById(id);
+        if (p && p.style.display !== "none") return PAGES[id]();
+      }
+      return null;
     }
 
     window.addEventListener("touchstart", e => {
-      if (charge || e.touches.length !== 1 || !surFeed() || window.scrollY > 0) { y0 = null; return; }
+      if (charge || e.touches.length !== 1 || window.scrollY > 0) { y0 = null; return; }
+      cible = pageActive();
+      if (!cible || !cible.el) { y0 = null; return; }
       y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; d = 0; actif = true; sens = null;
     }, { passive: true });
 
@@ -797,8 +816,8 @@
       if (sens === "h" || dy <= 0 || window.scrollY > 0) { actif = false; return; }
       e.preventDefault();
       d = Math.min(dy * 0.5, 90);                       // résistance
-      feed.style.transition = "none";
-      feed.style.transform  = `translateY(${d}px)`;
+      cible.el.style.transition = "none";
+      cible.el.style.transform  = `translateY(${d}px)`;
       ptr.style.opacity   = String(Math.min(1, d / SEUIL));
       ptr.style.transform = `translateX(-50%) rotate(${d * 3}deg)`;
     }, { passive: false });
@@ -806,15 +825,19 @@
     async function fin() {
       if (y0 === null) return;
       const declenche = d >= SEUIL;
+      const c = cible;
       y0 = null; actif = false;
-      feed.style.transition = "transform .25s ease";
-      feed.style.transform  = "";
-      if (declenche) {
+      if (c && c.el) {
+        c.el.style.transition = "transform .25s ease";
+        c.el.style.transform  = "";
+        setTimeout(() => { if (c.el) c.el.style.transition = ""; }, 260);
+      }
+      if (declenche && c) {
         charge = true;
         ptr.style.transform = "translateX(-50%)";   // rotation pilotée par .spin (icône)
         ptr.classList.add("spin");
         ptr.style.opacity = "1";
-        try { await chargerAlertes(); } finally {
+        try { await c.recharge(); } finally {
           ptr.classList.remove("spin");
           ptr.style.opacity = "0";
           ptr.style.transform = "translateX(-50%) rotate(0deg)";
@@ -824,7 +847,6 @@
         ptr.style.opacity = "0";
         ptr.style.transform = "translateX(-50%) rotate(0deg)";
       }
-      setTimeout(() => { feed.style.transition = ""; }, 260);
     }
     window.addEventListener("touchend", fin);
     window.addEventListener("touchcancel", fin);

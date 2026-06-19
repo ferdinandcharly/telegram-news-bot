@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=20260620" />
+  <link rel="stylesheet" href="/static/style.css?v=20260620b" />
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
   <meta name="mobile-web-app-capable" content="yes" />
@@ -51,7 +51,6 @@
       </div>
     </div>
   </header>
-  <div id="ptr" aria-hidden="true"><ion-icon name="reload-outline"></ion-icon></div>
   <button id="feed-refresh" class="feed-refresh" onclick="appliquerFeedEnAttente()">
     <ion-icon name="arrow-up"></ion-icon> Nouvelles infos
   </button>
@@ -281,6 +280,9 @@
   </div>
 </div>
 
+<!-- Indicateur pull-to-refresh (niveau body : visible sur toutes les pages) -->
+<div id="ptr" aria-hidden="true"><ion-icon name="reload-outline"></ion-icon></div>
+
 <!-- ── Modal synthèse (style éditorial) ── -->
 <div class="modal-overlay" id="modal" onclick="fermerModal(event)">
   <div class="modal" id="modal-box">
@@ -334,6 +336,6 @@
   </button>
 </nav>
 
-<script src="/static/app.js?v=20260620"></script>
+<script src="/static/app.js?v=20260620b"></script>
 </body>
 </html>
