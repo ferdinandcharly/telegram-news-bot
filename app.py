@@ -75,6 +75,11 @@ ALERTES_FILE = "alertes.json"
 # ── Supabase ──────────────────────────────────────────────────────────────────
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+# Clé anon (publique) pour l'authentification utilisateur. INDISPENSABLE pour que
+# la confirmation par email s'applique : s'inscrire avec la clé service_role
+# (SUPABASE_KEY) place Supabase en contexte admin et AUTO-CONFIRME le compte.
+# Repli sur la service_role si non définie (comportement actuel, non corrigé).
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY") or SUPABASE_KEY
 
 SB_SERVICE = {
     "apikey": SUPABASE_KEY,
@@ -243,7 +248,7 @@ def forgot_password():
         email = request.form.get("email", "").strip()
         try:
             http.post(sb_auth("/recover"),
-                      headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                      headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
                       json={"email": email}, timeout=10)
         except Exception:
             pass
@@ -447,7 +452,7 @@ def login():
         pwd   = request.form.get("password", "")
         try:
             r = http.post(sb_auth("/token?grant_type=password"),
-                          headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                          headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
                           json={"email": email, "password": pwd}, timeout=10)
             if r.ok:
                 d = r.json()
@@ -497,7 +502,7 @@ def register():
             return _register_form("Mot de passe trop court (6 min.)")
         try:
             r = http.post(sb_auth("/signup"),
-                          headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                          headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
                           json={"email": email, "password": pwd}, timeout=10)
             if r.ok:
                 d = r.json()
@@ -1099,7 +1104,7 @@ def refresh_token():
         return jsonify({"erreur": "pas de refresh token"}), 401
     try:
         r = http.post(sb_auth("/token?grant_type=refresh_token"),
-                      headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                      headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
                       json={"refresh_token": rt}, timeout=10)
         if r.ok:
             d = r.json()
@@ -1669,7 +1674,7 @@ def api_reset_my_password():
         return jsonify({"erreur": "non authentifié"}), 401
     try:
         http.post(sb_auth("/recover"),
-                  headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+                  headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
                   json={"email": email}, timeout=10)
         return jsonify({"ok": True})
     except Exception as e:
