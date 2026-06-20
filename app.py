@@ -404,6 +404,7 @@ a{{color:#555}}
 
 <h2>2. Compte</h2>
 <ul>
+<li>Le service est réservé aux personnes de 15 ans et plus (ou disposant de l'accord d'un représentant légal).</li>
 <li>Tu es responsable de la confidentialité de tes identifiants.</li>
 <li>Un compte est strictement personnel.</li>
 <li>Tu peux supprimer ton compte à tout moment depuis les paramètres.</li>
@@ -428,7 +429,10 @@ a{{color:#555}}
 <h2>7. Évolution</h2>
 <p>Ces conditions peuvent évoluer. La date de dernière mise à jour figure en haut de page.</p>
 
-<h2>8. Contact</h2>
+<h2>8. Droit applicable</h2>
+<p>Les présentes conditions sont régies par le droit français. À défaut de résolution amiable, tout litige relève de la compétence des tribunaux français.</p>
+
+<h2>9. Contact</h2>
 <p>Pour toute question : <a href="mailto:{os.getenv('CONTACT_EMAIL','korrel.news@gmail.com')}">{os.getenv('CONTACT_EMAIL','korrel.news@gmail.com')}</a></p>
 
 <p style="margin-top:32px"><a href="/privacy">Politique de confidentialité →</a></p>
