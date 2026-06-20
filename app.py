@@ -478,7 +478,6 @@ def _register_form(erreur=""):
 <input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe (6 min.)" autocomplete="new-password"/>
 <input type="password" name="confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"/>
-<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#888;text-align:left;line-height:1.5;margin:2px 0 10px"><input type="checkbox" name="age15" required style="width:auto;margin-top:2px"/> <span>Je certifie avoir au moins 15 ans et accepter les <a href="/terms" target="_blank" style="color:#888;text-decoration:underline">conditions d'utilisation</a>.</span></label>
 <button type="submit">Créer mon compte</button></form>
 <div class="divider">ou</div>
 {oauth}""",
@@ -496,8 +495,6 @@ def register():
             return _register_form("Les mots de passe ne correspondent pas")
         if len(pwd) < 6:
             return _register_form("Mot de passe trop court (6 min.)")
-        if not request.form.get("age15"):
-            return _register_form("Tu dois certifier avoir au moins 15 ans pour créer un compte.")
         try:
             r = http.post(sb_auth("/signup"),
                           headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
@@ -581,6 +578,12 @@ input[type=text]:focus { border-color: var(--accent); }
 .choice.on .dot { border-color: var(--accent); }
 .choice.on .dot::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); }
 .choice .lbl { font-size: 15px; font-weight: 500; }
+
+.age-attest { display: flex; align-items: flex-start; gap: 11px; padding: 16px 18px;
+              border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+              cursor: pointer; font-size: 13px; color: var(--sub); line-height: 1.5; }
+.age-attest input { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; accent-color: var(--accent); }
+.age-attest a { color: var(--text); text-decoration: underline; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .chip { padding: 11px 17px; border-radius: 10px; border: 1px solid var(--line);
@@ -817,10 +820,16 @@ input[type=text]:focus { border-color: var(--accent); }
       </div>
     </section>
 
-    <section class="screen" data-next="Entrer dans Korrel">
+    <section class="screen" data-next="Entrer dans Korrel" data-require="age">
       <div class="s-kicker">C'est prêt</div>
       <div class="s-title" id="done-title">Bienvenue !</div>
       <div class="s-sub">Ton fil est configuré. Tu peux tout ajuster dans les paramètres quand tu le souhaites.</div>
+      <label class="age-attest">
+        <input type="checkbox" id="onb-age" onchange="validate()"/>
+        <span>Je certifie avoir au moins 15 ans et j'accepte les
+          <a href="/terms" target="_blank">conditions d'utilisation</a> et la
+          <a href="/privacy" target="_blank">politique de confidentialité</a>.</span>
+      </label>
     </section>
 
   </div>
@@ -863,6 +872,8 @@ input[type=text]:focus { border-color: var(--accent); }
     let ok = true;
     if (s.dataset.require === "domaines") {
       ok = document.querySelectorAll("#domaines-chips .chip.on").length > 0;
+    } else if (s.dataset.require === "age") {
+      ok = document.getElementById("onb-age").checked;
     }
     nextBtn.disabled = !ok;
   }
