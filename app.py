@@ -478,6 +478,7 @@ def _register_form(erreur=""):
 <input type="email" name="email" placeholder="exemple@gmail.com" autocomplete="email"/>
 <input type="password" name="password" placeholder="Mot de passe (6 min.)" autocomplete="new-password"/>
 <input type="password" name="confirm" placeholder="Confirmer le mot de passe" autocomplete="new-password"/>
+<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#888;text-align:left;line-height:1.5;margin:2px 0 10px"><input type="checkbox" name="age15" required style="width:auto;margin-top:2px"/> <span>Je certifie avoir au moins 15 ans et accepter les <a href="/terms" target="_blank" style="color:#888;text-decoration:underline">conditions d'utilisation</a>.</span></label>
 <button type="submit">Créer mon compte</button></form>
 <div class="divider">ou</div>
 {oauth}""",
@@ -495,6 +496,8 @@ def register():
             return _register_form("Les mots de passe ne correspondent pas")
         if len(pwd) < 6:
             return _register_form("Mot de passe trop court (6 min.)")
+        if not request.form.get("age15"):
+            return _register_form("Tu dois certifier avoir au moins 15 ans pour créer un compte.")
         try:
             r = http.post(sb_auth("/signup"),
                           headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
