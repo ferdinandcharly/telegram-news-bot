@@ -1705,17 +1705,22 @@ def health():
 
 @app.route("/api/cron/recap")
 def api_cron_recap():
-    """Déclencheur externe du résumé matinal (réveille l'instance Render endormie).
-    À appeler chaque matin par un cron gratuit (ex: cron-job.org) avec ?token=CRON_SECRET.
-    Le verrou _resumes_envoyes empêche tout double envoi le même jour."""
+    """Déclencheur externe des corrélations (réveille l'instance Render endormie).
+    À appeler par un cron gratuit (ex: cron-job.org) avec ?token=CRON_SECRET :
+    un cron à 8h (push matinal) et un à 18h avec &heure=18 (refresh silencieux).
+    Le verrou _resumes_envoyes empêche tout double passage sur le même créneau."""
     secret = os.getenv("CRON_SECRET", "")
     if not secret or request.args.get("token") != secret:
         return "forbidden", 403
     # ?force=1 : relancer même si déjà fait aujourd'hui (utile pour tester)
     if request.args.get("force"):
         _resumes_envoyes.clear()
-    # on passe 8 explicitement : indépendant du fuseau horaire du serveur
-    check_resumes_matinaux(8)
+    # ?heure=8 (défaut) ou 18 : indépendant du fuseau horaire du serveur
+    try:
+        heure = int(request.args.get("heure", 8))
+    except ValueError:
+        heure = 8
+    check_resumes_matinaux(heure if heure in (8, 18) else 8)
     return "ok", 200
 
 
@@ -1809,13 +1814,13 @@ def envoyer_push_user(user_id, titre, body, url):
         print(f"[Push user] {e}")
 
 def generer_correlations():
-    """Analyse TOUTES les alertes des dernières 24h et génère les corrélations (passe globale unique).
+    """Analyse TOUTES les alertes des dernières 48h et génère les corrélations (passe globale unique).
 
     Un seul appel Groq 70b par matin pour l'ensemble des utilisateurs : les corrélations
     sont stockées globalement puis filtrées par domaine au moment du push (cf. check_resumes_matinaux).
     Retourne la liste des corrélations générées (vide si rien)."""
 
-    depuis = (datetime.now() - timedelta(hours=24)).isoformat()
+    depuis = (datetime.now() - timedelta(hours=48)).isoformat()
     # Lire depuis Supabase pour ne pas dépendre de la mémoire (réinitialisée au redémarrage)
     try:
         r = http.get(sb("alertes"), headers=SB_SERVICE,
@@ -1825,14 +1830,14 @@ def generer_correlations():
         print(f"[Corrélation] Erreur lecture Supabase : {e}")
         alertes_24h = [a for a in alertes if a.get("date", "") >= depuis]
 
-    print(f"[Corrélation] {len(alertes_24h)} alertes des 24h (global)")
+    print(f"[Corrélation] {len(alertes_24h)} alertes des 48h (global)")
     if len(alertes_24h) < 2:
         print(f"[Corrélation] Pas assez d'alertes, abandon.")
         return []
 
     # Plafond pour rester sous la limite Groq (12k TPM en free tier sur le 70b).
     # On garde les plus récentes et on allège chaque entrée (pas de contexte, accroche tronquée).
-    MAX_ALERTES = 45
+    MAX_ALERTES = 60
     alertes_24h = alertes_24h[:MAX_ALERTES]
     alertes_compact = [
         {
@@ -1851,7 +1856,7 @@ def generer_correlations():
     try:
         rc = http.get(sb("correlations"), headers=SB_SERVICE,
                       params={"date": f"gte.{depuis_corr}", "order": "date.desc",
-                              "limit": "25", "select": "id,titre,synthese"}, timeout=10)
+                              "limit": "15", "select": "id,titre,synthese"}, timeout=10)
         corr_passees = rc.json() if rc.ok and isinstance(rc.json(), list) else []
     except Exception:
         corr_passees = []
@@ -1874,7 +1879,7 @@ def generer_correlations():
 
     prompt = (
         "Tu es un analyste géopolitique, scientifique et économique senior. "
-        "Voici les alertes d'actualité des dernières 24h :\n"
+        "Voici les alertes d'actualité des dernières 48h :\n"
         + json.dumps(alertes_compact, ensure_ascii=False)
         + bloc_suites
         + """
@@ -1941,7 +1946,7 @@ Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
         rep = bot.client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=2200, temperature=0.2,
+            max_tokens=2800, temperature=0.2,
         )
         contenu = rep.choices[0].message.content.strip()
         debut = contenu.find("[")
@@ -2014,19 +2019,25 @@ Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
 
 
 def check_resumes_matinaux(heure):
-    """À 8h chaque matin : génère les corrélations UNE seule fois (global),
-    puis envoie à chaque utilisateur un push filtré par ses domaines."""
-    if heure != 8 or not SUPABASE_URL:
+    """Génère les corrélations 2×/jour (8h + 18h, heure de Paris).
+    À 8h : génération + push matinal filtré par domaine. À 18h : régénération
+    SILENCIEUSE (le contenu se rafraîchit avec l'actu du jour, sans notifier).
+    Un verrou par créneau évite de tourner deux fois le même créneau."""
+    if heure not in (8, 18) or not SUPABASE_URL:
         return
     today = datetime.now(PARIS).date().isoformat()
-    # Vérifier qu'on n'a pas déjà tourné ce matin
-    if _resumes_envoyes.get("__global__") == today:
+    cle = f"__global_{heure}__"
+    # Vérifier qu'on n'a pas déjà tourné ce créneau aujourd'hui
+    if _resumes_envoyes.get(cle) == today:
         return
 
-    print(f"[Resume] Génération des corrélations matinales ({today})")
+    push_matinal = (heure == 8)
+    label = "matinales (8h)" if push_matinal else "de l'après-midi (18h)"
+    print(f"[Resume] Génération des corrélations {label} ({today})")
     correlations = generer_correlations()  # 1 seul appel Groq 70b pour tout le monde
-    _resumes_envoyes["__global__"] = today
-    if not correlations:
+    _resumes_envoyes[cle] = today
+    # 18h : régénération silencieuse, on s'arrête avant le push.
+    if not correlations or not push_matinal:
         return
 
     try:
