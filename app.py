@@ -1703,7 +1703,11 @@ def api_me():
 # ── Fichiers statiques ────────────────────────────────────────────────────────
 @app.route("/sw.js")
 def service_worker():
-    return send_from_directory("static", "sw.js", mimetype="application/javascript")
+    resp = send_from_directory("static", "sw.js", mimetype="application/javascript")
+    # Jamais de cache HTTP sur le service worker → une nouvelle version est prise
+    # en compte au lancement suivant (sinon un SW bugué pourrait rester des heures).
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
 
 @app.route("/health")
 def health():
