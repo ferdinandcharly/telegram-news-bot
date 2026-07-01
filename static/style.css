@@ -631,6 +631,11 @@ header {
 .fm-portee { display: inline-flex; align-items: center; gap: 3px; }
 .fm-sep { color: var(--border-card); }
 
+/* ════════ Feed : "À la une" — hero pleine largeur au-dessus des rails ════════ */
+.une { margin-top: 22px; }
+.une-head { display: flex; align-items: center; gap: 9px; padding: 4px 16px 8px; }
+.une-card { padding: 0 16px; }   /* aligne la hero sur le contenu des rails de domaine */
+
 /* ════════ Feed : rails par domaine (suite horizontale plate) ════════ */
 .rail { margin-top: 22px; }
 .rail-head { display: flex; align-items: center; gap: 9px; padding: 4px 16px 6px; }

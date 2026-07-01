@@ -6,6 +6,8 @@
   let userAvatar    = "";   // photo de profil (dataURL base64) ou "" si initiale
   let sigFeed       = "";   // signature des alertes affichées (évite un re-render inutile)
   let feedEnAttente = false;// de nouvelles infos sont prêtes mais pas encore affichées
+  let heroActuelId  = null; // id de la critique affichée en "À la une" (hero)
+  let heroVus       = new Set(JSON.parse(localStorage.getItem("heroVus") || "[]"));
 
   // empreinte du cache : si elle ne change pas, inutile de ré-afficher (clignotement)
   function signatureAlertes() {
@@ -141,8 +143,26 @@
 
   // Rafraîchit le feed (bouton dédié dans la barre).
   async function rafraichir() {
-    await chargerAlertes();
+    await rafraichirFeed();
     remonterFeed();
+  }
+
+  // Rechargement du feed déclenché par l'utilisateur (bouton ou pull-to-refresh) :
+  // la critique affichée en "À la une" est marquée vue → au prochain rendu le
+  // rappel disparaît du haut (elle reste présente dans son rail de domaine).
+  async function rafraichirFeed() {
+    marquerHeroVu();
+    await chargerAlertes();
+  }
+
+  // Mémorise les héros déjà vus (localStorage) en ne gardant que les ids encore en cache.
+  function persistHeroVus() {
+    const vivants = new Set(alertesCache.map(a => a.id));
+    for (const id of heroVus) if (!vivants.has(id)) heroVus.delete(id);
+    localStorage.setItem("heroVus", JSON.stringify([...heroVus]));
+  }
+  function marquerHeroVu() {
+    if (heroActuelId != null) { heroVus.add(heroActuelId); persistHeroVus(); }
   }
 
   // Écran de lancement : on le masque une fois l'app prête (ou par sécurité après 6 s).
@@ -319,6 +339,7 @@
 
   // ── Vue liste plate (recherche / filtre domaine) ──
   function afficherListePlate(q) {
+    heroActuelId = null;  // pas de hero "À la une" hors de la vue rails
     let alertes = filtreCourant === "Tout"
       ? filtrerParPrefs(alertesCache)
       : alertesCache.filter(a => (a.domaine || "").includes(filtreCourant));
@@ -370,10 +391,19 @@
       return;
     }
     let html = "";
-    // "À la une" : critiques du jour, tous domaines confondus
-    const unes = trierArts(alertes.filter(critiqueDuJour)).slice(0, 10);
-    if (unes.length) html += railHTML({ cls: "une", label: "À la une" }, unes, false, true);
-    // Un rail par domaine, préférés en haut
+    // "À la une" : hero pleine largeur = la critique du jour la plus récente
+    // pas encore vue (rappel en haut ; elle reste aussi dans son rail de domaine).
+    // Au pull-to-refresh elle est marquée vue → le rappel disparaît du haut.
+    const critiques = trierArts(alertes.filter(critiqueDuJour));
+    const hero = critiques.find(a => !heroVus.has(a.id)) || null;
+    heroActuelId = hero ? hero.id : null;
+    if (hero) {
+      html += `<section class="une" style="--accent:#ef4444">
+        <div class="une-head"><span class="rail-dot"></span><span class="rail-name">À la une</span></div>
+        <div class="une-card">${carteHTML(hero, true)}</div>
+      </section>`;
+    }
+    // Un rail par domaine, préférés en haut. La critique en hero reste aussi dans son domaine.
     for (const m of ordreDomaines()) {
       const arts = alertes.filter(a => getDomaine(a.domaine || "").cls === m.cls);
       if (!arts.length) continue;
@@ -793,7 +823,7 @@
     if (!ptr) return;
     const SEUIL = 70;
     const PAGES = {
-      "page-feed":  () => ({ el: document.getElementById("feed"),       recharge: chargerAlertes }),
+      "page-feed":  () => ({ el: document.getElementById("feed"),       recharge: rafraichirFeed }),
       "page-corr":  () => ({ el: document.getElementById("feed-corr"),  recharge: chargerCorrelations }),
       "page-saved": () => ({ el: document.getElementById("feed-saved"), recharge: chargerSauvegardes }),
     };
