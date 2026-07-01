@@ -63,8 +63,14 @@ self.addEventListener("push", event => {
   event.waitUntil(
     self.registration.showNotification(data.title || "Korrel", {
       body: data.body || "",
-      icon: "/static/icon-192.png",
-      badge: "/static/icon-192.png",
+      icon: data.icon || "/static/icon-192.png",
+      badge: "/static/badge-96.png",          // silhouette monochrome (barre d'état Android)
+      image: data.image || undefined,          // grande image d'article si fournie
+      tag: data.tag || undefined,              // regroupe / remplace (ex: corr du jour)
+      renotify: !!data.tag,
+      vibrate: [80, 40, 80],
+      timestamp: Date.now(),
+      lang: "fr",
       data: { url: data.url || "/" },
       requireInteraction: false,
     })

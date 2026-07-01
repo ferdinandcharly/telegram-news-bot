@@ -1196,9 +1196,12 @@ def sauver_alerte(alerte):
 
 
 # ── Push notifications ────────────────────────────────────────────────────────
-def envoyer_push(titre, body, url, niveau=3):
+def envoyer_push(titre, body, url, niveau=3, tag=None):
     if not VAPID_PRIVATE_FILE or not SUPABASE_URL:
         return
+    payload = {"title": titre, "body": body, "url": url}
+    if tag:
+        payload["tag"] = tag
     try:
         from pywebpush import webpush, WebPushException
     except ImportError:
@@ -1216,7 +1219,7 @@ def envoyer_push(titre, body, url, niveau=3):
             continue
         try:
             webpush(subscription_info=sub,
-                    data=json.dumps({"title": titre, "body": body, "url": url}),
+                    data=json.dumps(payload),
                     vapid_private_key=VAPID_PRIVATE_FILE,
                     vapid_claims={"sub": "mailto:korrel.news@gmail.com"})
         except Exception as e:
@@ -1254,9 +1257,13 @@ def ajouter_alerte(domaine, titre, teaser, lien, description="", niveau=2, sourc
     sauver_alerte(alerte)
 
     notif_url = f"{APP_URL}/#synthese/{alerte['id']}" if APP_URL else lien
-    prefix = "🔴" if niveau >= 3 else "🟡"
-    envoyer_push(titre=f"{prefix} {domaine[:25]} — {titre[:40]}",
-                 body=(accroche or titre)[:120], url=notif_url, niveau=niveau)
+    # Épuré : titre = titre de l'article ; corps = surtitre domaine + accroche.
+    emoji    = "🔴" if niveau >= 3 else "🟡"
+    dom      = domaine.split(" ", 1)[-1] if " " in domaine else domaine  # sans l'emoji du domaine
+    surtitre = f"{emoji} {dom} · Critique" if niveau >= 3 else f"{emoji} {dom}"
+    corps    = f"{surtitre}\n{(accroche or titre)[:140]}"
+    envoyer_push(titre=titre[:120], body=corps, url=notif_url,
+                 niveau=niveau, tag=f"alerte-{alerte['id']}")
     return alerte["id"]
 
 
@@ -1791,10 +1798,13 @@ def index():
 # ── Bot en arrière-plan ───────────────────────────────────────────────────────
 _resumes_envoyes = {}  # {user_id: date_string}
 
-def envoyer_push_user(user_id, titre, body, url):
+def envoyer_push_user(user_id, titre, body, url, tag=None):
     """Envoie une push notification à un utilisateur spécifique."""
     if not VAPID_PRIVATE_FILE:
         return
+    payload = {"title": titre, "body": body, "url": url}
+    if tag:
+        payload["tag"] = tag
     try:
         from pywebpush import webpush
         r = http.get(sb("user_subscriptions"), headers=SB_SERVICE,
@@ -1805,7 +1815,7 @@ def envoyer_push_user(user_id, titre, body, url):
                 continue
             try:
                 webpush(subscription_info=sub,
-                        data=json.dumps({"title": titre, "body": body, "url": url}),
+                        data=json.dumps(payload),
                         vapid_private_key=VAPID_PRIVATE_FILE,
                         vapid_claims={"sub": "mailto:korrel.news@gmail.com"})
             except Exception:
@@ -2070,13 +2080,11 @@ def check_resumes_matinaux(heure):
         if not corr_user:
             continue
 
-        display_name = u.get("display_name")
-        prenom = display_name.split()[0] if display_name else None
-        salut  = f"Bonjour {prenom} — " if prenom else ""
-        titres = " · ".join(c["titre"] for c in corr_user[:2])
-        envoyer_push_user(uid,
-                          f"🌅 {salut}{len(corr_user)} corrélation(s) du jour",
-                          titres[:120], url)
+        # Digest : titre = nombre, corps = liste à puces des corrélations.
+        n = len(corr_user)
+        titre_notif = f"🔗 {n} corrélation{'s' if n > 1 else ''} du jour"
+        puces = "\n".join(f"• {c['titre']}" for c in corr_user[:4])
+        envoyer_push_user(uid, titre_notif, puces[:300], url, tag="corr-jour")
 
 
 def nettoyer_vieilles_alertes():
