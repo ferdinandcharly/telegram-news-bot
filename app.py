@@ -1500,8 +1500,12 @@ def api_correlations():
         return any(any(mk in cd for mk in mots_cles) for cd in c_dom)
 
     # all_corr est déjà trié par date décroissante → on garde la version la plus
-    # récente de chaque sujet et on écarte les doublons accumulés sur 3 jours.
-    return jsonify(_dedup_correlations([c for c in all_corr if match(c)]))
+    # récente de chaque sujet, on écarte les doublons accumulés sur 3 jours et les
+    # corrélations à une seule alerte (anciennes lignes qui n'ont pas de sens).
+    return jsonify(_dedup_correlations([
+        c for c in all_corr
+        if match(c) and len(set(c.get("alertes_ids") or [])) >= 2
+    ]))
 
 
 @app.route("/api/notifier/<alerte_id>", methods=["POST"])
@@ -1949,6 +1953,14 @@ Sois exigeant : 2 corrélations denses valent mieux que 5 creuses."""
 
     if not correlations:
         print(f"[Corrélation] Aucune corrélation (global)")
+        return []
+
+    # Une corrélation relie AU MOINS 2 alertes distinctes : on écarte les groupes
+    # à une seule source (ou zéro), qui n'ont aucun sens en tant que corrélation.
+    correlations = [c for c in correlations
+                    if len(set(c.get("alertes_ids") or [])) >= 2]
+    if not correlations:
+        print(f"[Corrélation] Aucune corrélation à ≥2 alertes (global)")
         return []
 
     # Sauvegarder dans Supabase. Colonnes : id, titre, synthese, alertes_ids, date, domaines,
