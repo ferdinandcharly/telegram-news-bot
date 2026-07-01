@@ -1245,6 +1245,11 @@ nav {
 .nav-btn.actif { color: var(--text-primary); background: var(--bg-card); }
 .nav-icon { font-size: 22px; line-height: 1; display: flex; }
 
+/* Bouton Corrélations = logo de l'app (page phare) : toujours en couleur pour
+   se démarquer des icônes monochromes ; légèrement estompé quand inactif. */
+.nav-logo { width: 25px; height: 25px; display: block; object-fit: contain; opacity: 0.75; transition: opacity 0.18s, transform 0.12s; }
+.nav-btn-corr.actif .nav-logo { opacity: 1; }
+
 .nav-badge {
   position: absolute; top: 4px; right: 6px;
   background: #e5534b; color: #fff; font-size: 10px; font-weight: 700;
