@@ -1,5 +1,5 @@
 // Service Worker Korrel — shell offline minimal + push notifications.
-const CACHE = "korrel-v2";
+const CACHE = "korrel-v3";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -28,8 +28,11 @@ self.addEventListener("fetch", event => {
     event.respondWith((async () => {
       try {
         const fresh = await fetch(req);
-        const c = await caches.open(CACHE);
-        c.put(req, fresh.clone());
+        // Ne mettre en cache QUE les réponses valides (jamais un 502/erreur de deploy).
+        if (fresh && fresh.ok) {
+          const c = await caches.open(CACHE);
+          c.put(req, fresh.clone());
+        }
         return fresh;
       } catch {
         const cached = await caches.match(req) || await caches.match("/");
@@ -48,8 +51,11 @@ self.addEventListener("fetch", event => {
       if (cached) return cached;
       try {
         const fresh = await fetch(req);
-        const c = await caches.open(CACHE);
-        c.put(req, fresh.clone());
+        // Ne cacher que si OK : sinon un 502 (redeploy) resterait servi en boucle.
+        if (fresh && fresh.ok) {
+          const c = await caches.open(CACHE);
+          c.put(req, fresh.clone());
+        }
         return fresh;
       } catch {
         return cached || Response.error();
