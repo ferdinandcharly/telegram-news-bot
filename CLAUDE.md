@@ -39,7 +39,7 @@ Si le worker tourne, mettre **`RUN_BOT=0`** dans l'env de l'instance web Render 
 ## Architecture
 
 ```
-bot.py          ← RSS polling (15 min) + filtre IA Groq + Telegram
+bot.py          ← RSS polling (15 min) + filtre IA Groq + dédoublonnage
 app.py          ← Flask server + toute la logique API + lance bot en thread
 templates/index.html  ← SPA mobile complète (HTML/CSS/JS vanilla, un seul fichier)
 static/sw.js    ← Service Worker pour push notifications VAPID
@@ -83,8 +83,10 @@ Deux étapes avant de sauvegarder un article :
 1. `est_doublon(titre)` — skip si >55% de mots-clés communs avec un titre récent (évite les doublons inter-sources)
 2. `est_important(titre, resume, domaine)` → Groq llama-3.1-8b-instant, retourne `(niveau, teaser)`
    - niveau 0 : rejeté (~95% des articles)
-   - niveau 2 : IMPORTANT → sauvegardé + push
-   - niveau 3 : CRITIQUE → sauvegardé + push + Telegram
+   - niveau 2 : IMPORTANT → sauvegardé + push (badge 🟡)
+   - niveau 3 : CRITIQUE → sauvegardé + push (badge 🔴)
+
+**Telegram retiré du flux** : les alertes ne partent QUE par push VAPID. `test_telegram.py` et les variables `TELEGRAM_*` sont un héritage mort (aucune ligne Telegram dans `bot.py`/`app.py`).
 
 ### Corrélations
 
@@ -105,8 +107,8 @@ Tout est dans un seul fichier. Variables globales clés :
 
 ```
 GROQ_API_KEY
-TELEGRAM_TOKEN
-TELEGRAM_CHAT_ID
+TELEGRAM_TOKEN         # héritage — plus utilisé (Telegram retiré du flux)
+TELEGRAM_CHAT_ID       # héritage — plus utilisé
 VAPID_PUBLIC_KEY
 VAPID_PRIVATE_KEY      # clé privée VAPID encodée en base64
 APP_URL                # URL publique (ex: https://telegram-news-bot2.onrender.com)
