@@ -1245,13 +1245,9 @@ nav {
 .nav-btn.actif { color: var(--text-primary); background: var(--bg-card); }
 .nav-icon { font-size: 22px; line-height: 1; display: flex; }
 
-/* Bouton Corrélations = logo de l'app (page phare) en monochrome : masque CSS
-   → suit la couleur du bouton comme les autres icônes (gris inactif, clair actif). */
-.nav-logo {
-  width: 28px; height: 28px; display: block; background-color: currentColor;
-  -webkit-mask: url(/static/logo.png?v=20260620d) center / contain no-repeat;
-          mask: url(/static/logo.png?v=20260620d) center / contain no-repeat;
-}
+/* Bouton Corrélations = glyphe « triangle » réseau (page phare). SVG en
+   currentColor → suit la couleur du bouton comme les autres (gris/clair). */
+.nav-corr-svg { width: 27px; height: 27px; display: block; }
 
 .nav-badge {
   position: absolute; top: 4px; right: 6px;
