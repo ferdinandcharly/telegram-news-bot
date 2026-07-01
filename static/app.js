@@ -312,16 +312,13 @@
     return Array(rails).fill(rail).join("");
   }
 
-  // Corrélations : reprend la forme des cartes d'analyse (titre + fil d'étapes)
-  function skeletonCorrHTML(n = 3) {
-    const step = `<div class="skel-corr-step">
-        <span class="skel-dot"></span>
-        <div class="skel-corr-lines"><div class="skel-line court"></div><div class="skel-line long"></div></div>
-      </div>`;
-    const card = `<div class="skel-corr-card">
-        <div class="skel-line" style="width:45%;height:10px"></div>
-        <div class="skel-line" style="width:80%;height:16px;margin-top:9px"></div>
-        <div class="skel-corr-steps">${step}${step}${step}</div>
+  // Corrélations : reprend la forme des cartes condensées (.corr-cc)
+  function skeletonCorrHTML(n = 5) {
+    const card = `<div class="skel-corr-cc">
+        <div class="skel-line" style="width:42%;height:9px"></div>
+        <div class="skel-line" style="width:88%;height:14px;margin-top:10px"></div>
+        <div class="skel-line" style="width:55%;height:14px;margin-top:6px"></div>
+        <div class="skel-line" style="width:30%;height:9px;margin-top:12px"></div>
       </div>`;
     return Array(n).fill(card).join("");
   }
@@ -536,7 +533,7 @@
   // Liste condensée : une carte compacte par corrélation (clic → détail complet).
   async function chargerCorrelations() {
     const feed = document.getElementById("feed-corr");
-    feed.innerHTML = skeletonCorrHTML(3);
+    feed.innerHTML = skeletonCorrHTML();
     corrsCache = await fetch("/api/correlations").then(r => r.json()).catch(() => []);
 
     if (!corrsCache.length) {

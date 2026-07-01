@@ -402,15 +402,11 @@ header {
 .skel-cc-thumb { height: 130px; }
 .skel-cc-body { padding: 12px 13px 14px; display: flex; flex-direction: column; gap: 9px; }
 
-/* Corrélations : squelette en cartes d'analyse (titre + fil d'étapes) */
-.skel-corr-card {
+/* Corrélations : squelette en cartes condensées (miroir de .corr-cc) */
+.skel-corr-cc {
   background: var(--bg-card); border: .5px solid var(--border-card);
-  border-radius: 14px; padding: 16px; margin-top: 12px;
+  border-left: 3px solid var(--border-card); border-radius: 12px; padding: 15px 16px;
 }
-.skel-corr-steps { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
-.skel-corr-step { display: flex; gap: 10px; }
-.skel-corr-step .skel-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; }
-.skel-corr-lines { flex: 1; display: flex; flex-direction: column; gap: 7px; }
 
 .skel-vignette, .skel-line, .skel-dot, .skel-cc-thumb {
   background: linear-gradient(90deg,
