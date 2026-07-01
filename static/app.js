@@ -517,86 +517,103 @@
     "Finance": "var(--finance)", "Environnement": "var(--env)", "Sport": "var(--sport)"
   };
 
+  let corrsCache = [];
+
+  // accent = couleur du premier domaine impliqué
+  function accentCorr(domaines) {
+    return (domaines && domaines.length)
+      ? (CORR_DOMAIN_COLORS[domaines[0].replace(/^\S+\s/, "")] || "var(--text-secondary)")
+      : "var(--text-secondary)";
+  }
+  function domainesCorrHTML(domaines) {
+    return (domaines || []).map(dom => {
+      const label = dom.replace(/^\S+\s/, "");
+      const color = CORR_DOMAIN_COLORS[label] || "var(--text-secondary)";
+      return `<span class="corr-domain-dot" style="color:${color}">${esc(label)}</span>`;
+    }).join('<span class="corr-sep">·</span>') || `<span class="corr-domain-dot">Général</span>`;
+  }
+
+  // Liste condensée : une carte compacte par corrélation (clic → détail complet).
   async function chargerCorrelations() {
     const feed = document.getElementById("feed-corr");
     feed.innerHTML = skeletonCorrHTML(3);
-    const corrs = await fetch("/api/correlations").then(r => r.json()).catch(() => []);
+    corrsCache = await fetch("/api/correlations").then(r => r.json()).catch(() => []);
 
-    if (!corrs.length) {
+    if (!corrsCache.length) {
       feed.innerHTML = `<div class="vide">Aucune corrélation pour le moment.<br>Générée chaque matin à 8h.</div>`;
       return;
     }
-
-    feed.innerHTML = corrs.map(c => {
-      const domaines = c.domaines || [];
-      const nb  = (c.alertes_ids || []).length;
-      const d   = c.date ? parseDate(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short"}) : "";
-
-      // accent = couleur du premier domaine impliqué
-      const accent = domaines.length
-        ? (CORR_DOMAIN_COLORS[domaines[0].replace(/^\S+\s/, "")] || "var(--text-secondary)")
-        : "var(--text-secondary)";
-
-      const domainsHtml = (domaines.map(dom => {
-        const label = dom.replace(/^\S+\s/, "");
-        const color = CORR_DOMAIN_COLORS[label] || "var(--text-secondary)";
-        return `<span class="corr-domain-dot" style="color:${color}">${esc(label)}</span>`;
-      }).join('<span class="corr-sep">·</span>')) || `<span class="corr-domain-dot">Général</span>`;
-
-      // le « fil » : un nœud par étape, reliés verticalement
-      const corps = c.contexte
-        ? [["Contexte", c.contexte], ["Enjeux", c.analyse], ["À suivre", c.implication]]
-            .filter(([, txt]) => txt)
-            .map(([label, txt]) => `
-              <div class="corr-step">
-                <span class="corr-dot"></span>
-                <div class="corr-label">${label}</div>
-                <div class="corr-text">${esc(txt)}</div>
-              </div>`).join("")
-        : `<div class="corr-synthese">${esc(c.synthese || "")}</div>`;
-
-      // liste (repliée) des articles liés, cliquables → fiche de l'article
-      const ids = c.alertes_ids || [];
-      const liensHtml = ids.map(id => {
-        const a = alertesCache.find(x => x.id === id);
-        if (!a) return `<div class="corr-lien-off">Article expiré</div>`;
-        const dom = getDomaine(a.domaine);
-        const t   = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
-        return `<div class="corr-lien" onclick="ouvrirModal(${id})">
-            <span class="corr-lien-dot" style="background:var(--${dom.cls})"></span>
-            <span class="corr-lien-titre">${t}</span>
-            <ion-icon name="chevron-forward-outline"></ion-icon>
-          </div>`;
-      }).join("");
-
-      const foot = nb
-        ? `<button class="corr-foot" onclick="toggleCorrLiens(this)">
-             <ion-icon name="git-network-outline"></ion-icon>
-             <span>${nb} alerte${nb > 1 ? "s" : ""} liée${nb > 1 ? "s" : ""}</span>
-             <ion-icon name="chevron-down-outline" class="corr-foot-chevron"></ion-icon>
-           </button>
-           <div class="corr-liens">${liensHtml}</div>`
-        : "";
-
-      return `<div class="corr-card" style="--accent:${accent}">
-        <div class="corr-card-head">
-          ${domainsHtml}
-          <span class="corr-sep">·</span>
-          <span class="corr-date">${d}</span>
-          ${c.maj ? '<span class="corr-maj">mis à jour</span>' : ''}
-        </div>
-        <div class="corr-titre">${esc(c.titre || "")}</div>
-        <div class="corr-steps">${corps}</div>
-        ${foot}
-      </div>`;
-    }).join("");
+    feed.innerHTML = corrsCache.map((c, i) => carteCorrCondensee(c, i)).join("");
   }
 
-  // Déplie / replie la liste des articles liés d'une corrélation
-  function toggleCorrLiens(btn) {
-    btn.classList.toggle("open");
-    const liste = btn.nextElementSibling;
-    if (liste && liste.classList.contains("corr-liens")) liste.classList.toggle("open");
+  function carteCorrCondensee(c, i) {
+    const nb = (c.alertes_ids || []).length;
+    const d  = c.date ? parseDate(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short"}) : "";
+    return `<div class="corr-cc" style="--accent:${accentCorr(c.domaines)}" onclick="ouvrirCorr(${i})">
+      <div class="corr-cc-top">${domainesCorrHTML(c.domaines)}<span class="corr-cc-date">${d}</span>${c.maj ? '<span class="corr-maj">màj</span>' : ''}</div>
+      <div class="corr-cc-titre">${esc(c.titre || "")}</div>
+      <div class="corr-cc-bot">
+        <ion-icon name="git-network-outline"></ion-icon><span>${nb} alerte${nb > 1 ? "s" : ""} liée${nb > 1 ? "s" : ""}</span>
+        <ion-icon name="chevron-forward-outline" class="corr-cc-go"></ion-icon>
+      </div>
+    </div>`;
+  }
+
+  // Détail complet (fil connecté + alertes liées) affiché dans une feuille.
+  function detailCorrHTML(c) {
+    const nb = (c.alertes_ids || []).length;
+    const d  = c.date ? parseDate(c.date).toLocaleDateString("fr-FR", {day:"numeric",month:"short"}) : "";
+
+    const corps = c.contexte
+      ? [["Contexte", c.contexte], ["Enjeux", c.analyse], ["À suivre", c.implication]]
+          .filter(([, txt]) => txt)
+          .map(([label, txt]) => `
+            <div class="corr-step">
+              <span class="corr-dot"></span>
+              <div class="corr-label">${label}</div>
+              <div class="corr-text">${esc(txt)}</div>
+            </div>`).join("")
+      : `<div class="corr-synthese">${esc(c.synthese || "")}</div>`;
+
+    const liensHtml = (c.alertes_ids || []).map(id => {
+      const a = alertesCache.find(x => x.id === id);
+      if (!a) return `<div class="corr-lien-off">Article expiré</div>`;
+      const dom = getDomaine(a.domaine);
+      const t   = esc(userLangue === "fr" && a.titre_fr ? a.titre_fr : a.titre);
+      return `<div class="corr-lien" onclick="ouvrirModal(${id})">
+          <span class="corr-lien-dot" style="background:var(--${dom.cls})"></span>
+          <span class="corr-lien-titre">${t}</span>
+          <ion-icon name="chevron-forward-outline"></ion-icon>
+        </div>`;
+    }).join("");
+    const liens = nb ? `<div class="corr-d-liens">
+        <div class="corr-d-liens-lab"><ion-icon name="git-network-outline"></ion-icon>${nb} alerte${nb > 1 ? "s" : ""} liée${nb > 1 ? "s" : ""}</div>
+        ${liensHtml}
+      </div>` : "";
+
+    return `<div class="sheet-handle" aria-hidden="true"></div>
+      <div class="corr-d-body" style="--accent:${accentCorr(c.domaines)}">
+        <div class="corr-card-head">${domainesCorrHTML(c.domaines)}<span class="corr-sep">·</span><span class="corr-date">${d}</span>${c.maj ? '<span class="corr-maj">mis à jour</span>' : ''}</div>
+        <div class="corr-d-titre">${esc(c.titre || "")}</div>
+        <div class="corr-steps">${corps}</div>
+        ${liens}
+      </div>`;
+  }
+
+  function ouvrirCorr(i) {
+    const c = corrsCache[i]; if (!c) return;
+    const sheet = document.getElementById("corr-sheet");
+    sheet.innerHTML = detailCorrHTML(c);
+    sheet.scrollTop = 0;
+    document.getElementById("corr-modal").classList.add("visible");
+    document.body.classList.add("modal-ouvert");
+  }
+  function fermerCorrMaintenant() {
+    document.getElementById("corr-modal").classList.remove("visible");
+    document.body.classList.remove("modal-ouvert");
+  }
+  function fermerCorr(e) {
+    if (e.target === document.getElementById("corr-modal")) fermerCorrMaintenant();
   }
 
   // ── Sauvegardés ─────────────────────────────────────────────────────────
@@ -808,6 +825,52 @@
           box.style.transition = box.style.transform = box.style.opacity = "";
         }, 220);
       } else {                          // pas assez → retour en place
+        box.style.transform = "";
+        box.style.opacity   = "";
+      }
+    };
+    box.addEventListener("touchend", fin);
+    box.addEventListener("touchcancel", fin);
+  })();
+
+  // Même geste « glisser pour fermer » sur la feuille de détail des corrélations.
+  (function brancherSwipeCorr() {
+    const box = document.getElementById("corr-sheet");
+    if (!box) return;
+    let y0 = null, x0 = 0, dy = 0, actif = false, sens = null;
+
+    box.addEventListener("touchstart", e => {
+      if (e.touches.length !== 1) { y0 = null; return; }
+      actif = box.scrollTop <= 0;
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; sens = null;
+    }, { passive: true });
+
+    box.addEventListener("touchmove", e => {
+      if (y0 === null || !actif) return;
+      dy = e.touches[0].clientY - y0;
+      const dx = e.touches[0].clientX - x0;
+      if (sens === null && (Math.abs(dy) > 6 || Math.abs(dx) > 6)) {
+        sens = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+      }
+      if (sens === "h" || dy <= 0) { actif = false; box.style.transform = ""; box.style.opacity = ""; return; }
+      e.preventDefault();
+      box.style.transition = "none";
+      box.style.transform  = `translateY(${dy}px)`;
+      box.style.opacity    = String(Math.max(0.4, 1 - dy / 600));
+    }, { passive: false });
+
+    const fin = () => {
+      if (y0 === null) return;
+      const d = dy; y0 = null; actif = false;
+      box.style.transition = "transform .25s ease, opacity .25s ease";
+      if (d > 110) {
+        box.style.transform = `translateY(${window.innerHeight}px)`;
+        box.style.opacity   = "0";
+        setTimeout(() => {
+          fermerCorrMaintenant();
+          box.style.transition = box.style.transform = box.style.opacity = "";
+        }, 220);
+      } else {
         box.style.transform = "";
         box.style.opacity   = "";
       }
