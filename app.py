@@ -42,6 +42,14 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 limiter = Limiter(key_func=get_remote_address, app=app,
                   default_limits=[], storage_uri="memory://")
 
+# Email autorisé à voir l'espace développeur (/api/admin/stats).
+# Gating côté serveur uniquement : l'email vient de la session Supabase, non falsifiable côté client.
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ferdinandcharly@gmail.com").strip().lower()
+
+def _est_admin():
+    email = session.get("user_email", "")
+    return bool(email) and email.strip().lower() == ADMIN_EMAIL
+
 
 # ── Pages d'erreur (HTML propre, ou JSON pour les routes /api) ───────────────
 @app.errorhandler(429)
@@ -1310,6 +1318,90 @@ def api_stats():
         "aujourd_hui": sum(1 for a in alertes if a["date"].startswith(aujourd_hui)),
     })
 
+@app.route("/api/admin/stats")
+def api_admin_stats():
+    """Statistiques de pilotage, réservées à l'admin (voir ADMIN_EMAIL)."""
+    if not _est_admin():
+        return jsonify({"erreur": "accès refusé"}), 403
+
+    s   = bot.STATS
+    now = time.time()
+
+    # ── Volume : répartition par domaine + fenêtres 24h / 48h ──
+    par_domaine = {}
+    for a in alertes:
+        dom = a.get("domaine", "?")
+        par_domaine[dom] = par_domaine.get(dom, 0) + 1
+
+    def _recent(a, heures):
+        try:
+            d = datetime.fromisoformat(a["date"])
+            if d.tzinfo is None:
+                d = d.replace(tzinfo=PARIS)
+            return (datetime.now(PARIS) - d).total_seconds() <= heures * 3600
+        except Exception:
+            return False
+    h24 = sum(1 for a in alertes if _recent(a, 24))
+    h48 = sum(1 for a in alertes if _recent(a, 48))
+
+    # ── Corrélations : compte dédupliqué + date de la dernière génération ──
+    corr_actives, corr_derniere = 0, None
+    try:
+        r = http.get(sb("correlations"), headers=SB_SERVICE,
+                     params={"order": "date.desc", "limit": "30"}, timeout=8)
+        if r.ok and r.json():
+            brut = r.json()
+            corr_actives = len(_dedup_correlations(
+                [c for c in brut if len(set(c.get("alertes_ids") or [])) >= 2]))
+            corr_derniere = brut[0].get("date")
+    except Exception:
+        pass
+
+    # ── Abonnements push actifs ──
+    push_n = 0
+    try:
+        r = http.get(sb("user_subscriptions"), headers=SB_SERVICE,
+                     params={"select": "endpoint"}, timeout=8)
+        if r.ok:
+            push_n = len(r.json())
+    except Exception:
+        pass
+
+    # ── Filtre 8b : taux de rejet + estimation grossière de tokens ──
+    cand = s.get("candidats", 0)
+    surv = s.get("survivants", 0)
+    rejet_pct  = round(100 * (1 - surv / cand)) if cand else 0
+    tokens_est = cand * 250  # ~titre+résumé+prompt par article, pour situer vs le plafond TPM
+
+    return jsonify({
+        "bot": {
+            "dernier_cycle":  s.get("dernier_cycle"),
+            "prochain_cycle": (s["dernier_cycle"] + bot.INTERVALLE) if s.get("dernier_cycle") else None,
+            "uptime_s":       int(now - s.get("demarrage", now)),
+            "cycles_total":   s.get("cycles_total", 0),
+            "flux_total":     s.get("flux_total", 0),
+            "flux_echecs":    s.get("flux_echecs", []),
+        },
+        "volume": {
+            "total":         len(alertes),
+            "h24":           h24,
+            "h48":           h48,
+            "par_domaine":   par_domaine,
+            "corr_actives":  corr_actives,
+            "corr_derniere": corr_derniere,
+        },
+        "filtre": {
+            "candidats":   cand,
+            "survivants":  surv,
+            "alertes":     s.get("alertes", 0),
+            "rejet_pct":   rejet_pct,
+            "tokens_est":  tokens_est,
+            "tpm_plafond": 12000,
+        },
+        "push": {"abonnements": push_n},
+        "now":  now,
+    })
+
 
 # ── API synthèse ──────────────────────────────────────────────────────────────
 @app.route("/api/synthese/<alerte_id>")
@@ -1625,6 +1717,7 @@ def api_init():
         "preferences":  prefs,
         "email":        session.get("user_email", ""),
         "is_new_user":  prefs_row is None,
+        "is_admin":     _est_admin(),
     })
 
 

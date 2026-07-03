@@ -71,8 +71,9 @@
   function afficherPage(page, btn) {
     document.activeElement?.blur();
     fermerDomaine();   // toujours revenir aux rails en quittant/rouvrant le feed
-    ["feed","corr","saved","params"].forEach(p => {
-      document.getElementById("page-" + p).style.display = "none";
+    ["feed","corr","saved","params","dev"].forEach(p => {
+      const el = document.getElementById("page-" + p);
+      if (el) el.style.display = "none";
     });
     const elPage = document.getElementById("page-" + page);
     elPage.style.display = "block";
@@ -88,6 +89,7 @@
     if (page === "feed")  marquerLus();
     if (page === "saved") chargerSauvegardes();
     if (page === "corr")  chargerCorrelations();
+    if (page === "dev")   chargerAdmin();
     // Remonte en haut de la page sélectionnée, avec défilement animé
     // (sauf si l'utilisateur a demandé moins d'animations)
     const doux = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
@@ -1244,6 +1246,102 @@
   }
 
   // ── Init ─────────────────────────────────────────────────────────────────
+  // ── Espace développeur (admin) ─────────────────────────────────────────────
+  function _devRelatif(epoch, now) {
+    if (!epoch) return "—";
+    const d = now - epoch, abs = Math.abs(d);
+    const mots = abs < 60 ? Math.round(abs) + " s"
+               : abs < 3600 ? Math.round(abs / 60) + " min"
+               : abs < 86400 ? Math.round(abs / 3600) + " h"
+               : Math.round(abs / 86400) + " j";
+    return d >= 0 ? "il y a " + mots : "dans " + mots;
+  }
+  function _devDuree(s) {
+    if (!s || s < 0) return "—";
+    const j = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    const p = [];
+    if (j) p.push(j + " j");
+    if (h) p.push(h + " h");
+    p.push(m + " min");
+    return p.join(" ");
+  }
+  function _devDate(iso) {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleString("fr-FR",
+        { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    } catch { return "—"; }
+  }
+
+  async function chargerAdmin() {
+    const box = document.getElementById("dev-content");
+    box.innerHTML = '<div class="vide">Chargement…</div>';
+    let d;
+    try {
+      const r = await fetch("/api/admin/stats");
+      if (!r.ok) { box.innerHTML = '<div class="vide">Accès refusé.</div>'; return; }
+      d = await r.json();
+    } catch {
+      box.innerHTML = '<div class="vide">Pas de connexion.</div>';
+      return;
+    }
+    const now = d.now, b = d.bot, v = d.volume, f = d.filtre, p = d.push;
+
+    const enMarche = b.dernier_cycle && (now - b.dernier_cycle) < 1800;
+    const nbEchecs = (b.flux_echecs || []).length;
+    const fluxOK   = (b.flux_total || 0) - nbEchecs;
+    const echecsHTML = (b.flux_echecs || []).map(e =>
+      `<div class="dev-fail">✗ ${esc(e.nom)} — ${esc(e.erreur)}</div>`).join("");
+
+    const doms   = Object.entries(v.par_domaine || {}).sort((a, b2) => b2[1] - a[1]);
+    const maxDom = doms.length ? Math.max(...doms.map(x => x[1])) : 1;
+    const barsHTML = doms.map(([nom, n]) =>
+      `<div class="dev-bar"><span class="dev-bar-nom">${esc(nom)}</span>` +
+      `<span class="dev-bar-track"><span class="dev-bar-fill" style="width:${Math.round(100 * n / maxDom)}%"></span></span>` +
+      `<span class="dev-bar-num">${n}</span></div>`).join("");
+
+    const tpmPct = Math.min(100, Math.round(100 * (f.tokens_est || 0) / (f.tpm_plafond || 12000)));
+
+    box.innerHTML = `
+      <div class="dev-section-label">Santé du bot</div>
+      <div class="dev-card">
+        <div class="dev-row"><span class="dev-k">État</span><span class="dev-v"><span class="dev-dot ${enMarche ? 'ok' : 'crit'}"></span>${enMarche ? 'En marche' : 'Aucun cycle récent'}</span></div>
+        <div class="dev-row"><span class="dev-k">Dernier cycle</span><span class="dev-v">${_devRelatif(b.dernier_cycle, now)}</span></div>
+        <div class="dev-row"><span class="dev-k">Prochain cycle</span><span class="dev-v">${_devRelatif(b.prochain_cycle, now)}</span></div>
+        <div class="dev-row"><span class="dev-k">Uptime</span><span class="dev-v">${_devDuree(b.uptime_s)}</span></div>
+        <div class="dev-row"><span class="dev-k">Cycles effectués</span><span class="dev-v">${b.cycles_total}</span></div>
+        <div class="dev-row"><span class="dev-k">Flux interrogés</span><span class="dev-v"><span class="dev-dot ${nbEchecs ? 'warn' : 'ok'}"></span>${fluxOK} / ${b.flux_total} OK</span></div>
+        ${echecsHTML}
+      </div>
+
+      <div class="dev-section-label">Volume</div>
+      <div class="dev-grid">
+        <div class="dev-stat"><div class="dev-n">${v.total}</div><div class="dev-l">alertes total</div></div>
+        <div class="dev-stat"><div class="dev-n">${v.h24}</div><div class="dev-l">dernières 24 h</div></div>
+        <div class="dev-stat"><div class="dev-n">${v.h48}</div><div class="dev-l">dernières 48 h</div></div>
+      </div>
+      <div class="dev-card">${barsHTML || '<div class="dev-muted">Aucune alerte en mémoire.</div>'}</div>
+      <div class="dev-card">
+        <div class="dev-row"><span class="dev-k">Corrélations actives</span><span class="dev-v">${v.corr_actives}</span></div>
+        <div class="dev-row"><span class="dev-k">Dernière génération</span><span class="dev-v">${_devDate(v.corr_derniere)}</span></div>
+      </div>
+
+      <div class="dev-section-label">Filtre IA &amp; Groq</div>
+      <div class="dev-card">
+        <div class="dev-row"><span class="dev-k">Dernier cycle</span><span class="dev-v">${f.candidats} triés → ${f.survivants} gardés</span></div>
+        <div class="dev-row"><span class="dev-k">Alertes créées</span><span class="dev-v">${f.alertes}</span></div>
+        <div class="dev-row"><span class="dev-k">Taux de rejet (8b)</span><span class="dev-v">${f.rejet_pct} %</span></div>
+        <div class="dev-row" style="border-bottom:none"><span class="dev-k">Tokens 8b (est.)</span><span class="dev-v">${(f.tokens_est || 0).toLocaleString('fr-FR')} / ${(f.tpm_plafond || 12000).toLocaleString('fr-FR')}</span></div>
+        <div class="dev-prog"><i style="width:${tpmPct}%"></i></div>
+        <div class="dev-muted">Estimation (~250 tokens/article) pour situer vs le plafond free 12k TPM.</div>
+      </div>
+
+      <div class="dev-section-label">Notifications push</div>
+      <div class="dev-card">
+        <div class="dev-row" style="border-bottom:none"><span class="dev-k">Abonnements actifs</span><span class="dev-v">${p.abonnements}</span></div>
+      </div>`;
+  }
+
   async function init() {
     // Verrou portrait (efficace surtout en PWA installée ; ignoré sinon)
     try { await screen.orientation.lock("portrait"); } catch {}
@@ -1270,6 +1368,14 @@
     document.getElementById("user-email").textContent = data.email || "—";
     userAvatar = data.preferences.avatar || "";
     majIdentite(dn, data.email);
+
+    // espace développeur : le bouton nav n'apparaît que pour l'admin (email autorisé côté serveur)
+    if (data.is_admin) {
+      const nb = document.getElementById("nav-btn-dev");
+      if (nb) nb.style.display = "";
+      const sub = document.getElementById("dev-sub");
+      if (sub) sub.textContent = "Réservé à " + (data.email || "toi");
+    }
 
     // langue
     userLangue = data.preferences.langue || "multi";

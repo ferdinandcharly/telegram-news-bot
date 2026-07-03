@@ -15,6 +15,19 @@ GROQ_KEY = os.getenv("GROQ_API_KEY")
 SEEN_FILE = "vus.json"
 INTERVALLE = 900  # 15 minutes
 
+# État en mémoire pour l'espace développeur (exposé par /api/admin/stats).
+# Rempli à chaque cycle de verifier(). Aucune persistance : reflète l'instance vivante.
+STATS = {
+    "demarrage":     time.time(),  # epoch de démarrage → uptime
+    "dernier_cycle": None,         # epoch de fin du dernier cycle complet
+    "cycles_total":  0,
+    "flux_total":    0,            # nb de flux interrogés au dernier cycle
+    "flux_echecs":   [],           # [{"nom", "erreur"}] flux en échec au dernier cycle
+    "candidats":     0,            # articles entrés dans le triage 8b (après dédup)
+    "survivants":    0,            # gardés par le triage 8b
+    "alertes":       0,            # alertes niveau>=2 créées au dernier cycle
+}
+
 FLUX = {
     "🌍 Géopolitique": [
         "http://feeds.bbci.co.uk/news/world/rss.xml",
@@ -396,11 +409,14 @@ def triage_groupe(lot):
 def verifier(premiere_fois=False):
     vus = charger_vus()
     nouveaux_ids = set()
+    _flux_n = 0      # nb de flux interrogés ce cycle (instrumentation dev)
+    _echecs = []     # flux en échec ce cycle
 
     # ── Phase 1 : collecte + dédoublonnage + pré-filtre local (0 appel Groq) ──
     candidats = []  # {domaine, titre, resume, lien, article}
     for domaine, urls in FLUX.items():
         for url in urls:
+            _flux_n += 1
             try:
                 feed = feedparser.parse(url)
                 entrees = feed.entries[:8]
@@ -438,6 +454,7 @@ def verifier(premiere_fois=False):
                     candidats.append({"domaine": dom, "titre": titre,
                                       "resume": resume, "lien": lien, "article": article})
             except Exception as e:
+                _echecs.append({"nom": _nom_source(url), "erreur": str(e)[:80]})
                 print(f"  Erreur flux {url[:50]} : {e}")
 
     # ── Phase 2 : triage groupé permissif (Groq, par paquets de 8) ────────────
@@ -485,6 +502,17 @@ def verifier(premiere_fois=False):
     if len(vus) > 4000:
         vus = set(list(vus)[-4000:])
     sauver_vus(vus)
+
+    # Instrumentation dev : photographie l'état du cycle qui vient de finir.
+    STATS.update({
+        "dernier_cycle": time.time(),
+        "cycles_total":  STATS["cycles_total"] + 1,
+        "flux_total":    _flux_n,
+        "flux_echecs":   _echecs,
+        "candidats":     len(candidats),
+        "survivants":    len(survivants),
+        "alertes":       alertes,
+    })
 
     # Libère la mémoire transitoire accumulée pendant le parsing RSS + appels Groq.
     gc.collect()

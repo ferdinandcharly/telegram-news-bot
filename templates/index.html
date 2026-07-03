@@ -330,6 +330,18 @@
   <div class="corr-sheet" id="corr-sheet"></div>
 </div>
 
+<!-- ── Espace développeur (admin uniquement, dévoilé par init si is_admin) ── -->
+<div id="page-dev" style="display:none">
+  <div class="dev-head">
+    <h1 class="dev-title">Espace développeur</h1>
+    <button class="dev-refresh" onclick="chargerAdmin()" aria-label="Rafraîchir">
+      <ion-icon name="refresh-outline"></ion-icon>
+    </button>
+  </div>
+  <div class="dev-sub" id="dev-sub"></div>
+  <div id="dev-content"><div class="vide">Chargement…</div></div>
+</div>
+
 <!-- ── Nav ── -->
 <nav>
   <button class="nav-btn actif" id="nav-btn-feed" aria-label="Accueil" onclick="afficherPage('feed', this)">
@@ -348,8 +360,11 @@
   <button class="nav-btn" aria-label="Compte et paramètres" onclick="afficherPage('params', this)">
     <span class="nav-icon"><ion-icon name="person-circle-outline"></ion-icon></span>
   </button>
+  <button class="nav-btn" id="nav-btn-dev" aria-label="Espace développeur" onclick="afficherPage('dev', this)" style="display:none">
+    <span class="nav-icon"><ion-icon name="code-slash-outline"></ion-icon></span>
+  </button>
 </nav>
 
-<script src="/static/app.js?v=20260701g"></script>
+<script src="/static/app.js?v=20260703a"></script>
 </body>
 </html>
