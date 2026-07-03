@@ -21,6 +21,8 @@ FLUX = {
         "https://www.rfi.fr/fr/rss",
         "https://www.france24.com/fr/rss",
         "https://www.lemonde.fr/international/rss_full.xml",
+        "https://www.theguardian.com/world/rss",
+        "https://www.courrierinternational.com/feed/all/rss.xml",
     ],
     "🔬 Science": [
         "https://www.nasa.gov/rss/dyn/breaking_news.rss",
@@ -38,12 +40,16 @@ FLUX = {
         "https://feeds.bbci.co.uk/news/business/rss.xml",
         "https://www.lemonde.fr/economie/rss_full.xml",
         "https://www.franceinfo.fr/economie.rss",
+        "https://www.theguardian.com/business/rss",
+        "https://www.latribune.fr/rss/rubriques/actualite.html",
+        "https://oilprice.com/rss/main",
     ],
     "🌱 Environnement": [
         "https://reporterre.net/spip.php?page=backend",
         "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
         "https://www.futura-sciences.com/planete/rss/actualites.xml",
         "https://www.lemonde.fr/planete/rss_full.xml",
+        "https://www.theguardian.com/environment/rss",
     ],
     "⚽ Sport": [
         "https://www.lequipe.fr/rss/actu_rss.xml",
@@ -67,6 +73,8 @@ _SOURCE_NAMES = {
     "wired.com": "Wired", "bfmtv.com": "BFM", "lesechos.fr": "Les Échos",
     "reporterre.net": "Reporterre", "lequipe.fr": "L'Équipe",
     "franceinfo.fr": "France Info",
+    "theguardian.com": "The Guardian", "courrierinternational.com": "Courrier International",
+    "latribune.fr": "La Tribune", "oilprice.com": "OilPrice",
 }
 
 def _nom_source(url):
@@ -85,6 +93,7 @@ def _nom_source(url):
 _DOMAINES_FR = {
     "rfi.fr", "france24.com", "lemonde.fr", "bfmtv.com", "franceinfo.fr",
     "futura-sciences.com", "reporterre.net", "lequipe.fr", "lesechos.fr",
+    "courrierinternational.com", "latribune.fr",
 }
 
 def _est_source_francaise(lien):
